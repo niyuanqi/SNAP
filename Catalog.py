@@ -1,7 +1,7 @@
 #################################################################
 # Name:     Catalog.py                                          #
 # Author:   Yuan Qi Ni                                          #
-# Date:     May, 27, 2016                                       #
+# Version:  May, 27, 2016                                       #
 # Function: Program contains functions for loading photometric  #
 #           reference star catalog data for differential        #
 #           photometry.                                         #

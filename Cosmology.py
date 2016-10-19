@@ -1,7 +1,7 @@
 #################################################################
 # Name:     Cosmology.py                                        #
 # Author:   Yuan Qi Ni                                          #
-# Date:     July, 18, 2016                                      #
+# Version:  July, 18, 2016                                      #
 # Function: Program contains various routines for calculating   #
 #           cosmological quantities. Also contains constants.   #
 #################################################################
