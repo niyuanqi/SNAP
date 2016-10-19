@@ -1,0 +1,2 @@
+# SNAP
+SuperNova Analysis Package
