@@ -2,8 +2,7 @@
 # Name:     MagCalc.py                                          #
 # Author:   Yuan Qi Ni                                          #
 # Version:  August 25, 2016                                     #
-# Function: Developed from LimMag.py routine. Program contains  # 
-#           essential functions for computing magnitude         #
+# Function: Program contains essential functions for computing  #
 #           magnitude at position of specified source in image  #
 #           file using provided differential photometric        #
 #           reference star catalog.                             #
