@@ -1,7 +1,7 @@
 #################################################################
 # Name:     Astrometry.py                                       #
 # Author:   Yuan Qi Ni                                          #
-# Date:     June 22, 2016                                       #
+# Version:  August 25, 2016                                     #
 # Function: Program contains functions that perform essential   #
 #           astrometric tasks.                                  #
 #################################################################
