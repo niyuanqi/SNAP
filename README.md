@@ -1,5 +1,5 @@
 # SNAP
-SuperNova Analysis, Processing Package
+SuperNova data analysis, processing package
 
 # Processing
 Contains routines for packing raw data into light curves
