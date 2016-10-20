@@ -1,5 +1,5 @@
 #################################################################
-# Name:     LCRoutines.py                                       #
+# Name:     LCFitting.py                                        #
 # Author:   Yuan Qi Ni                                          #
 # Version:  Oct, 19, 2016                                       #
 # Function: Program contains various models to analyse and fit  #
@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.integrate import simps
+import warnings
 
 #################################################################
 # Light Curve Analysis and Fitting Functions                    #
@@ -96,6 +97,7 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
             #plot fit
             plt.errorbar(t, M, yerr=M_err, fmt='r+')
             plt.plot(ta, Ma)
+            plt.plot([t_max,t_max],[M_max,M_max+dM15],c='g')
             plt.show()
         #add to params list
         params = [t_max, M_max, dM15]
