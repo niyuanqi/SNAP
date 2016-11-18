@@ -137,6 +137,9 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     if verbosity > 0:
         print "Average PSF [A,a,b,X0,Y0,B] = "+str(catpopt)
         print "parameter errors = "+str(catperr)
+        
+    print "\nMean SN of reference stars:",np.mean(catSN)
+    print ""
     
     #calculate photometry for source object
     if verbosity > 0:
