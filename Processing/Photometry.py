@@ -91,20 +91,50 @@ def D2moff((x, y), A, a, b, x0, y0):
     return m.ravel()
 #function: moffat a, b paramters -> fwhm
 def moff_toFWHM(a,b):
-    if b != 0:
-        if np.power(2,1.0/b)-1 > 0:
-            return np.abs(a)*(2*np.sqrt(np.power(2,1.0/b)-1))
-        else:
-            return 0
+    if b != 0 and np.power(2,1.0/b)-1 > 0:
+        return np.abs(a)*(2*np.sqrt(np.power(2,1.0/b)-1))
+    else:
+        return 0
+#function: integrate moffat function
+def moff_integrate(A,a,b):
+    if b != 0 and np.power(2,1.0/b)-1 > 0:
+        return np.pi*np.square(a)*A/(b-1)
     else:
         return 0
 
 #function: clean out cosmic rays and junk from PSF
 def PSFclean(x,y,psf,skyN):
-    x = x[psf+skyN**2>0]
-    y = y[psf+skyN**2>0]
-    psf = psf[psf+skyN**2>0]
+    #remove pixels that are 5sigma below the noise floor(dead? hot?)
+    x = x[psf+5*skyN>0]
+    y = y[psf+5*skyN>0]
+    psf = psf[psf+5*skyN>0]
     return x, y, psf
+
+#function: check veracity of PSF fit
+def PSFverify(PSFpopt, x0, y0):
+    #extract values from PSF
+    A = PSFpopt[0]
+    a = abs(PSFpopt[1])
+    b = PSFpopt[2]
+    X0 = PSFpopt[3]
+    Y0 = PSFpopt[4]
+    FWHM = moff_toFWHM(a, b)
+    #check all manner of ridiculous scenarios
+    if FWHM > 20.0 or FWHM < 1.0:
+        #unphysical FWHM
+        return False
+    elif A < 0:
+        #not a source
+        return False
+    elif dist(X0,Y0,x0,y0)>10:
+        #not our source
+        return False
+    elif b <= 1.0:
+        #divergent PSF
+        return False
+    else:
+        #seems legit
+        return True
 
 #function: extracts PSF from source
 def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
@@ -119,14 +149,14 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     x, y = np.meshgrid(x, y)
     x = x.ravel()
     y = y.ravel()
-    #filter out cosmic rays
+    #filter out bad pixels
     x, y, intens = PSFclean(x, y, intens, skyN)
     #get sky background
     sky = D2plane((x,y),*skypopt)
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm,4.765,x0,y0]
-        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens-sky, sigma=np.sqrt(intens+skyN**2) , p0=est, maxfev=100000)
+        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens-sky, sigma=np.sqrt(np.sqrt(np.absolute(intens-sky))), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             PSFperr = np.sqrt(np.diag(PSFpcov))
@@ -150,6 +180,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         print "PSF moffat fit parameters"
         print "[A,a,b,X0,Y0] = "+str(PSFpopt)
         print "parameter errors = "+str(PSFperr)
+        print "Chi2 = "+str(X2dof)
     #get values from fit
     A = PSFpopt[0]
     a = abs(PSFpopt[1])
@@ -160,7 +191,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     FWHM = moff_toFWHM(a, b)
         
     #graph fits if verbosity is high enough
-    if verbosity > 1:
+    if verbosity > 1 and FWHM != 0:
         xt = np.arange(x0-fsize*fwhm,x0+fsize*fwhm+1,0.1)
         x = np.arange(x0-fsize*fwhm,x0+fsize*fwhm+1,dtype=int)
         Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
@@ -188,24 +219,15 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         f.subplots_adjust(wspace=0)
         plt.suptitle("PSF Moffat Fit")
         plt.show()
+    elif FWHM == 0:
+        print "Unable to plot, catastrophic failure to extract PSF"
 
     #check if fit is ridiculous, give back no fit
-    if FWHM > 20.0 or FWHM < 1.0:
-        #unphysical FWHM
-        return [0]*5, [0]*5, 0, skyN
-    elif A < 0:
-        #not a source
-        return [0]*5, [0]*5, 0, skyN
-    elif dist(X0,Y0,x0,y0)>10:
-        return [0]*5, [0]*5, 0, skyN
-        #not our source
-    elif b <= 1.0:
-        #divergent PSF
-        return [0]*5, [0]*5, 0, skyN
+    if PSFverify(PSFpopt, x0, y0):
+        return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
-        #no problems
-        return PSFpopt, PSFperr, X2dof, skyN
-
+        return [0]*5, [0]*5, 0, [0]*3, skyN
+    
 #function: fits PSF to source
 def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     #fit sky background in an annulus
@@ -234,7 +256,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(np.sqrt(np.absolute(intens-sky))), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
@@ -265,6 +287,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         print "PSF moffat fit parameters"
         print "[A,a,b,X0,Y0] = "+str(PSFpopt)
         print "parameter errors = "+str(PSFperr)
+        print "Chi2 = "+str(X2dof)
 
     #graph fits if verbosity is high enough
     if verbosity > 1:
@@ -295,26 +318,15 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         f.subplots_adjust(wspace=0)
         plt.suptitle("PSF Moffat Fit")
         plt.show()
-    
-    #check if fit is ridiculous, give back no fit
-    if FWHM > 20.0 or FWHM < 1.0:
-        #unphysical FWHM
-        return [0]*5, [0]*5, 0, skyN
-    elif A < 0:
-        #not a source
-        return [0]*5, [0]*5, 0, skyN
-    elif dist(X0,Y0,x0,y0)>10:
-        return [0]*5, [0]*5, 0, skyN
-        #not our source
-    elif b <= 1.0:
-        #divergent PSF
-        return [0]*5, [0]*5, 0, skyN
-    else:
-        #no problems
-        return PSFpopt, PSFperr, X2dof, skyN
 
+    #check if fit is ridiculous, give back no fit
+    if PSFverify(PSFpopt, x0, y0):
+        return PSFpopt, PSFperr, X2dof, skypopt, skyN
+    else:
+        return [0]*5, [0]*5, 0, [0]*3, skyN
+    
 #function: calculates photometric intensity and sky background using PSF
-def photometry(image, x0, y0, PSFpopt, PSFperr, skyN, verbosity=0):
+def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
     #get some critical values
     A = PSFpopt[0]
     a = abs(PSFpopt[1])
@@ -322,28 +334,14 @@ def photometry(image, x0, y0, PSFpopt, PSFperr, skyN, verbosity=0):
     X0 = PSFpopt[3]
     Y0 = PSFpopt[4]
     FWHM = moff_toFWHM(a, b)
-    #check if PSF is ridiculous
-    psf=True
-    if FWHM > 20.0 or FWHM < 1.0:
-        #unphysical FWHM
-        psf = False
-    if A < 0:
-        #not a source
-        psf = False
-    if dist(X0,Y0,x0,y0)>10:
-        #not our source
-        psf = False
-    if b <= 1.0:
-        #divergent PSF
-        psf = False
             
     #compute optimal aperture
     Io = 0
     SNo = 0
     opt_r = 0
-    if psf:
+    if PSFverify(PSFpopt, x0, y0):
         #integrate moffat PSF to infinity
-        I_total = np.pi*np.square(a)*A/(b-1)
+        I_total = moff_integrate(A,a,b)
         #compute optimal aperture radius (90% source light)
         frac = 0.9
         I90 = frac*I_total
@@ -352,10 +350,23 @@ def photometry(image, x0, y0, PSFpopt, PSFperr, skyN, verbosity=0):
         opt_r = min(opt_r, 3.0)
         #check if psf is too small
         opt_r = max(opt_r, 1.0/FWHM)
+        
         #synthetic aperture containing PSF
-        aperture = ap_synth(D2moff, PSFpopt, opt_r*FWHM)
-        Io = np.sum(aperture)
-        sigmao = np.sqrt(Io + (skyN**2)*aperture.size)
+        #aperture = ap_synth(D2moff, PSFpopt, opt_r*FWHM)
+        #Io = np.sum(aperture)
+        #sigmao = np.sqrt(Io + (skyN**2)*aperture.size)
+        
+        #extract PSF aperture
+        PSF_extract, x, y = ap_get(image, x0, y0, 0, opt_r*FWHM)
+        PSF_sky = D2plane((x,y),*skypopt)
+        PSF_nosky = PSF_extract - PSF_sky
+        #calculate noise in aperture
+        PSF_fit = D2moff((x,y),*PSFpopt)
+        Io = np.sum(PSF_fit)
+        PSF_res = np.square(PSF_fit-PSF_nosky)
+        sigmao = np.sqrt(PSF_res.sum())
+        #calculate signal to noise
+        sigmao = np.sqrt(Io + (skyN**2)*PSF_fit.size)
         SNo = Io/sigmao
     else:
         print "Fit not viable for aperture photometry"
@@ -374,9 +385,19 @@ def photometry(image, x0, y0, PSFpopt, PSFperr, skyN, verbosity=0):
         Is = np.zeros(len(ap_r))
         sigmas = np.zeros(len(ap_r))
         for i, radius in enumerate(ap_r):
-            aperture = ap_synth(D2moff, PSFpopt, radius*FWHM)
-            Is[i] = np.sum(aperture)
-            sigmas[i] = np.sqrt(Is[i] + (skyN**2)*aperture.size)
+            #aperture = ap_synth(D2moff, PSFpopt, radius*FWHM)
+            #Is[i] = np.sum(aperture)
+            #sigmas[i] = np.sqrt(Is[i] + (skyN**2)*aperture.size)
+
+            #extract PSF aperture
+            PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
+            PSF_sky = D2plane((x,y),*skypopt)
+            PSF_nosky = PSF_extract - PSF_sky
+            #calculate noise in aperture
+            PSF_fit = D2moff((x,y),*PSFpopt)
+            Is[i] = np.sum(PSF_fit)
+            PSF_res = np.square(PSF_fit-PSF_nosky)
+            sigmas[i] = np.sqrt(PSF_res.sum())
         SNs = Is/sigmas
 
         f, ax = plt.subplots(2, sharex=True)

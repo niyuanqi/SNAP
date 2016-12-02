@@ -9,7 +9,7 @@
 #################################################################
 
 #run sample
-#python MagCalc.py -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 2000 -fwhm 5 -vvv -n 3.0 N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv
+#python MagCalc.py -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv
 #python MagCalc.py -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3 -s 14.0 -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat
 
 #essential modules
@@ -46,9 +46,9 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     hdulist.close()
     
     #print hdulist header
-    if verbosity > 2:
-        print "\n info \n"
-        print header
+    #if verbosity > 2:
+        #print "\n info \n"
+        #print header
     #calculate observation time in day of year
     try:
         time = isot_day(Time(header['DATE-OBS']))
@@ -101,6 +101,9 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         for i in range(len(ID)):
             print RA[int(i)], DEC[int(i)]
 
+    plt.imshow(image, cmap='Greys', vmax=0.0001*np.amax(image), vmin=0)
+    plt.scatter(catX, catY)
+    plt.show()
     #aperture photometry on catalog stars
     n = len(catX)
     catI = np.zeros(n) #intensity list
@@ -117,8 +120,8 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
-        I, SN = photometry(image, x0, y0, PSFpopt, PSFperr, skyN, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
+        I, SN = photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
         #check if reference stars are valid
         if I == 0 or SN == 0 or skyN == 0:
             raise ImageError('Unable to perform photometry on reference stars.')
@@ -144,8 +147,8 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     #calculate photometry for source object
     if verbosity > 0:
         print "Computing magnitude of source "+name
-    PSFpopt, PSFperr, X2dof, skyNo = PSFfit(image, catpopt, catperr, X, Y, verbosity=verbosity)
-    Io, SNo = photometry(image, X, Y, PSFpopt, PSFperr, skyNo, verbosity=verbosity)
+    PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, X, Y, verbosity=verbosity)
+    Io, SNo = photometry(image, X, Y, PSFpopt, skypopto, skyN, verbosity=verbosity)
     #check if source is valid
     mo = float('NaN')
     mo_err = float('NaN')
@@ -212,7 +215,9 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
             aperture = ap_synth(D2moff, popt_trial, opt_r*FWHM)
             #photometry over synthetic aperture
             I = np.sum(aperture)
-            sigma = np.sqrt(I + (skyN**2)*aperture.size)
+            #sigma = np.sqrt(I + (skyN**2)*aperture.size)
+            #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
+            sigma = np.sqrt(aperture.size*skyN**2)
             SN = I/sigma
             #append to trials
             I_trials[j] = I
@@ -274,7 +279,7 @@ def main():
     parser.add_argument("-b", "--band", type=str, default='V', help="image filter band")
     parser.add_argument("-p", "--position", type=str, help="RA:DEC as deg:deg")
     parser.add_argument("-fwhm", type=float, default=5.0, help="image fwhm upper bound")
-    parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="limiting signal to noise threshold")
+    parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="signal to noise at detection limit")
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
