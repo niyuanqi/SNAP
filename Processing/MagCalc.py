@@ -96,14 +96,18 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     index = catM < 19.0
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
     if verbosity > 0:
+        #output selected catalog stars
         print "Selected catalog star IDs:"
         print ID
         for i in range(len(ID)):
             print RA[int(i)], DEC[int(i)]
 
-    plt.imshow(image, cmap='Greys', vmax=0.0001*np.amax(image), vmin=0)
-    plt.scatter(catX, catY)
-    plt.show()
+    if verbosity > 3:
+        #plot image of catalog positions
+        plt.imshow(image, cmap='Greys', vmax=0.0001*np.amax(image), vmin=0)
+        plt.scatter(catX, catY)
+        plt.scatter(X,Y,c='r')
+        plt.show()
     #aperture photometry on catalog stars
     n = len(catX)
     catI = np.zeros(n) #intensity list
@@ -117,14 +121,15 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     for i in range(n):
         if verbosity > 0:
             print "Computing "+str(i+1)+"/"+str(n)
+            print "Magnitude "+str(catM[i])
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
         PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
         I, SN = photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
         #check if reference stars are valid
-        if I == 0 or SN == 0 or skyN == 0:
-            raise ImageError('Unable to perform photometry on reference stars.')
+        #if I == 0 or SN == 0 or skyN == 0:
+            #raise ImageError('Unable to perform photometry on reference stars.')
         #save intensity and SN ratio
         catI[i] = I
         catSN[i] = SN
@@ -133,6 +138,31 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         catperr.append(PSFperr)
     catpopt = np.array(catpopt)
     catperr = np.array(catperr)
+
+    """
+    #diagnostic for SNR, N, I calculation routine
+    plt.title("SNR calculation for various reference stars")
+    plt.scatter(catM, np.log(catSNr), c='b', label="Calculated using fit residuals")
+    plt.scatter(catM, np.log(catSN), c='r', label="Calculated using intensity")
+    plt.ylabel("log SNR")
+    plt.xlabel("Mag (~log I)")
+    plt.legend()
+    plt.show()
+    plt.title("Noise under various reference stars")
+    plt.scatter(catM, np.log(catI/catSNr), c='b', label="Calculated using fit residuals")
+    plt.scatter(catM, np.log(catI/catSN), c='r', label="Calculated using intensity")
+    plt.ylabel("log Noise")
+    plt.xlabel("Mag (~log I)")
+    plt.legend()
+    plt.show()
+    plt.title("Intensity of various reference stars")
+    plt.scatter(catM, np.log(catI), c='b')
+    plt.ylabel("log I")
+    plt.xlabel("Mag (catalog)")
+    plt.legend()
+    plt.show()
+    """
+
     #calculate average psf among reference stars
     w = 1/np.square(catperr)
     catpopt = (catpopt*w).sum(0)/w.sum(0)
@@ -143,7 +173,7 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         
     print "\nMean SN of reference stars:",np.mean(catSN)
     print ""
-    
+
     #calculate photometry for source object
     if verbosity > 0:
         print "Computing magnitude of source "+name

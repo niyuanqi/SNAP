@@ -153,23 +153,25 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     x, y, intens = PSFclean(x, y, intens, skyN)
     #get sky background
     sky = D2plane((x,y),*skypopt)
+    #subtract sky background
+    intens = intens - sky
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm,4.765,x0,y0]
-        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens-sky, sigma=np.sqrt(np.sqrt(np.absolute(intens-sky))), p0=est, maxfev=100000)
+        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             PSFperr = np.sqrt(np.diag(PSFpcov))
         except:
             try:
                 #take closer initial conditions
-                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens-sky, sigma=np.sqrt(intens+skyN**2) , p0=PSFpopt, maxfev=100000)
+                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2) , p0=PSFpopt, maxfev=100000)
                 PSFperr = np.sqrt(np.diag(PSFpcov))
             except:
                 PSFperr = [0]*5
         #calculate goodness of fit
         I_theo = D2moff((x, y),*PSFpopt)
-        X2dof = np.sum(np.square((intens-I_theo)/np.sqrt(np.abs(intens))))/(len(intens)-6)
+        X2dof = np.sum(np.square((intens-I_theo)/np.sqrt(intens+skyN**2)))/(len(intens)-6)
     except:
         #catastrophic failure of PSF fitting
         print "PSF fitting catastrophic failure"
@@ -196,27 +198,40 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         x = np.arange(x0-fsize*fwhm,x0+fsize*fwhm+1,dtype=int)
         Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
         Ix_im = np.array([image[int(Y0)][i] for i in x])
+        Ix_res = Ix_im - D2moff((x,np.array([int(Y0)]*len(x))),*PSFpopt)-D2plane((x,np.array([int(Y0)]*len(x))),*skypopt)
 
         yt = np.arange(y0-fsize*fwhm,y0+fsize*fwhm+1,0.1)
         y = np.arange(y0-fsize*fwhm,y0+fsize*fwhm+1,dtype=int)
         Iy_theo = D2moff((np.array([int(X0)]*len(yt)),yt),*PSFpopt)+D2plane((np.array([int(X0)]*len(yt)),yt),*skypopt)
         Iy_im = np.array([image[i][int(X0)] for i in y])
+        Iy_res = Iy_im - D2moff((np.array([int(X0)]*len(y)),y),*PSFpopt)-D2plane((np.array([int(X0)]*len(y)),y),*skypopt)        
         
         #plot psf moffat in X and Y slice side by side
-        f, ax = plt.subplots(1, 2, sharey=True)
-        ax[0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
-        ax[0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
-        ax[0].set_xlabel('x-pixel')
-        ax[0].set_ylabel('data #')
-        ax[0].set_xlim(min(x),max(x))
-        ax[0].legend()
-        ax[1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
-        ax[1].plot(yt, Iy_theo, label='gaus fit X2/dof='+str(X2dof)[:6])
-        ax[1].set_xlabel('y-pixel')
-        ax[1].set_ylabel('data #')
-        ax[1].set_xlim(min(y),max(y))
-        ax[1].legend()
+        f, ax = plt.subplots(2, 2, sharex="col", sharey="row")
+        ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
+        ax[0][0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
+        ax[0][0].set_xlabel('x-pixel')
+        ax[0][0].set_ylabel('data #')
+        ax[0][0].set_xlim(min(x),max(x))
+        ax[0][0].legend()
+        ax[1][0].errorbar(x,Ix_res,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='residuals')
+        ax[1][0].plot(x,np.zeros(len(x)))
+        ax[1][0].legend()
+        ax[0][1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
+        ax[0][1].plot(yt, Iy_theo, label='fit X2/dof='+str(X2dof)[:6])
+        ax[0][1].set_xlabel('y-pixel')
+        ax[0][1].set_ylabel('data #')
+        ax[0][1].set_xlim(min(y),max(y))
+        ax[0][1].legend()
+        ax[1][1].errorbar(y,Iy_res,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='residuals')
+        ax[1][1].plot(y,np.zeros(len(y)))
+        ax[1][1].legend()
         f.subplots_adjust(wspace=0)
+        f.subplots_adjust(hspace=0)
+        plt.setp([a.get_xticklabels()[0] for a in ax[1, :]], visible=False)
+        plt.setp([a.get_yticklabels()[0] for a in ax[:, 0]], visible=False)
+        plt.setp([a.get_xticklabels()[-1] for a in ax[1, :]], visible=False)
+        plt.setp([a.get_yticklabels()[-1] for a in ax[:, 0]], visible=False)
         plt.suptitle("PSF Moffat Fit")
         plt.show()
     elif FWHM == 0:
@@ -290,35 +305,50 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         print "Chi2 = "+str(X2dof)
 
     #graph fits if verbosity is high enough
-    if verbosity > 1:
+    if verbosity > 1 and FWHM != 0:
         xt = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,0.1)
         x = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,dtype=int)
         Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
         Ix_im = np.array([image[int(Y0)][i] for i in x])
+        Ix_res = Ix_im - D2moff((x,np.array([int(Y0)]*len(x))),*PSFpopt)-D2plane((x,np.array([int(Y0)]*len(x))),*skypopt)
         
         yt = np.arange(y0-fsize*FWHM,y0+fsize*FWHM+1,0.1)
         y = np.arange(y0-fsize*FWHM,y0+fsize*FWHM+1,dtype=int)
         Iy_theo = D2moff((np.array([int(X0)]*len(yt)),yt),*PSFpopt)+D2plane((np.array([int(X0)]*len(yt)),yt),*skypopt)
         Iy_im = np.array([image[i][int(X0)] for i in y])
-        
+        Iy_res = Iy_im - D2moff((np.array([int(X0)]*len(y)),y),*PSFpopt)-D2plane((np.array([int(X0)]*len(y)),y),*skypopt)
+
         #plot psf moffat in X and Y slice side by side
-        f, ax = plt.subplots(1, 2, sharey=True)       
-        ax[0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
-        ax[0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
-        ax[0].set_xlabel('x-pixel')
-        ax[0].set_ylabel('data #')
-        ax[0].set_xlim(min(x),max(x))
-        ax[0].legend()       
-        ax[1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
-        ax[1].plot(yt, Iy_theo, label='gaus fit X2/dof='+str(X2dof)[:6])
-        ax[1].set_xlabel('y-pixel')
-        ax[1].set_ylabel('data #')
-        ax[1].set_xlim(min(y),max(y))
-        ax[1].legend()
+        f, ax = plt.subplots(2, 2, sharex="col", sharey="row")
+        ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
+        ax[0][0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
+        ax[0][0].set_xlabel('x-pixel')
+        ax[0][0].set_ylabel('data #')
+        ax[0][0].set_xlim(min(x),max(x))
+        ax[0][0].legend()
+        ax[1][0].errorbar(x,Ix_res,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='residuals')
+        ax[1][0].plot(x,np.zeros(len(x)))
+        ax[1][0].legend()
+        ax[0][1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
+        ax[0][1].plot(yt, Iy_theo, label='fit X2/dof='+str(X2dof)[:6])
+        ax[0][1].set_xlabel('y-pixel')
+        ax[0][1].set_ylabel('data #')
+        ax[0][1].set_xlim(min(y),max(y))
+        ax[0][1].legend()
+        ax[1][1].errorbar(y,Iy_res,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='residuals')
+        ax[1][1].plot(y,np.zeros(len(y)))
+        ax[1][1].legend()
         f.subplots_adjust(wspace=0)
+        f.subplots_adjust(hspace=0)
+        plt.setp([a.get_xticklabels()[0] for a in ax[1, :]], visible=False)
+        plt.setp([a.get_yticklabels()[0] for a in ax[:, 0]], visible=False)
+        plt.setp([a.get_xticklabels()[-1] for a in ax[1, :]], visible=False)
+        plt.setp([a.get_yticklabels()[-1] for a in ax[:, 0]], visible=False)
         plt.suptitle("PSF Moffat Fit")
         plt.show()
-
+    elif FWHM == 0:
+        print "Unable to plot, catastrophic failure to extract PSF"
+        
     #check if fit is ridiculous, give back no fit
     if PSFverify(PSFpopt, x0, y0):
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
@@ -360,16 +390,27 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         PSF_extract, x, y = ap_get(image, x0, y0, 0, opt_r*FWHM)
         PSF_sky = D2plane((x,y),*skypopt)
         PSF_nosky = PSF_extract - PSF_sky
-        #calculate noise in aperture
+        #calculate PSF fit
         PSF_fit = D2moff((x,y),*PSFpopt)
         Io = np.sum(PSF_fit)
+
+        #proper signal to noise calculation for unscaled intensities
+        sigmar = np.sqrt(Io + (skyN**2)*PSF_fit.size)
+        SNo = Io/sigmar
+
+        """
+        #vestigial method, moffat function is not good enough fit
+        #calculate noise in aperture
         PSF_res = np.square(PSF_fit-PSF_nosky)
         sigmao = np.sqrt(PSF_res.sum())
-        #calculate signal to noise
-        sigmao = np.sqrt(Io + (skyN**2)*PSF_fit.size)
-        SNo = Io/sigmao
+        #calculate signal to noise for scaled intensities
+        SNr = Io/sigmao
+        """
     else:
         print "Fit not viable for aperture photometry"
+        Io = 0
+        SNo = 0
+        SNr = 0
     #output information
     if verbosity > 0:
         print "\noutput values"
@@ -402,12 +443,15 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
 
         f, ax = plt.subplots(2, sharex=True)
         ax[0].set_title("Aperture Signal to Noise")
-        ax[0].plot(ap_r,SNs)
+        ax[0].plot(ap_r,SNs,label='SNR')
         ax[0].set_ylabel("SN")
+        ax[0].legend()
         ax[1].errorbar(ap_r,Is,yerr=sigmas,fmt='r+',label='summed intens')
         ax[1].set_ylabel("I")
         ax[1].set_xlabel("Aperture R (FWHM)")
         ax[1].legend()
+        plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
+        plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
         f.subplots_adjust(hspace=0)
         plt.show()
 
