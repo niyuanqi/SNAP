@@ -1,5 +1,5 @@
 #################################################################
-# Name:     DiffIm.py                                           #
+# Name:     make_image_diff_n.py                                #
 # Author:   Yuan Qi Ni                                          #
 # Version:  January 10, 2016                                    #
 # Function: Program contains routines used for fits image       #
@@ -7,6 +7,9 @@
 #           and hotpants photometric alignment software by      #
 #           Andrew Becker.                                      #
 #################################################################
+
+#Sample usage
+#python make_image_diff_n.py N300-1.Q0.B.161030_0504.C.034140.005604N3646.0060.nh.fits N300-1.Q0.B.150626_1842-151019_1231.XCSA.005605N3646.00081.00081.FM30.BS0512.ALL.coadd.NEW.REF.fits diff.fits
 
 #remove incompatible header information
 def remove_tan_from_header(inname, outdir, extnum=0):
@@ -51,7 +54,11 @@ def run_hotpants(src_name, template_name, out_name):
 
     #call hotpants
     subprocess.call(['hotpants', '-inim', src_name, '-tmplim',
-                     template_name, '-outim', out_name])
+                     template_name, '-outim', out_name,
+                     '-tl', '-100', '-il', '-100',
+                     '-nrx', '2', '-nry', '2',
+                     '-nsx', '15', '-nsy', '15',
+                     '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0'])
 
 #make difference image
 def make_diff_image(src_name, ref_name, out_name, delete_temp=True):
