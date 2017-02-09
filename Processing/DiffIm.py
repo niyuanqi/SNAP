@@ -1,11 +1,11 @@
 #################################################################
-# Name:     make_image_diff_n.py                                #
+# Name:     DiffIm.py                                           #
 # Author:   Yuan Qi Ni                                          #
 # Version:  January 10, 2016                                    #
 # Function: Program contains routines used for fits image       #
 #           subtraction using wcsremap astrometric alignment    #
 #           and hotpants photometric alignment software by      #
-#           Andrew Becker.                                      #
+#           Andrew Becker. Based on make_image_diff.py          #
 #################################################################
 
 #Sample usage

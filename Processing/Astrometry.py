@@ -54,3 +54,10 @@ def sepAngle(coord1, coord2):
     coord1 = SkyCoord(*coord1, unit='deg')
     coord2 = SkyCoord(*coord2, unit='deg')
     return coord1.separation(coord2).degree
+
+#function: returns separation angle on single plate (<1deg)
+def smallAngle(coord1, coord2):
+    da = coord1[0] - coord2[0]
+    dd = coord1[1] - coord2[1]
+    d = 0.5*(coord1[1] + coord2[1])
+    return np.sqrt(np.square(da*np.cos(d*np.pi/180.0))+np.square(dd))
