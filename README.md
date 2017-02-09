@@ -23,6 +23,8 @@ for explanation of flags and inputs
 
 DiffIm.py:
 
+Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically for subtraction.
+
 Basic usage (sample)
 
 % python DiffIm.py srcfile_name reffile_name outfile_name
@@ -32,6 +34,24 @@ Try
 % python DiffIm.py -h
 
 for explanation of flags and inputs
+
+MatchPhot.py:
+
+Operates on the output of SExtractor (Emmanuel Bertin) which takes in a fits image and compiles catalog file with fluxes of objects detected in the image. MatchPhot uses a list reference stars in the same field of view from AAVSO's APASS-DR9 catalog and extracts a photometric solution mapping SExtractor fluxes to their apparent magnitudes by matching bright reference stars from SExtractor catalog to their counterpart in APASS-DR9 catalog.
+
+Basic usage (sample)
+
+% python MatchPhot.py SExtractor_catname -ref AAVSO_catname
+
+Try
+
+% python MatchPhot.py -h
+
+for explanation of flags and inputs
+
+Vizier.py:
+
+Contains python functions for querying/parsing vizier catalogs and currently supports USNO-B1, AAVSO-APASS-DR9.
 
 Astrometry.py:
 
