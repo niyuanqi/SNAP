@@ -113,11 +113,14 @@ def matchPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0)
     popt = [1/popt[0], -popt[1]/popt[0]]
     perr = [perr[0]/popt[0]**2, (-popt[1]/popt[0])*np.sqrt((perr[1]/popt[1])**2+(perr[0]/popt[0])**2)]
 
-    Ffit = np.sort(Fm)
+    Ffit = Fm
     Mfit, Mfit_err = linMatch(Ffit, popt[0], popt[1], Fm_err, perr[0], perr[1])
-    X2dof = np.sqrt((Mfit-magm)/Mfit_err)/(len(Mfit)-2.0)
+    X2dof = np.sum(np.square((Mfit-magm)/Mfit_err))/(len(Mfit)-2.0)
 
     if verbosity > 1:
+        print "Linear Photmetric Solution: "+str(popt)
+        print "Errors: "+str(perr)
+        print "Fit X2/dof: "+str(X2dof)
         print "Writing photometric fit parameters"
     #get base of catalog name for output
     base = catname[:-4]
@@ -129,6 +132,7 @@ def matchPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0)
         s += '# '+refname
     else:
         s += '# AAVSO-APASS-DR9_ra{:4.6f}dec{:4.6f}bm{:4.1f}x{:4.1f}.cat'.format(radeg,decdeg,fovam,fovam)
+    s += '\n# fit X2/dof = '+str(X2dof)[:4]
     s += '\n# magnitude = a*flux + b'
     s += '\n# row 1: a\tb'
     s += '\n# row 2: errors'
@@ -174,7 +178,7 @@ def matchPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0)
         
         #plot fit residuals
         plt.plot(Fm, magm, 'r+')
-        plt.errorbar(Ffit, Mfit, yerr=Mfit_err, label="fit\nm="+str(popt[0])[:7]+"pm"+str(perr[0])[:6]+"\nb="+str(popt[1])[:6]+"pm"+str(perr[1])[:5])
+        plt.errorbar(Ffit, Mfit, yerr=Mfit_err, label="fit\nm="+str(popt[0])[:7]+"pm"+str(perr[0])[:6]+"\nb="+str(popt[1])[:6]+"pm"+str(perr[1])[:5]+"\nX2dof="+str(X2dof)[:4])
         plt.xlabel("SExtractor")
         plt.ylabel("AAVSO-APASS-DR9")
         plt.axis('equal')

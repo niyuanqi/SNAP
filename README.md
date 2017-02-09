@@ -41,7 +41,7 @@ Operates on the output of SExtractor (Emmanuel Bertin) which takes in a fits ima
 
 Basic usage (sample)
 
-*% python MatchPhot.py SExtractor_catname -ref AAVSO_catname
+*% python MatchPhot.py SExtractor_catname band -ref AAVSO_catname
 
 Try
 
