@@ -10,7 +10,7 @@
 #essential modules
 import numpy as np
 
-#function: load DPRS catalog
+#function: load DPRS catalog (give flag 'dprs' to MagCalc)
 def catDPRS(catname, band=False):
     #load values with DPRS conventions
     ID,RA,DEC,V,Verr,B,Berr,g,gerr,r,rerr,i,ierr = np.loadtxt(catname, unpack=True, skiprows=2)
@@ -32,7 +32,7 @@ def catDPRS(catname, band=False):
     #return catalog magnitudes
     return ID, RA, DEC, catM, catMerr
 
-#function: load phot catalog
+#function: load phot catalog (give flag 'phot' to MagCalc)
 def catPhot(catname,band=False):
     #load values with phot conventions
     RA,RAerr,DEC,DECerr,Nobs,V,Verr,B,Berr,g,gerr,r,rerr,i,ierr = np.loadtxt(catname, unpack=True, skiprows=2, delimiter=",", dtype='string')
