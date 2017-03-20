@@ -30,8 +30,10 @@ from Astrometry import*
 #class: exception to detect invalid images
 class ImageError(Exception):
     def __init__(self, value):
+        #value is error message
         self.value = value
     def __str__(self):
+        #set error message as value
         return repr(self.value)
 
 #function: compute magnitude of object in image with catalog
@@ -96,6 +98,8 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     #select bright enough catalog stars
     index = catM < 19.0
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
+    if len(ID) == 0:
+        raise ImageError('No reference stars in image.')
     if verbosity > 0:
         #output selected catalog stars
         print "Selected catalog star IDs:"
@@ -128,6 +132,7 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         #calculate intensity and SN ratio with reduced verbosity
         PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
         I, SN = photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
+        #vestigial diagnoses
         #check if reference stars are valid
         #if I == 0 or SN == 0 or skyN == 0:
             #raise ImageError('Unable to perform photometry on reference stars.')
@@ -137,6 +142,9 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         #save catalog star fits
         catpopt.append(PSFpopt)
         catperr.append(PSFperr)
+    #for i in range(n):
+    #    if catI[i] == 0 or catSN[i] == 0:
+    #        raise ImageError('Unable to perform photometry on reference stars.')
     catpopt = np.array(catpopt)
     catperr = np.array(catperr)
 
