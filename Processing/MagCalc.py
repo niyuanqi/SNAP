@@ -27,7 +27,7 @@ from Catalog import*
 from Photometry import*
 from Astrometry import*
 
-#class: exception to detect invalid images
+#class: exception to detect invalid images of various sorts
 class ImageError(Exception):
     def __init__(self, value):
         #value is error message
@@ -143,8 +143,8 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         catpopt.append(PSFpopt)
         catperr.append(PSFperr)
     #for i in range(n):
-    #    if catI[i] == 0 or catSN[i] == 0:
-    #        raise ImageError('Unable to perform photometry on reference stars.')
+        #if catI[i] == 0 or catSN[i] == 0:
+            #raise ImageError('Unable to perform photometry on reference stars.')
     catpopt = np.array(catpopt)
     catperr = np.array(catperr)
 

@@ -87,6 +87,13 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
 
 #function: general 2D moffat function
 def D2moff((x, y), A, a, b, x0, y0):
+    """
+    This is the most frequently used function to model PSFs,
+    but it is not perfect! Expect residuals!
+    Residuals of fit is not a good estimator of noise in PSF.
+    Don't make the same mistake as I did.
+    Problem fixed in 2016, noise now measured from sky, not from residual.
+    """
     m = A*np.power(1+np.square(dist(x,y,x0,y0)/a),-b)
     return m.ravel()
 #function: moffat a, b paramters -> fwhm
@@ -395,11 +402,13 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         Io = np.sum(PSF_fit)
 
         #proper signal to noise calculation for unscaled intensities
+        #noise is sqrt(intensity) is the best we can do
         sigmar = np.sqrt(Io + (skyN**2)*PSF_fit.size)
         SNo = Io/sigmar
 
         """
         #vestigial method, moffat function is not good enough fit
+        #residual cant be used as noise, because it contains PSF
         #calculate noise in aperture
         PSF_res = np.square(PSF_fit-PSF_nosky)
         sigmao = np.sqrt(PSF_res.sum())
