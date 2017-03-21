@@ -32,7 +32,7 @@ catname = 'N2784-7.Q1.DPRS.cat'
 #year observed
 year = 2015
 #current time
-t_now = "170321_0303"
+t_now = "170321_0700"
 #user running this code
 user = "Chris Ni"
 #noise level
