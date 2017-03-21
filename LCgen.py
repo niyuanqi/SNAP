@@ -137,7 +137,7 @@ for i in range(len(files)):
     #check if SrcExt processed this image
     if band in bands: #valid band selection
         b = bindex[band]
-        if fo in fs[bindex[band]]:
+        if fo in fSs[bindex[band]]:
             #source extractor did process image
             j = float(np.argwhere(fB==fo))
             ts, RAs, DECs, Ms, Mserr = tSs[b][j], RASs[b][j], DECSs[b][j], MSs[b][j], MSs_err[b][j]
