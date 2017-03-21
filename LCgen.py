@@ -113,9 +113,9 @@ Ms_err = [MBerr, MVerr, MIerr]
 os.system('touch '+outBname)
 os.system('touch '+outVname)
 os.system('touch '+outIname)
-outB = open(outBname)
-outV = open(outVname)
-outI = open(outIname)
+outB = open(outBname, 'a')
+outV = open(outVname, 'a')
+outI = open(outIname, 'a')
 outs = [outB, outV, outI]
 #write headers for BVI light curve output files
 for i in range(len(bands)):
