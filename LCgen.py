@@ -44,6 +44,8 @@ Bfile = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.00
 Vfile = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
 Ifile = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
 files = [Bfile, Vfile, Ifile]
+#number of rows to skip
+skip = 3
 #output light curve filenames
 outBname = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170321.txt"
 outVname = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170321.txt"
@@ -94,12 +96,12 @@ def headGen():
 
 #read SExtractor files
 #time series
-tB, RAB, DECB, MB, MBerr = np.loadtxt(Bfile, usecols=(0,2,3,4,5), skiprows=2, unpack=True)
-fB = np.loadtxt(Bfile, dtype=str, usecols=(1,), skiprows=2)
-tV, RAV, DECV, MV, MVerr = np.loadtxt(Vfile, usecols=(0,2,3,4,5), skiprows=2, unpack=True)
-fV = np.loadtxt(Vfile, dtype=str, usecols=(1,), skiprows=2)
-tI, RAI, DECI, MI, MIerr = np.loadtxt(Ifile, usecols=(0,2,3,4,5), skiprows=2, unpack=True)
-fI = np.loadtxt(Ifile, dtype=str, usecols=(1,), skiprows=2)
+tB, RAB, DECB, MB, MBerr = np.loadtxt(Bfile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
+fB = np.loadtxt(Bfile, dtype=str, usecols=(1,), skiprows=skip)
+tV, RAV, DECV, MV, MVerr = np.loadtxt(Vfile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
+fV = np.loadtxt(Vfile, dtype=str, usecols=(1,), skiprows=skip)
+tI, RAI, DECI, MI, MIerr = np.loadtxt(Ifile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
+fI = np.loadtxt(Ifile, dtype=str, usecols=(1,), skiprows=skip)
 fs = [fB, fV, fI]
 ts = [tB, tV, tI]
 RAs = [RAB, RAV, RAI]
