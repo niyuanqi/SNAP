@@ -123,7 +123,7 @@ for i in range(len(bands)):
     outs[i].write(headGen())
 
 #search for fits files with which to construct light curve
-files = sorted(glob('*.fits'))
+files = sorted(glob(prefix+'*.fits'))
 
 #generate light curve
 for i in range(len(files)):
@@ -157,9 +157,9 @@ for i in range(len(files)):
 
     if Mtest:
         #get moon ephemeris
-        obs = f[j][-1]
+        obs = fo[-1]
         loc = observatories[obs]
-        time = day_isot(to[j],2015)
+        time = day_isot(to,year)
         RAmoon, DECmoon = moonEQC(time,loc)
         ALTmoon, AZmoon = moonLC(time,loc)
         #check if moon bright
