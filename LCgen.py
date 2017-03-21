@@ -102,12 +102,12 @@ tV, RAV, DECV, MV, MVerr = np.loadtxt(Vfile, usecols=(0,2,3,4,5), skiprows=skip,
 fV = np.loadtxt(Vfile, dtype=str, usecols=(1,), skiprows=skip)
 tI, RAI, DECI, MI, MIerr = np.loadtxt(Ifile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
 fI = np.loadtxt(Ifile, dtype=str, usecols=(1,), skiprows=skip)
-fs = [fB, fV, fI]
-ts = [tB, tV, tI]
-RAs = [RAB, RAV, RAI]
-DECs = [DECB, DECV, DECI]
-Ms = [MB, MV, MI]
-Ms_err = [MBerr, MVerr, MIerr]
+fSs = [fB, fV, fI]
+tSs = [tB, tV, tI]
+RASs = [RAB, RAV, RAI]
+DECSs = [DECB, DECV, DECI]
+MSs = [MB, MV, MI]
+MSs_err = [MBerr, MVerr, MIerr]
 
 #generate output files
 os.system('touch '+outBname)
@@ -140,7 +140,7 @@ for i in range(len(files)):
         if fo in fs[bindex[band]]:
             #source extractor did process image
             j = float(np.argwhere(fB==fo))
-            ts, RAs, DECs, Ms, Mserr = ts[b][j], RAs[b][j], DECs[b][j], Ms[b][j], Ms_err[b][j]
+            ts, RAs, DECs, Ms, Mserr = tSs[b][j], RASs[b][j], DECSs[b][j], MSs[b][j], MSs_err[b][j]
             Stest = True
         else:
             #source extractor did not process image
