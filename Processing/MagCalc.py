@@ -27,8 +27,8 @@ from Catalog import*
 from Photometry import*
 from Astrometry import*
 
-#class: exception to detect invalid images of various sorts
-class ImageError(Exception):
+#class: exception to clarify cause of crash as inability to extract psf on image
+class PSFError(Exception):
     def __init__(self, value):
         #value is error message
         self.value = value
@@ -36,40 +36,56 @@ class ImageError(Exception):
         #set error message as value
         return repr(self.value)
 
-#function: compute magnitude of object in image with catalog
-def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
-    #load HDU image
-    if verbosity > 0:
-        print "loading hdu"
-    hdulist = fits.open(filename)
-    info = hdulist.info()
-    image = hdulist[0].data
-    header = hdulist[0].header
-    #close HDU image
-    hdulist.close()
-    
-    #print hdulist header
-    #if verbosity > 2:
-        #print "\n info \n"
-        #print header
-    #calculate observation time in day of year
-    try:
+#class: exception to clarify cause of crash as invalid fits file
+class FitsError(Exception):
+    def __init__(self, value):
+        #value is error message
+        self.value = value
+    def __str__(self):
+        #set error message as value
+        return repr(self.value)
+
+#function: load fits file
+def loadFits(filename, verbosity):
+    try: #try to load image data
+        #load HDU image
+        if verbosity > 0:
+            print "loading hdu"
+        hdulist = fits.open(filename)
+        info = hdulist.info()
+        image = hdulist[0].data
+        header = hdulist[0].header
+        #close HDU image
+        hdulist.close()
+        #print hdulist header
+        #if verbosity > 2:
+        #    print "\n info \n"
+        #    print header
+    except:
+        raise FitsError('Unable to load fits data.')
+
+    try: #calculate observation time in day of year
         time = isot_day(Time(header['DATE-OBS']))
     except KeyError:
         time = 0
 
-    #construct world coordinate system
-    if verbosity > 0:
-        print "loading world coordinate system"
-    wcs = WCS(filename)
-    
+    try: #try to load WCS
+        if verbosity > 0:
+            print "loading world coordinate system"
+        wcs = WCS(filename)
+    except:
+        raise FitsError('Unable to load wcs data.')
+
+    return image, time, wcs
+
+#function: compute magnitude of object in image with catalog
+def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
     #convert position of source to pixel 
-    print RA, DEC
     X, Y = wcs.all_world2pix(RA, DEC, 0)
     X, Y  = int(X), int(Y)
     if verbosity > 0:
         print "Source located at: " + str(X) + ", " + str(Y)
-    
+
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
@@ -132,24 +148,20 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         #calculate intensity and SN ratio with reduced verbosity
         PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
         I, SN = photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
-        #vestigial diagnoses
         #check if reference stars are valid
-        #if I == 0 or SN == 0 or skyN == 0:
-            #raise ImageError('Unable to perform photometry on reference stars.')
+        if I == 0 or SN == 0 or skyN == 0:
+            raise PSFError('Unable to perform photometry on reference stars.')
         #save intensity and SN ratio
         catI[i] = I
         catSN[i] = SN
         #save catalog star fits
         catpopt.append(PSFpopt)
         catperr.append(PSFperr)
-    #for i in range(n):
-        #if catI[i] == 0 or catSN[i] == 0:
-            #raise ImageError('Unable to perform photometry on reference stars.')
     catpopt = np.array(catpopt)
     catperr = np.array(catperr)
-
     """
     #diagnostic for SNR, N, I calculation routine
+    #checks for wrong correlation between intensity and noise
     plt.title("SNR calculation for various reference stars")
     plt.scatter(catM, np.log(catSNr), c='b', label="Calculated using fit residuals")
     plt.scatter(catM, np.log(catSN), c='r', label="Calculated using intensity")
@@ -189,8 +201,6 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
     PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, X, Y, verbosity=verbosity)
     Io, SNo = photometry(image, X, Y, PSFpopt, skypopto, skyN, verbosity=verbosity)
     #check if source is valid
-    mo = float('NaN')
-    mo_err = float('NaN')
     if Io != 0 and SNo != 0 and skyN != 0:
         #convert position to world coordinates
         Xo, Yo = PSFpopt[3], PSFpopt[4]
@@ -205,8 +215,7 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         mo_rand = np.sqrt(1/np.sum(w))
         mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
     else:
-        print "No source candidate detected"
-        RAo, DECo = float('NaN'), float('NaN')
+        Io, SNo, mo, mo_err, RAo, DECo = [float('NaN')]*6
 
     if limsnr != 0 and skyNo != 0:
         #sky noise properly estimated, calculate limiting magnitude
@@ -214,13 +223,13 @@ def magnitude(filename, cat, catname, (RA,DEC), radius=500, name='object', band=
         rl = 0.1 #recursion seed
         mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catpopt, np.mean(catSN), skyNo, catM, catMerr, catSN, catI, verbosity)
         #return calculated magnitude, magnitude errors, and limiting magnitude
-        return time, RAo, DECo, mo, mo_err, mlim
+        return RAo, DECo, Io, SNo, mo, mo_err, mlim
     elif limsnr != 0:
         #no sky noise estimate
-        return time, RAo, DECo, mo, mo_err, float('NaN')
+        return RAo, DECo, Io, SNo, mo, mo_err, float('NaN')
     else:
         #return calculated magnitude and magnitude errors
-        return time, RAo, DECo, mo, mo_err
+        return RAo, DECo, Io, SNo, mo, mo_err
 
 #function: recursively calculates limiting magnitude by scaling PSF to SN3.0
 def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
@@ -325,15 +334,19 @@ def main():
     
     #extract RA, DEC from position argument
     RA, DEC = [float(coord) for coord in args.position.split(':')]
+
+    #load fits file, get relevant data
+    image, time, wcs = loadFits(args.filename, args.verbosity)
+    
     #compute position, magnitude and error
     if args.noiseSNR != 0:
-        time, RA, DEC, M, Merr, Mlim = magnitude(args.filename, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
         #output position, magnitude
-        print time, RA, DEC, M, Merr, Mlim
+        print time, RA, DEC, I, SN, M, Merr, Mlim
     else:
-        time, RA, DEC, M, Merr = magnitude(args.filename, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr = magnitude(image, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
         #output position, magnitude
-        print time, RA, DEC, M, Merr   
+        print time, RA, DEC, I, SN, M, Merr   
         
 #command line execution
 if __name__ == "__main__":

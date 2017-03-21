@@ -32,9 +32,9 @@ def lin(x, a, b):
 #distance metric on image
 def dist(x1, y1, x2, y2):
     return np.sqrt(np.square(x1-x2)+np.square(y1-y2))
-    
-#match photometry between catalog and AAVSO
-def matchPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0):
+
+#match photometry between catalog and reference
+def matchSExPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0):
     #get centroid positions in image from SExtractor Catalog
     if verbosity > 1:
         print "Loading SExtractor Catalog"
