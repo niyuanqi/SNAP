@@ -209,8 +209,11 @@ for i in range(len(files)):
     #check for total failure
     if (not Stest) and (not Mtest):
         so = so + "_BAD_IMAGE"
-    if Mtest and Mlim < 0:
-        so = "INCONV"
+    elif Mtest:
+        if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
+            RAo, DECo = 0.0, 0.0
+        if Mlim < 0:
+            so = "INCONV"
 
     #format output
     out = rowGen(to,fo,RAs,DECs,Ms,Ms_err,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so)
