@@ -1,2 +1,6 @@
 import Analysis
-import Processing
+from Astrometry import *
+from Photometry import *
+from Catalog import *
+from MagCalc import *
+from DiffIm import *
