@@ -73,7 +73,7 @@ def rowGen(to,fo,RAs,DECs,Ms,Ms_err,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
     sMo_err = padstr("%.3f"%Mo_err,10)
     sMlim = padstr("%.3f"%Mlim,10)
     ss = "   "+so
-    out = '\n  '+sto+sf+sRAs+sDECs+sMs+sMs_err+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlim+ss
+    out = '\n  '+sto+sfo+sRAs+sDECs+sMs+sMs_err+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlim+ss
     return out
 #fills first row with column headers
 def headGen():
@@ -91,7 +91,7 @@ def headGen():
     sMo_err = padstr("MAGERR_MC",10)
     sMlim = padstr("LIM_MC",10)
     ss = "   "+"NOTE"
-    out = "\n; "+sto+sf+sRAs+sDECs+sMs+sMs_err+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlim+ss
+    out = "\n; "+sto+sfo+sRAs+sDECs+sMs+sMs_err+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlim+ss
     return out
 
 #read SExtractor files
