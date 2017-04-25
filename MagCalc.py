@@ -265,7 +265,7 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
             I = np.sum(aperture)
             #sigma = np.sqrt(I + (skyN**2)*aperture.size)
             #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
-            sigma = np.sqrt(aperture.size*skyN**2)
+            sigma = np.sqrt(I + aperture.size*skyN**2)
             SN = I/sigma
             #append to trials
             I_trials[j] = I
