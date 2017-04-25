@@ -32,11 +32,11 @@ catname = 'N2784-7.Q1.DPRS.cat'
 #year observed
 year = 2015
 #current time
-t_now = "170321_0700"
+t_now = "170425_0300"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 3.0
+SNRnoise = 2.0
 #number of reference stars used in each band
 nrefs = [1,1,1]
 #SExtractor time series data files at source
