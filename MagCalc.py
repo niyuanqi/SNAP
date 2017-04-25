@@ -79,12 +79,12 @@ def loadFits(filename, verbosity):
     return image, time, wcs
 
 #function: compute magnitude of object in image with catalog
-def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
+def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
     #convert position of source to pixel 
-    X, Y = wcs.all_world2pix(RA, DEC, 0)
-    X, Y  = int(X), int(Y)
+    Xo, Yo = wcs.all_world2pix(RA, DEC, 0)
+    Xo, Yo  = int(Xo), int(Yo)
     if verbosity > 0:
-        print "Source located at: " + str(X) + ", " + str(Y)
+        print "Source located at: " + str(Xo) + ", " + str(Yo)
 
     #load photometric reference stars catalog
     if verbosity > 0:
@@ -101,7 +101,7 @@ def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', ban
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
     catX, catY = catX.astype(float), catY.astype(float)
     #select catalog stars within some radius of object
-    index = dist(catX,catY,X,Y) < radius
+    index = dist(catX,catY,Xo,Yo) < radius
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
     #select catalog stars within edges
     index = np.logical_and(catX > 15, image.shape[1]-catX > 15)
@@ -127,7 +127,7 @@ def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', ban
         #plot image of catalog positions
         plt.imshow(image, cmap='Greys', vmax=0.0001*np.amax(image), vmin=0)
         plt.scatter(catX, catY)
-        plt.scatter(X,Y,c='r')
+        plt.scatter(Xo,Yo,c='r')
         plt.show()
     #aperture photometry on catalog stars
     n = len(catX)
@@ -197,8 +197,8 @@ def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', ban
     #calculate photometry for source object
     if verbosity > 0:
         print "Computing magnitude of source "+name
-    PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, X, Y, verbosity=verbosity)
-    Io, SNo = photometry(image, X, Y, PSFpopt, skypopto, skyN, verbosity=verbosity)
+    PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, Xo, Yo, verbosity=verbosity)
+    Io, SNo = photometry(image, Xo, Yo, PSFpopt, skypopto, skyN, verbosity=verbosity)
     #check if source is valid
     if Io != 0 and SNo != 0 and skyN != 0:
         #convert position to world coordinates
@@ -215,7 +215,7 @@ def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', ban
         mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
     else:
         Io, SNo, mo, mo_err = [float('NaN')]*4
-        RAo, DECo = wcs.all_pix2world(X, Y, 0)
+        RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
     if limsnr != 0 and skyNo != 0:
         #sky noise properly estimated, calculate limiting magnitude
