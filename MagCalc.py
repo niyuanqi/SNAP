@@ -217,7 +217,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         Io, SNo, mo, mo_err = [float('NaN')]*4
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
-    if limsnr != 0 and skyNo != 0 and PSFverify(catpopt, Xp, Yp):
+    if limsnr != 0 and skyNo != 0 and PSFverify(catpopt, catpopt[-2], catpopt[-1]):
         #sky noise properly estimated, calculate limiting magnitude
         ru = 10.0 #recursion seed
         rl = 0.1 #recursion seed
