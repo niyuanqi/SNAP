@@ -81,7 +81,7 @@ def loadFits(filename, verbosity):
 #function: compute magnitude of object in image with catalog
 def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
     #convert position of source to pixel 
-    Xo, Yo = wcs.all_world2pix(RA, DEC, 0)
+    Xo, Yo = wcs.all_world2pix(RAo, DECo, 0)
     Xo, Yo  = int(Xo), int(Yo)
     if verbosity > 0:
         print "Source located at: " + str(Xo) + ", " + str(Yo)
