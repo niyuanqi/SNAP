@@ -11,6 +11,10 @@ import numpy as np
 from astropy.time import Time, TimeDelta
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_moon
 
+#function: converts KSPTime to isot time
+def ksp_isot(time):
+    return "20"+time[:2]+"-"+time[2:4]+"-"+time[4:6]+"T"+time[7:9]+":"+time[9:11]+":00.000"
+
 #function: converts isot time to day of year float
 def isot_day(time):
     #create astropy time object
