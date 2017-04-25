@@ -139,7 +139,7 @@ for i in range(len(files)):
         b = bindex[band]
         if fo in fSs[b]:
             #source extractor did process image
-            j = float(np.argwhere(fSs[b]==fo))
+            j = int(np.argwhere(fSs[b]==fo))
             ts, RAs, DECs, Ms, Ms_err = tSs[b][j], RASs[b][j], DECSs[b][j], MSs[b][j], MSs_err[b][j]
             Stest = True
         else:
