@@ -202,8 +202,8 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     #check if source is valid
     if Io != 0 and SNo != 0 and skyN != 0:
         #convert position to world coordinates
-        Xo, Yo = PSFpopt[3], PSFpopt[4]
-        RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
+        Xp, Yp = PSFpopt[3], PSFpopt[4]
+        RAo, DECo = wcs.all_pix2world(Xp, Yp, 0)
     
         #calculate magnitude of object wrt each reference star
         mi = catM - 2.512*np.log10(Io/catI)
@@ -217,7 +217,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         Io, SNo, mo, mo_err = [float('NaN')]*4
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
-    if limsnr != 0 and skyNo != 0:
+    if limsnr != 0 and skyNo != 0 and PSFverify(catpopt, Xp, Yp):
         #sky noise properly estimated, calculate limiting magnitude
         ru = 10.0 #recursion seed
         rl = 0.1 #recursion seed
@@ -250,6 +250,8 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
         opt_r = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)/FWHM
         #check if wings are too large to be sensical
         opt_r = min(opt_r, 3.0)
+        #check if psf is too small
+        opt_r = max(opt_r, 1.0/FWHM)
         #do photometry over synthetic sources for each A
         if verbosity > 0:
             print "Computing "+str(n)+" synthetic sources to find mlim"
@@ -265,7 +267,7 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
             I = np.sum(aperture)
             #sigma = np.sqrt(I + (skyN**2)*aperture.size)
             #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
-            sigma = np.sqrt(I + aperture.size*skyN**2)
+            sigma = np.sqrt(aperture.size*skyN**2)
             SN = I/sigma
             #append to trials
             I_trials[j] = I
