@@ -215,6 +215,7 @@ def magnitude(image, wcs, cat, catname, (RA,DEC), radius=500, name='object', ban
         mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
     else:
         Io, SNo, mo, mo_err = [float('NaN')]*4
+        RAo, DECo = RA, DEC
 
     if limsnr != 0 and skyNo != 0:
         #sky noise properly estimated, calculate limiting magnitude
