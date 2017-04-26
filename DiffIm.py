@@ -67,7 +67,7 @@ def make_diff_image(src_name, ref_name, out_name, delete_temp=True):
         import os
         
         #make temporary directory
-        tmpdir = 'temp'
+        tmpdir = 'DITemp'
         if not os.path.exists(tmpdir):
             os.makedirs(tmpdir)
             

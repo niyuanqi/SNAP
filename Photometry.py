@@ -165,7 +165,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm,4.765,x0,y0]
-        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=1000000)
         try:
             #try to calculate fit error
             PSFperr = np.sqrt(np.diag(PSFpcov))
