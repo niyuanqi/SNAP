@@ -4,4 +4,3 @@ from Photometry import *
 from Catalog import *
 from MagCalc import *
 from DiffIm import *
-from LCgen import *
