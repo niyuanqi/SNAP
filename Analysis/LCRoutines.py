@@ -30,6 +30,23 @@ def padstr(string, l):
         string = " "+string
     return string
 
+#function: places left-aligned string in a string of space-padded chars
+def padstl(string, l):
+    ######################################################
+    # Input                                              #
+    # -------------------------------------------------- #
+    # string: str to be padded                           #
+    #      l: length of padded str                       #
+    # -------------------------------------------------- #
+    # Output                                             #
+    # -------------------------------------------------- #
+    # string: left-aligned space padded str of length l  #
+    ######################################################
+    pad = l - len(string)
+    for i in range(pad):
+        string = string+" "
+    return string
+
 #function: split value(error) format into value
 def splitval(string):
     ######################################
