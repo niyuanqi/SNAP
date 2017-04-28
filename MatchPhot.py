@@ -8,12 +8,7 @@
 #################################################################
 
 #essential modules
-from astropy.io import fits
-from astropy.wcs import WCS
-import matplotlib.pyplot as plt 
-from scipy.optimize import curve_fit
 import numpy as np 
-import argparse
 
 #essential imports
 from Astrometry import*
@@ -35,6 +30,11 @@ def dist(x1, y1, x2, y2):
 
 #match photometry between catalog and reference
 def matchSExPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity=0):
+
+    from astropy.io import fits
+    from astropy.wcs import WCS
+    from scipy.optimize import curve_fit
+    
     #get centroid positions in image from SExtractor Catalog
     if verbosity > 1:
         print "Loading SExtractor Catalog"
@@ -160,6 +160,9 @@ def matchSExPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity
         np.savetxt(base+".txt", np.array([M, M_err, RA, DEC]).T, fmt='%.3f', delimiter='\t', header=s)
         
     if verbosity > 1:
+
+        import matplotlib.pyplot as plt 
+        
         #plot matching star field
         plt.title("AAVSO matched to SExtractor 14<m<16")
         plt.plot(RAm, DECm, 'b.', label='source')
@@ -187,9 +190,12 @@ def matchSExPhot(catname, band, refname=None, fitsname=None, pos=None, verbosity
 
     #return photometric fit parameters
     return popt, perr
+        
+#command line execution
+if __name__ == "__main__":
     
-#function: main function, command line execution
-def main():
+    import argparse
+    
     #command line arguments
     parser = argparse.ArgumentParser(description="Find Photometric Magnitude")
     parser.add_argument("catname", type=str, help="catalog whose photometry needs to be matched to AAVSO")
@@ -220,8 +226,3 @@ def main():
         print "Errors: "+str(perr)
     else:
         print "Insufficient information to retrieve AAVSO catalog, try -h flag and give one of three optional arguments."
-        
-#command line execution
-if __name__ == "__main__":
-    #call main function
-    main()

@@ -8,8 +8,6 @@
 
 #essential modules
 import numpy as np
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 
 #function: estimate snr using mag_err
 def limErr(snrerr):
@@ -45,6 +43,9 @@ def D2plane((x, y), a, b, c):
 
 #function: fits background sky plane and noise
 def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
+
+    from scipy.optimize import curve_fit
+    
     #get background sky annulus
     inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
@@ -145,6 +146,9 @@ def PSFverify(PSFpopt, x0, y0):
 
 #function: extracts PSF from source
 def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
+
+    from scipy.optimize import curve_fit
+    
     #fit sky background in an annulus
     skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
 
@@ -201,6 +205,9 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
+
+        import matplotlib.pyplot as plt
+        
         xt = np.arange(x0-fsize*fwhm,x0+fsize*fwhm+1,0.1)
         x = np.arange(x0-fsize*fwhm,x0+fsize*fwhm+1,dtype=int)
         Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
@@ -252,6 +259,9 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     
 #function: fits PSF to source
 def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
+
+    from scipy.optimize import curve_fit
+    
     #fit sky background in an annulus
     skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
     
@@ -313,6 +323,9 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
 
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
+
+        import matplotlib.pyplot as plt
+        
         xt = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,0.1)
         x = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,dtype=int)
         Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
@@ -430,6 +443,9 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         
     #graph photometry if verbosity is high enough
     if verbosity > 1:
+        
+        import matplotlib.pyplot as plt
+    
         #plot psf aperture to snr, intensity
         ap_r = np.linspace(1.0/FWHM,3.0,100)
         Is = np.zeros(len(ap_r))

@@ -1,7 +1,7 @@
 #################################################################
 # Name:     MagCalc.py                                          #
 # Author:   Yuan Qi Ni                                          #
-# Version:  August 25, 2016                                     #
+# Version:  April 28, 2016                                      #
 # Function: Program contains essential functions for computing  #
 #           magnitude at position of specified source in image  #
 #           file using provided differential photometric        #
@@ -14,13 +14,7 @@
 #python MagCalc.py -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat
 
 #essential modules
-from astropy.io import fits
-from astropy.time import Time
-from astropy.wcs import WCS
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-import argparse
 
 #essential files
 from Catalog import*
@@ -45,8 +39,30 @@ class FitsError(Exception):
         #set error message as value
         return repr(self.value)
 
-#function: load fits file
-def loadFits(filename, verbosity):
+def loadFits(filename, verbosity=0):
+    """
+    #################################################################
+    # Desc: Load fits file for MagCalc.                             #
+    # ------------------------------------------------------------- #
+    # Imports: astropy.io.fits, astropy.time.Time, astropy.wcs.WCS  #
+    # ------------------------------------------------------------- #
+    # Input                                                         #
+    # ------------------------------------------------------------- #
+    #  filename: str fits filename to be opened                     #
+    # verbosity; int counts verbosity level                         #
+    # ------------------------------------------------------------- #
+    # Output                                                        #
+    # ------------------------------------------------------------- #
+    # image: numpy array containing image data                      #
+    #  time: float time in days since start of year YYYY            #
+    #   wcs: astropy wcs object, world coordinate system on image   #
+    #################################################################
+    """
+
+    from astropy.io import fits
+    from astropy.time import Time
+    from astropy.wcs import WCS
+    
     try: #try to load image data
         #load HDU image
         if verbosity > 0:
@@ -78,8 +94,39 @@ def loadFits(filename, verbosity):
 
     return image, time, wcs
 
-#function: compute magnitude of object in image with catalog
 def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
+    """
+    #####################################################################
+    # Desc: Compute magnitude of object in image using ref catalog.     #
+    # ----------------------------------------------------------------- #
+    # Imports:                                                          #
+    # ----------------------------------------------------------------- #
+    # Input                                                             #
+    # ----------------------------------------------------------------- #
+    #     image: numpy array containing image data.                     #
+    #       wcs: astropy wcs object, world coordinate system on image.  #
+    #       cat: str catalog type (phot, dprs, or diff from Catalog.py) #
+    #   catname: str catalog name.                                      #
+    # RAo, DECo: float equatorial coordinate of object in degrees.      #
+    #    radius; float radius around object in which to take ref stars. #
+    #      name; str name of object.                                    #
+    #      band; char observational filter of data.                     #
+    #      fwhm; float estimate of FWHM on image.                       #
+    #    limsnr; float signal to noise ratio defining detection limit,  #
+    #            if 0.0, then no detection limits are calculated.       #
+    #    satmag; float magnitude below which reference stars are        #
+    #            considered to be saturated and hence not used.         #
+    # verbosity; int counts verbosity level.                            #
+    # ----------------------------------------------------------------- #
+    # Output                                                            #
+    # ----------------------------------------------------------------- #
+    #  RAo, DECo: float measured equatorial coordinate of source.       #
+    #    Io, SNo: float measured intensity and SNR of source.           #
+    # mo, mo_err: float calibrated magnitude and error of source.       #
+    #       mlim; float detection limit at source position.             #
+    #####################################################################
+    """
+    
     #convert position of source to pixel 
     Xo, Yo = wcs.all_world2pix(RAo, DECo, 0)
     Xo, Yo  = int(Xo), int(Yo)
@@ -162,6 +209,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     """
     #diagnostic for SNR, N, I calculation routine
     #checks for wrong correlation between intensity and noise
+    import matplotlib.pyplot as plt
     plt.title("SNR calculation for various reference stars")
     plt.scatter(catM, np.log(catSNr), c='b', label="Calculated using fit residuals")
     plt.scatter(catM, np.log(catSN), c='r', label="Calculated using intensity")
@@ -233,6 +281,37 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
 
 #function: recursively calculates limiting magnitude by scaling PSF to SN3.0
 def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
+    """
+    ##########################################################################
+    # Desc: Recursively calculates limiting magnitude by scaling PSF to SNR. #
+    # ---------------------------------------------------------------------- #
+    # Imports:                                                               #
+    # ---------------------------------------------------------------------- #
+    # Input                                                                  #
+    # ---------------------------------------------------------------------- #
+    #    ru, rl: Upper and lower ratio of fixed scaling estimate.            #
+    #            Estimate A_est obtained from popt, and Monte Carlo          #
+    #            values taken between ru*A_est and rl*A_est.                 #
+    #    limsnr: float signal to noise ratio defining detection limit.       #
+    #      popt: iterable floats (len 5) containing PSF on image.            #
+    #       sno: average signal to noise of ref stars used to get popt.      #
+    #      skyN: sky noise in annulus at source position.                    #
+    #      catM: list of magnitudes of reference stars.                      #
+    #   catMerr: list of magnitude errors of reference stars.                #
+    #     catSN: list of SNRs of reference stars.                            #
+    #      catI: list of intensities of reference stars.                     #
+    #     level; recursion level of computation, min 0, max 10.              #
+    # verbosity; int counts verbosity level.                                 #
+    # ---------------------------------------------------------------------- #
+    # Output                                                                 #
+    # ---------------------------------------------------------------------- #
+    #  RAo, DECo: float measured equatorial coordinate of source.            #
+    #    Io, SNo: float measured intensity and SNR of source.                #
+    # mo, mo_err: float calibrated magnitude and error of source.            #
+    #       mlim; float detection limit at source position.                  #
+    ##########################################################################
+    """
+    
     if len(popt) == 5:
         #PSF is moffat
         A,a,b,X0,Y0 = popt[0], popt[1], popt[2], popt[3], popt[4]
@@ -314,11 +393,13 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
                 return limitingM(ru, rl/10.0, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
         else:
             #convergent
-            return mlim, SNlim, ru, rl
-
+            return mlim, SNlim, ru, rl          
         
-#function: main function, command line execution
-def main():
+#command line execution
+if __name__ == "__main__":
+
+    import argparse
+    
     #command line arguments
     parser = argparse.ArgumentParser(description="Find Photometric Magnitude")
     parser.add_argument("filename", type=str, help="fits image containing source")
@@ -348,9 +429,4 @@ def main():
     else:
         RA, DEC, I, SN, M, Merr = magnitude(image, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
         #output position, magnitude
-        print time, RA, DEC, I, SN, M, Merr   
-        
-#command line execution
-if __name__ == "__main__":
-    #call main function
-    main()
+        print time, RA, DEC, I, SN, M, Merr

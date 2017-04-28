@@ -4,22 +4,30 @@ SuperNova Analysis Package
 Performs data analysis and processing on images containing transient sources.
 Implements python routines for performing photometry, astrometry, etc.
 
-## Processing
-Contains routines for extracting light curves from raw images.
-The flagship program is MagCalc.py
+The flagship program is MagCalc.py.
+LCgen.py is a samply script using which one may generate a MagCalc light curve.
+The subpackage Analysis contains tools for dealing with such light curves.
 
 **MagCalc.py :**
 
 Automatically performs differential photometry on given fits image files. It includes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. PSFs can be manipulated by a highly customizable set of flags.
 
-Basic usage (sample)
+Basic usage in command line (some samples)
 
 *% python MagCalc.py -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 example.fits catalog.csv*
+
+*% python MagCalc.py -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
+
+*% python MagCalc.py -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
 Try 
 
 *% python MagCalc.py -h*
 for explanation of flags and inputs
+
+Basic usage in python routine (sample)
+
+*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, 'dprs', catname, (RA,DEC), radius=1000.0, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=14.0, verbosity=0)*
 
 **DiffIm.py :**
 
