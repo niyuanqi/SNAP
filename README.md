@@ -5,7 +5,9 @@ Performs data analysis and processing on images containing transient sources.
 Implements python routines for performing photometry, astrometry, etc.
 
 The flagship program is MagCalc.py.
+
 LCgen.py is a samply script using which one may generate a MagCalc light curve.
+
 The subpackage Analysis contains tools for dealing with such light curves.
 
 **MagCalc.py :**
