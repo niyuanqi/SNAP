@@ -10,7 +10,6 @@
 from astropy.io import fits
 from astropy.wcs import WCS
 import numpy as np
-import matplotlib.pyplot as plt
 
 #class: exception, data can not be handled
 class DataError(Exception):
@@ -34,6 +33,9 @@ def plotFits(image, rmax=1., rmin=0., title=None, invert=True, cmap='gray'):
     invert : boolean True to invert colormap when plotting
     cmap   : matplotlib colormap
     """
+
+    import matplotlib.pyplot as plt
+    
     if type(image) is fits.HDUList:
         #if HDUlist, break up into ImageHDUs
         for i, hdu in enumerate(image):

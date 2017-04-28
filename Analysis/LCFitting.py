@@ -8,7 +8,6 @@
 
 #essential modules
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.integrate import simps
 import warnings
@@ -19,6 +18,9 @@ import warnings
 
 #function: compute monte carlo polynomial fit and parameters
 def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
+
+    import matplotlib.pyplot as plt
+    
     #ignore least square coefficient matrix rank deficiency
     warnings.simplefilter('ignore', np.RankWarning)
     if M_err is None:
@@ -115,6 +117,9 @@ def SN1aLC(t, g0, t0, sigma0, g1, t1, sigma1, gamma, f0, tau, theta):
 
 #function: compute monte carlo 10 parameter SN1a fit and parameters
 def LCSN1aFit(t, M, M_err=None, p0=None, N=30, plot=False):
+
+    import matplotlib.pyplot as plt
+    
     #expected parameters
     t0 = t[np.argmin(M)]
     t1 = t[np.argmin(M)] + 25.0
