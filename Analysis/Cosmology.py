@@ -8,7 +8,6 @@
 
 #essential modules
 import numpy as np
-import scipy.integrate as integrate
 
 #global constants
 H0 = 69.6 #km/s/Mpc Hubble constant
@@ -23,6 +22,9 @@ def comov(z):
 
 #function: integrate comoving distance to some redshift [pc]
 def intDc(z):
+
+    import scipy.integrate as integrate
+    
     return integrate.quad(comov,0,z)[0]*(1.0+z)
 
 #function: integrate angular diameter distance to some redshift

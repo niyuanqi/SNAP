@@ -7,8 +7,6 @@
 #################################################################
 
 #essential modules
-from astropy.io import fits
-from astropy.wcs import WCS
 import numpy as np
 
 #class: exception, data can not be handled
@@ -34,6 +32,7 @@ def plotFits(image, rmax=1., rmin=0., title=None, invert=True, cmap='gray'):
     cmap   : matplotlib colormap
     """
 
+    from astropy.io import fits
     import matplotlib.pyplot as plt
     
     if type(image) is fits.HDUList:
@@ -76,6 +75,9 @@ def map_Noise(hdulist, val, scale):
     Output-----------------------------
     out     : Image HDU or HDUlist with noise mapped
     """
+
+    from astropy.io import fits
+
     if type(hdulist) is fits.HDUList:
         #if HDUlist, break up into ImageHDUs
         out = []
