@@ -12,7 +12,7 @@ The subpackage Analysis contains tools for dealing with such light curves.
 
 To use any of these modules, add SNAP to your PYTHONPATH
 
-*% PYTHONPATH=$PYTHONPATH:<path containing SNAP directory>*
+*% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
 
 **MagCalc.py :**
