@@ -10,6 +10,11 @@ LCgen.py is a samply script using which one may generate a MagCalc light curve.
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
+To use any of these modules, add SNAP to your PYTHONPATH
+
+*% PYTHONPATH=$PYTHONPATH:<path containing SNAP directory>*
+
+
 **MagCalc.py :**
 
 Automatically performs differential photometry on given fits image files. It includes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. PSFs can be manipulated by a highly customizable set of flags.
@@ -24,7 +29,7 @@ Basic usage in command line (some samples)
 
 Try 
 
-*% python MagCalc.py -h*
+*% python -m SNAP.MagCalc -h*
 for explanation of flags and inputs
 
 Basic usage in python routine (sample)
@@ -42,11 +47,11 @@ Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and c
 
 Basic usage (sample)
 
-*% python DiffIm.py srcfile_name reffile_name outfile_name*
+*% python -m SNAP.DiffIm srcfile_name reffile_name outfile_name*
 
 Try
 
-*% python DiffIm.py -h*
+*% python -m SNAP.DiffIm -h*
 
 for explanation of flags and inputs
 
@@ -56,11 +61,11 @@ Operates on the output of SExtractor (Emmanuel Bertin) which takes in a fits ima
 
 Basic usage (sample)
 
-*% python MatchPhot.py SExtractor_catname band -ref AAVSO_catname
+*% python -m SNAP.MatchPhot SExtractor_catname band -ref AAVSO_catname
 
 Try
 
-*% python MatchPhot.py -h*
+*% python -m SNAP.MatchPhot -h*
 
 for explanation of flags and inputs
 
