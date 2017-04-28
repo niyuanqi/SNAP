@@ -15,6 +15,7 @@ import numpy as np
 
 #function: places right-aligned string in a string of space-padded chars
 def padstr(string, l):
+    '''
     ######################################################
     # Input                                              #
     # -------------------------------------------------- #
@@ -25,6 +26,7 @@ def padstr(string, l):
     # -------------------------------------------------- #
     # string: right-aligned space padded str of length l #
     ######################################################
+    '''
     pad = l - len(string)
     for i in range(pad):
         string = " "+string
@@ -32,6 +34,7 @@ def padstr(string, l):
 
 #function: places left-aligned string in a string of space-padded chars
 def padstl(string, l):
+    '''
     ######################################################
     # Input                                              #
     # -------------------------------------------------- #
@@ -42,6 +45,7 @@ def padstl(string, l):
     # -------------------------------------------------- #
     # string: left-aligned space padded str of length l  #
     ######################################################
+    '''
     pad = l - len(string)
     for i in range(pad):
         string = string+" "
@@ -49,6 +53,7 @@ def padstl(string, l):
 
 #function: split value(error) format into value
 def splitval(string):
+    '''
     ######################################
     # Input                              #
     # ---------------------------------- #
@@ -58,6 +63,7 @@ def splitval(string):
     # ---------------------------------- #
     #       : value in float format      #
     ######################################
+    '''
     try :
         return float(string.split('(')[0])
     except ValueError:
@@ -65,6 +71,7 @@ def splitval(string):
     
 #function: split value(error) format into error
 def spliterr(string):
+    '''
     ######################################
     # Input                              #
     # ---------------------------------- #
@@ -74,6 +81,7 @@ def spliterr(string):
     # ---------------------------------- #
     #       : error in float format      #
     ######################################
+    '''
     try:
         return float(string.split('(')[1].split(')')[0])/100.0
     except IndexError:
@@ -81,6 +89,7 @@ def spliterr(string):
     
 #function: format value and error as value(error)
 def valerr(val, err):
+    '''
     #########################################
     # Input                                 #
     # ------------------------------------- #
@@ -91,6 +100,7 @@ def valerr(val, err):
     # ------------------------------------- #
     #       : value(error) in string format #
     #########################################
+    '''
     return ('%.3f'%val)+'('+str(int(err*1000))+')'
 
 #################################################################
@@ -99,6 +109,7 @@ def valerr(val, err):
 
 #function: split data formatting in light curve mag(err)
 def LCsplit(valerrs):
+    '''
     #####################################################################
     # Input                                                             #
     # ----------------------------------------------------------------- #
@@ -112,6 +123,7 @@ def LCsplit(valerrs):
     #    errs: array of light curves where each is an array of floats   #
     #          representing the magnitude error.                        #
     #####################################################################
+    '''
     mags, errs = [[]]*len(valerrs), [[]]*len(valerrs)
     for i, valerr in enumerate(valerrs):
         mags[i] = np.array([splitval(string) for string in valerr])
@@ -120,6 +132,7 @@ def LCsplit(valerrs):
 
 #function: filter bad data from light curve
 def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
+    '''
     #######################################################################
     # Input                                                               #
     # ------------------------------------------------------------------- #
@@ -163,6 +176,7 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
     #   lims; list of float limiting magnitude arrays (if given) where    #
     #         bad elements defined by flags and lims were purged.         #
     #######################################################################
+    '''
     #for each band
     for i in range(len(ts)):
         #remove elements with flag value for each flag
@@ -210,6 +224,7 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
 
 #function: crop time segment from dataset
 def LCcrop(t, t1, t2, M, M_err=None, Mlim=None):
+    '''
     ##############################################
     # Input                                      #
     # ------------------------------------------ #
@@ -227,6 +242,7 @@ def LCcrop(t, t1, t2, M, M_err=None, Mlim=None):
     #  M_err; cropped error array                #
     #   Mlim; cropped limiting magnitude array   #
     ##############################################
+    '''
     index = np.logical_and(t<t2,t>t1)
     if M_err is not None:
         if Mlim is not None:
@@ -241,6 +257,7 @@ def LCcrop(t, t1, t2, M, M_err=None, Mlim=None):
 
 #function: return first difference (color) between a set of light curves
 def LCcolors(ts, mags, errs):
+    '''
     #######################################################################
     # Input                                                               #
     # ------------------------------------------------------------------- #
@@ -261,6 +278,7 @@ def LCcolors(ts, mags, errs):
     #                                                                     #
     #  derrs: list of float errors color curves.                          #
     #######################################################################
+    '''
     tdiff, diffs, derrs = [], [], []
     #for each adjacent pair of light curve in mags
     for i in range(len(ts)-1):
@@ -279,6 +297,7 @@ def LCcolors(ts, mags, errs):
 
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags=['_'], aflag='sn', mode='single'):
+    '''
     #######################################################################
     # Input                                                               #
     # ------------------------------------------------------------------- #
@@ -324,6 +343,7 @@ def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags
     #   lims; list of float limiting magnitude arrays (if given) where    #
     #         bad elements defined by flags and lims were purged.         #
     #######################################################################
+    '''
     #check load mode, multifile or singlefile
     if mode == 'single':
         #load time column
