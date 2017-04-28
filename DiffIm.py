@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('out_name', type=str, help='output file name')
     parser.add_argument('--debug', dest='debug', action='store_const',
                         const=True, default=False,
-                        help='do not delete temp files')
+                        help='give this flag to not delete temp files')
     args = parser.parse_args()
     #whether to delete temporary directory for intermediate files created
     delete_temp = not args.debug
