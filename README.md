@@ -23,35 +23,57 @@ Basic usage in command line (some samples)
 
 *% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 example.fits catalog.csv*
 
+*% python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv*
+
 *% python -m SNAP.MagCalc -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
 
 *% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
-Try 
+Try in terminal
 
 *% python -m SNAP.MagCalc -h*
 for explanation of flags and inputs
 
 Basic usage in python routine (sample)
 
-*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, 'dprs', catname, (RA,DEC), radius=1000.0, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=14.0, verbosity=0)*
+*% from SNAP.MagCalc import magnitude*
 
-Try in python shell on imported modules from SNAP
+*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, wcs_fromfits, 'dprs', '../N2784-7.Q1.DPRS.cat', (140.92247,-21.969278), radius=1000.0, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=14.0, verbosity=0)*
 
-*% help(<module>)*
+Try in python shell on any imported modules from SNAP
+
+*% from SNAP.MagCalc import \<module\>*
+
+*% help(\<module\>)*
 for explanation of functions and inputs
 
 **DiffIm.py :**
 
-Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically for subtraction.
+Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction.
 
 Basic usage (sample)
 
 *% python -m SNAP.DiffIm srcfile_name reffile_name outfile_name*
 
-Try
+Try in terminal
 
 *% python -m SNAP.DiffIm -h*
+
+for explanation of flags and inputs
+
+**AutoSEx.py :**
+
+Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create catalog files.
+
+Basic usage (sample)
+
+*% python -m SNAP.AutoSEX srcfile_name*
+
+*% python -m SNAP.AutoSEX srcfile_name --config_name myconfig.sex --xml_out --check_out OBJECTS*
+
+Try in terminal
+
+*% python -m SNAP.AutoSEx -h*
 
 for explanation of flags and inputs
 
@@ -63,7 +85,7 @@ Basic usage (sample)
 
 *% python -m SNAP.MatchPhot SExtractor_catname band -ref AAVSO_catname
 
-Try
+Try in terminal
 
 *% python -m SNAP.MatchPhot -h*
 
