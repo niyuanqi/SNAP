@@ -29,6 +29,11 @@ Basic usage in python routine (sample)
 
 *% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, 'dprs', catname, (RA,DEC), radius=1000.0, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=14.0, verbosity=0)*
 
+Try in python shell on imported modules from SNAP
+
+*% help(<module>)*
+for explanation of functions and inputs
+
 **DiffIm.py :**
 
 Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically for subtraction.
