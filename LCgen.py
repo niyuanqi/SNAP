@@ -160,6 +160,7 @@ for i in range(len(files)):
         Mtest = False
         so = "FITS_ERROR"
         t0 = 0
+        print "Critical error loading image!"
 
     if Mtest:
         #get moon ephemeris
@@ -202,9 +203,11 @@ for i in range(len(files)):
             RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
             so = "PSF_ERROR"
             Mtest = False
+            print "PSF can't be extracted!"
         except: #General catastrophic failure
             RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
             Mtest = False
+            print "Unknown catastrophic failure!"
     else:
         RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
 
