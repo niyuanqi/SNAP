@@ -262,7 +262,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         mo_rand = np.sqrt(1/np.sum(w))
         mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
     else:
-        mo, mo_err = [float('NaN')]*4
+        mo, mo_err = float('NaN'), float('NaN')
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
     if limsnr != 0 and skyNo != 0 and PSFverify(catpopt, catpopt[-2], catpopt[-1]):
