@@ -179,8 +179,10 @@ for i in range(len(files)):
         try:
             RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
             #check if MagCalc returns nonsense
-            if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
+            if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Moerr)]):
                 Mo, Mo_err = -99.999, -99.999
+            if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
+                Io, SNo = -99.999, -99.999
                 if any([math.isnan(Mlim),math.isinf(Mlim)]):
                     Mlim = -99.999
                     RAo, DECo = -99.9, -99.9
@@ -188,8 +190,8 @@ for i in range(len(files)):
             
             if any([math.isnan(Mlim),math.isinf(Mlim)]):
                 Mlim = -99.999
-                if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Moerr)]):
-                    Mo, Mo_err = -99.999, -99.999
+                if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
+                    Io, SNo = -99.999, -99.999
                     RAo, DECo = -99.9, -99.9
                     Mtest = False
                 else:
