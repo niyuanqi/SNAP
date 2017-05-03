@@ -136,7 +136,7 @@ for i in range(len(files)):
     filename = files[i]
     print "Computing file "+str(i+1)+"/"+str(len(files))+": "+filename
     #decipher information from KMTNet filename convention
-    fo = filename[11:26]
+    fo = '.'.join(filename.split('.')[2:5])
     band = fo[0]
     #check if SrcExt processed this image
     if band in bands: #valid band selection
