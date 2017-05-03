@@ -246,9 +246,9 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     if verbosity > 0:
         print "Computing magnitude of source "+name
     PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, Xo, Yo, verbosity=verbosity)
-    Io, SNo = photometry(image, Xo, Yo, PSFpopt, skypopto, skyN, verbosity=verbosity)
+    Io, SNo = photometry(image, Xo, Yo, PSFpopt, skypopto, skyNo, verbosity=verbosity)
     #check if source is valid
-    if Io != 0 and SNo != 0 and skyN != 0:
+    if Io > 0 and skyNo != 0:
         #convert position to world coordinates
         Xp, Yp = PSFpopt[3], PSFpopt[4]
         RAo, DECo = wcs.all_pix2world(Xp, Yp, 0)
@@ -262,7 +262,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         mo_rand = np.sqrt(1/np.sum(w))
         mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
     else:
-        Io, SNo, mo, mo_err = [float('NaN')]*4
+        mo, mo_err = [float('NaN')]*4
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
     if limsnr != 0 and skyNo != 0 and PSFverify(catpopt, catpopt[-2], catpopt[-1]):

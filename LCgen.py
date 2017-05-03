@@ -21,35 +21,39 @@ from Catalog import*
 from Photometry import*
 
 #object position
-RA = 140.92247
-DEC = -21.969278
+RA = 14.263303
+DEC = -37.039900
 #object name
-name = 'KSP-OT-1'
+name = 'N300-1.Q0.SN'
 #file prefix
-prefix = 'N2784-7.Q1.'
+prefix = 'N300-1.Q0.'
 #catalog to use
-catname = 'N2784-7.Q1.DPRS.cat'
+catname = 'N300_1_Q0_SN.csv'
+#type of catalog
+cattype = 'phot'
 #year observed
 year = 2015
 #current time
-t_now = "170425_0300"
+t_now = "170503_1500"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 2.0
+SNRnoise = 3.0
+#saturation level
+satlvl = 14.0
 #number of reference stars used in each band
 nrefs = [1,1,1]
 #SExtractor time series data files at source
-Bfile = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
-Vfile = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
-Ifile = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.txt"
 files = [Bfile, Vfile, Ifile]
-#number of rows to skip
-skip = 3
+#photometric radius
+radphot = 1000.0
 #output light curve filenames
-outBname = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170425.txt"
-outVname = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170425.txt"
-outIname = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170425.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
 
 #observation filters
 bands = ['B','V','I']
@@ -96,12 +100,12 @@ def headGen():
 
 #read SExtractor files
 #time series
-tB, RAB, DECB, MB, MBerr = np.loadtxt(Bfile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
-fB = np.loadtxt(Bfile, dtype=str, usecols=(1,), skiprows=skip)
-tV, RAV, DECV, MV, MVerr = np.loadtxt(Vfile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
-fV = np.loadtxt(Vfile, dtype=str, usecols=(1,), skiprows=skip)
-tI, RAI, DECI, MI, MIerr = np.loadtxt(Ifile, usecols=(0,2,3,4,5), skiprows=skip, unpack=True)
-fI = np.loadtxt(Ifile, dtype=str, usecols=(1,), skiprows=skip)
+tB, RAB, DECB, MB, MBerr = np.loadtxt(Bfile, usecols=(0,2,3,4,5), comments=';', unpack=True)
+fB = np.loadtxt(Bfile, dtype=str, usecols=(1,), comments=';')
+tV, RAV, DECV, MV, MVerr = np.loadtxt(Vfile, usecols=(0,2,3,4,5), comments=';', unpack=True)
+fV = np.loadtxt(Vfile, dtype=str, usecols=(1,), comments=';')
+tI, RAI, DECI, MI, MIerr = np.loadtxt(Ifile, usecols=(0,2,3,4,5), comments=';', unpack=True)
+fI = np.loadtxt(Ifile, dtype=str, usecols=(1,), comments=';')
 fSs = [fB, fV, fI]
 tSs = [tB, tV, tI]
 RASs = [RAB, RAV, RAI]
@@ -172,10 +176,9 @@ for i in range(len(files)):
 
     if Mtest:
         try:
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, 'dprs', catname, (RA,DEC), radius=1000.0, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=14.0, verbosity=0)
+            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
             #check if MagCalc returns nonsense
-            if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err),math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                Io, SNo = -99.99999, -99.99
+            if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
                 Mo, Mo_err = -99.999, -99.999
                 if any([math.isnan(Mlim),math.isinf(Mlim)]):
                     Mlim = -99.999
@@ -184,8 +187,7 @@ for i in range(len(files)):
             
             if any([math.isnan(Mlim),math.isinf(Mlim)]):
                 Mlim = -99.999
-                if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Moerr),math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                    Io, SNo = -99.99999, -99.99
+                if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Moerr)]):
                     Mo, Mo_err = -99.999, -99.999
                     RAo, DECo = -99.9, -99.9
                     Mtest = False

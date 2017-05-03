@@ -131,9 +131,6 @@ def PSFverify(PSFpopt, x0, y0):
     if FWHM > 20.0 or FWHM < 1.0:
         #unphysical FWHM
         return False
-    elif A < 0:
-        #not a source
-        return False
     elif dist(X0,Y0,x0,y0)>10:
         #not our source
         return False
@@ -168,7 +165,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     intens = intens - sky
     try:
         #fit 2d psf to background subtracted source light
-        est = [image[int(y0)][int(x0)],fwhm,4.765,x0,y0]
+        est = [image[int(y0)][int(x0)],fwhm/0.7914,4.765,x0,y0]
         PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=1000000)
         try:
             #try to calculate fit error
@@ -251,8 +248,8 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     elif FWHM == 0:
         print "Unable to plot, catastrophic failure to extract PSF"
 
-    #check if fit is ridiculous, give back no fit
-    if PSFverify(PSFpopt, x0, y0):
+    #check if fit is ridiculous for bright object, give back no fit
+    if PSFverify(PSFpopt, x0, y0) and PSFpopt[0]>0:
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
         return [0]*5, [0]*5, 0, [0]*3, skyN
