@@ -182,7 +182,7 @@ for i in range(len(files)):
             if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Moerr)]):
                 Mo, Mo_err = -99.999, -99.999
             if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                Io, SNo = -99.999, -99.999
+                Io, SNo = -99.99999, -99.99
                 if any([math.isnan(Mlim),math.isinf(Mlim)]):
                     Mlim = -99.999
                     RAo, DECo = -99.9, -99.9
@@ -191,7 +191,7 @@ for i in range(len(files)):
             if any([math.isnan(Mlim),math.isinf(Mlim)]):
                 Mlim = -99.999
                 if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                    Io, SNo = -99.999, -99.999
+                    Io, SNo = -99.99999, -99.99
                     RAo, DECo = -99.9, -99.9
                     Mtest = False
                 else:
