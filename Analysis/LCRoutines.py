@@ -196,7 +196,8 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
             #remove elements with bad sflag value
             for sflag in sflags:
                 #apply filter based on strs
-                index = strs[i]!=sflag
+                strlist = [streach[-9:] for streach in strs[i]]
+                index = strlist!=sflag
                 mags[i] = mags[i][index]
                 errs[i] = errs[i][index]
                 ts[i] = ts[i][index]
