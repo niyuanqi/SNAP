@@ -268,6 +268,8 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         I_err = np.sqrt(Io_err**2 + I_rand**2)
         SN = I/I_err
 
+        print I_rand
+        print Io, Io_err
         print I, I_err, SN
     else:
         #no valid source
