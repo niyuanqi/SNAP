@@ -24,7 +24,7 @@ from Astrometry import*
 #band definitions
 bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4}
 fluxes = [1810, 4260, 3640, 3080, 2550] #Jansky
-fluxes = [flux*1e-6 for flux in fluxes]
+fluxes = [flux*1e6 for flux in fluxes]
 
 #class: exception to clarify cause of crash as inability to extract psf on image
 class PSFError(Exception):
