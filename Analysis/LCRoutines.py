@@ -4,6 +4,14 @@
 # Version:  Oct, 19, 2016                                       #
 # Function: Program contains various routines for manipulating  #
 #           multi-band light curve files and arrays.            #
+#           In a MagCalc light curve, fluxes are more           #
+#           informative than magnitudes about object brightness #
+#           and SNRs are more informative than limiting         #
+#           magnitudes about the reliability of a detection.    #
+#           Hence whenever fluxes and SNR are given, they will  #
+#           generally "take precendence" over magnitude and     #
+#           limiting magnitude where determinations of          #
+#           reliability are concerned.                          #
 #################################################################
 
 #essential modules
@@ -131,7 +139,7 @@ def LCsplit(valerrs):
     return mags, errs
 
 #function: filter bad data from light curve
-def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
+def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, flags=['_'], aflag='sn'):
     '''
     #######################################################################
     # Input                                                               #
@@ -148,11 +156,22 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
     #   strs; list of string arrays (eg. [sB, sV, sI]) where each is an   #
     #         array of str comments accompanying the light curve.         #
     #                                                                     #
+    # fluxes; list of flux arrays (eg. [pB, pV, pI]) where each is an     #
+    #         array of flux (in float) corresponding to the light curve.  # 
+    #                                                                     #
+    #   snrs; list of snr arrays (eg. [nB, nV, nI]) where each is an      #
+    #         array of snr (in float) corresponding to the light curve.   # 
+    #                                                                     #
+    # nthres; float threshold SNR to flag data as proper detection.       #
+    #         If given, routine would purge all corresponding light curve #
+    #         values to snrs below above SNR threshold.                   #
+    #                                                                     #
     #   lims; list of limiting magnitude arrays (eg. [Blim, Vlim, Ilim])  #
     #         where each is an array of limiting magnitudes in float      #
     #         evaluated at each sample of its corresponding light curve.  #
     #         If given, routine would purge all corresponding light curve #
     #         values to magnitudes measured below detection threshold.    #
+    #         Applied only if nthres not applied.
     #                                                                     #
     #  flags; list of str flags defining what values in strs would cause  #
     #         all corresponding light curve values to be purged.          #
@@ -165,30 +184,38 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
     # Output                                                              #
     # ------------------------------------------------------------------- #
     #     ts: list of light curve time float arrays where bad elements    #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   mags: list of float magnitude light curves where bad elements     #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   errs: list of float error light curves where bad elements         #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
+    #                                                                     #
+    # fluxes; list of float flux light curves where bad elements          #
+    #         defined by flags, snrs, and lims were purged.               # 
+    #                                                                     #
+    #   snrs; list of float snr light curves where bad elements           #
+    #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   lims; list of float limiting magnitude arrays (if given) where    #
-    #         bad elements defined by flags and lims were purged.         #
+    #         defined by flags, snrs, and lims were purged.               #
     #######################################################################
     '''
     #for each band
     for i in range(len(ts)):
+        #base index
+        index = np.array([True]*len(ts[i]))
         #remove elements with flag value for each flag
         for flag in flags:
-            index = np.logical_and(mags[i]!=flag,errs[i]!=flag)
-            mags[i] = mags[i][index]
-            errs[i] = errs[i][index]
-            ts[i] = ts[i][index]
-            if strs is not None:
-                strs[i] = strs[i][index]
-            if lims is not None:
-                lims[i] = lims[i][index]
+            if nthres is not None:
+                #fluxes better than mags, check where fluxes are available
+                #presumably when you give fluxes, you give SNR
+                index = np.logical_and(index, fluxes[i]!=flag)
+            else:
+                #use light curve only where mags are available
+                index = np.logical_and(index, mags[i]!=flag)
+                index = np.logical_and(index, errs[i]!=flag)
         #check for string comments
         if strs is not None:
             #str flag values
@@ -197,34 +224,41 @@ def LCpurify(ts, mags, errs, strs=None, lims=None, flags=['_'], aflag='sn'):
             for sflag in sflags:
                 #apply filter based on strs
                 strlist = np.array([streach[-len(sflag):] for streach in strs[i]])
-                index = strlist!=sflag
-                mags[i] = mags[i][index]
-                errs[i] = errs[i][index]
-                ts[i] = ts[i][index]
-                strs[i] = strs[i][index]
-                if lims is not None:
-                    lims[i] = lims[i][index]
+                index = np.logical_and(index,strlist!=sflag)
+        #check for SNR filter (better than limiting magnitudes)
+        if nthres is not None:
+            index = np.logical_and(index, snrs[i] >= nthres)
         #check for limiting magnitudes
-        if lims is not None:
+        elif lims is not None:
             #remove elements with bad lim value or beyond detection limit
-            index = mags[i].astype(float) < lims[i]
-            if aflag is not None:
-                #antiflag prevents deletion of points below det lim
-                matches = np.array([strs[i][j][:len(aflag)]==aflag for j in range(len(strs[i]))])
-                index = np.logical_or(index, matches)
-            mags[i] = mags[i][index]
-            errs[i] = errs[i][index]
-            ts[i] = ts[i][index]
+            index = np.logical_and(index, mags[i].astype(float) < lims[i])
+        if aflag is not None:
+            #antiflag prevents deletion of points below det lim
+            matches = np.array([strs[i][j][:len(aflag)]==aflag for j in range(len(strs[i]))])
+            index = np.logical_or(index, matches)
+
+        mags[i] = mags[i][index]
+        errs[i] = errs[i][index]
+        ts[i] = ts[i][index]
+        if fluxes is not None:
+            fluxes[i] = fluxes[i][index]
+        if snrs is not None:
+            snrs[i] = snrs[i][index]
+        if strs is not None:
+            strs[i] = strs[i][index]
+        if lims is not None:
             lims[i] = lims[i][index]
-            if strs is not None:
-                strs[i] = strs[i][index]
+    retlist = [ts, mags, errs]
+    if fluxes is not None:
+        retlist += [fluxes]
+    if snrs is not None:
+        retlist += [snrs]
     if lims is not None:
-        return ts, mags, errs, lims
-    else:
-        return ts, mags, errs
+        retlist += [lims]
+    return retlist
 
 #function: crop time segment from dataset
-def LCcrop(t, t1, t2, M, M_err=None, Mlim=None):
+def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None):
     '''
     ##############################################
     # Input                                      #
@@ -245,16 +279,16 @@ def LCcrop(t, t1, t2, M, M_err=None, Mlim=None):
     ##############################################
     '''
     index = np.logical_and(t<t2,t>t1)
+    retlist = [t[index],M[index]]
     if M_err is not None:
-        if Mlim is not None:
-            return t[index], M[index], M_err[index], Mlim[index]
-        else:
-            return t[index], M[index], M_err[index]
-    else:
-        if Mlim is not None:
-            return t[index], M[index], Mlim[index]
-        else:
-            return t[index], M[index]
+        retlist += [M_err[index]]
+    if F is not None:
+        retlist += [F[index]]
+    if SN is not None:
+        retlist += [SN[index]]
+    if Mlim is not None:
+        retlist += [Mlim[index]]
+    return retlist
 
 #function: return first difference (color) between a set of light curves
 def LCcolors(ts, mags, errs):
@@ -297,7 +331,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: load light curve from text file
-def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags=['_'], aflag='sn', mode='single'):
+def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
     '''
     #######################################################################
     # Input                                                               #
@@ -315,12 +349,23 @@ def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags
     #   errcols; int location of error column (multi) or location of      #
     #            error columns (single).                                  #
     #                                                                     #
-    #    limcol; int location of limiting magnitude column (multi) or     #
+    #  fluxcols; int location of error column (multi) or location of      #
+    #            error columns (single).                                  #
+    #                                                                     #
+    #    SNcols; int location of SNR column (multi) or location of        #
+    #            error columns (single).                                  #
+    #            If given, rows of light curve will be purged when        #
+    #            SNcol below SNthres.                                     #
+    #                                                                     #
+    #   SNthres; float threshold SNR to flag data as proper detection.    #
+    #                                                                     #
+    #   limcols; int location of limiting magnitude column (multi) or     #
     #            location of limiting magnitude columns (single).         #
     #            If given, rows of light curve will be purged when        #
     #            measured magnitude is below detection threshold.         #
     #                                                                     #
-    #      scol; int location of comments column.                         #
+    #     scols; int location of comments column (multi) or location of   #
+    #            comments columns (single).                               #
     #                                                                     #
     #     flags; list of str flags defining what values in scol would     #
     #            cause a row in the file to be purged.                    #
@@ -333,16 +378,22 @@ def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags
     # Output                                                              #
     # ------------------------------------------------------------------- #
     #     ts: list of light curve time float arrays where bad elements    #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   mags: list of float magnitude light curves where bad elements     #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   errs: list of float error light curves where bad elements         #
-    #         defined by flags and lims were purged.                      #
+    #         defined by flags, snrs, and lims were purged.               #
+    #                                                                     #
+    # fluxes; list of float flux light curves where bad elements          #
+    #         defined by flags, snrs, and lims were purged.               # 
+    #                                                                     #
+    #   snrs; list of float snr light curves (if given) where bad         #
+    #         elements defined by flags, snrs, and lims were purged.      #
     #                                                                     #
     #   lims; list of float limiting magnitude arrays (if given) where    #
-    #         bad elements defined by flags and lims were purged.         #
+    #         bad elements defined by flags, snrs, and lims were purged.  #
     #######################################################################
     '''
     #check load mode, multifile or singlefile
@@ -361,25 +412,29 @@ def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags
             errs = list(np.loadtxt(filenames,dtype=str,usecols=errcols,comments=';',unpack=True))
         else: #no errors given
             errs = [np.array(['1.0']*len(t)) for t in ts]
+        #retrieve fluxes
+        if fluxcols is not None:
+            #load flux columns
+            fluxes = list(np.loadtxt(filenames,dtype=str,usecols=fluxcols,comments=';',unpack=True))
+        else: #no fluxes given
+            fluxes = [np.array(['1.0']*len(t)) for t in ts]
+        if SNcols is not None:
+            #load SNR column
+            snrs = list(np.loadtxt(filenames,usecols=SNcols,comments=';',unpack=True))
+        else: #no SNR given
+            snrs = [np.array([-1.0]*len(t)) for t in ts]
+        if limcols is not None:
+            #load Mlims column
+            lims = np.loadtxt(filenames,usecols=limcols,comments=';',unpack=True)
+        else: #no lims given
+            lims = [np.array([-1.0]*len(t)) for t in ts]
 
         #check if comment strings are given
-        if scol is not None:
-            #load comment column
-            s = np.loadtxt(filenames,dtype=str,usecols=(scol,),comments=';',unpack=True)
-            strs = [s]*len(magcols)
-        else:
+        if scols is not None:
+            #extract comments from files
+            strs = np.loadtxt(filenames,usecols=scols,comments=';',unpack=True)
+        else: #no strings given
             strs = [np.array(['_']*len(t)) for t in ts]
-        #check if limiting magnitudes are given
-        if limcol is not None:
-            #load Mlims column
-            l = np.loadtxt(filenames,usecols=(limcol,),comments=';',unpack=True)
-            lims = [l]*len(magcols)
-            #filter out bad data with all information
-            ts, mags, errs, lims = LCpurify(ts, mags, errs, strs=strs, lims=lims, flags=flags, aflag=aflag)
-        else:
-            lims = [np.array([-1.0]*len(t)) for t in ts]
-            #filter out bad data with all information
-            ts, mags, errs = LCpurify(ts, mags, errs, strs=strs, flags=flags, aflag=aflag)      
             
     elif mode == 'multi':
         #load from each file
@@ -401,45 +456,73 @@ def LCload(filenames, tcol, magcols, errcols=None, limcol=None, scol=None, flags
                 errs.append(np.loadtxt(filename,dtype=str,usecols=(errcols,),comments=';',unpack=True))
         else: #no errors given
             errs = [np.array(['1.0']*len(t)) for t in ts]
-
-        #check if comment strings are given
-        if scol is not None:
-            #extract comments from files
-            strs = []
+        #retrieve fluxes
+        if fluxcols is not None:
+            #extract fluxes from files
+            fluxes = []
             for filename in filenames:
-                #load comment column
-                s = np.loadtxt(filename,dtype=str,usecols=(scol,),comments=';',unpack=True)
-                strs.append(s)
-        else:
-            strs = [np.array(['_']*len(t)) for t in ts]
+                #load flux columns
+                fluxes.append(np.loadtxt(filename,dtype=str,usecols=(fluxcols,),comments=';',unpack=True))
+        else: #no fluxes given
+            fluxes = [np.array(['1.0']*len(t)) for t in ts]
+        #check if SNR are given
+        if SNcols is not None:
+            #extract SNR from files
+            snrs = []
+            for filename in filenames:
+                #load SNR column
+                snrs.append(np.loadtxt(filename,usecols=(SNcols,),comments=';',unpack=True))
+        else: #no SNR given
+            snrs = [np.array([-1.0]*len(t)) for t in ts]
         #check if limiting magnitudes are given
-        if limcol is not None:
+        if limcols is not None:
             #extract mlims from files
             lims = []
             for filename in filenames:
                 #load comment column
-                l = np.loadtxt(filename,usecols=(limcol,),comments=';',unpack=True)
-                lims.append(l)
-            #filter out bad data with all information
-            ts, mags, errs, lims = LCpurify(ts, mags, errs, strs=strs, lims=lims, flags=flags, aflag=aflag)
-        else:
+                lims.append(np.loadtxt(filename,usecols=(limcols,),comments=';',unpack=True))
+        else: #no lims given
             lims = [np.array([1.0]*len(t)) for t in ts]
+
+        #check if comment strings are given
+        if scols is not None:
+            #extract comments from files
+            strs = []
+            for filename in filenames:
+                #load comment column
+                s = np.loadtxt(filename,dtype=str,usecols=(scols,),comments=';',unpack=True)
+                strs.append(s)
+        else:
+            strs = [np.array(['_']*len(t)) for t in ts]
+
+    #check if SN filter is applied
+    if SNthres is not None:
+        #filter out bad data with all information
+        ts, mags, errs, fluxes, snrs, lims = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, flags=flags, aflag=aflag)
+    #check if SNR are given
+    else:
+        #check if limiting magnitudes are given
+        if limcols is not None:
             #filter out bad data with all information
-            ts, mags, errs = LCpurify(ts, mags, errs, strs=strs, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, lims = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, flags=flags, aflag=aflag)
+        else:
+            #filter out bad data with all information
+            ts, mags, errs, fluxes, snrs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, flags=flags, aflag=aflag)
             
     #convert mags to float
     mags = [mag.astype(float) for mag in mags]
+    retlist = [ts, mags]
     if errcols is not None:
-        if limcol is not None:
-            #convert errors to float
-            errs = [err.astype(float) for err in errs]
-            return ts, mags, errs, lims
-        else:
-            #convert errors to float
-            errs = [err.astype(float) for err in errs]
-            return ts, mags, errs
-    else:
-        if limcol is not None:
-            return ts, mags, lims
-        else:
-            return ts, mags
+        #convert errors to float
+        errs = [err.astype(float) for err in errs]
+        retlist += [errs]
+    if fluxcols is not None:
+        #convert fluxes to float
+        fluxes = [flux.astype(float) for flux in fluxes]
+        retlist += [fluxes]
+    if SNcols is not None:
+        retlist += [snrs]
+    if limcols is not None:
+        retlist += [lims]
+    #return arrays of data
+    return retlist

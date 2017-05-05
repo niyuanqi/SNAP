@@ -248,7 +248,21 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, Xo, Yo, verbosity=verbosity)
     Io, SNo = photometry(image, Xo, Yo, PSFpopt, skypopto, skyNo, verbosity=verbosity)
     #check if source is valid
-    if (Io == 0 and SNo == 0) or skyNo == 0:
+    if Io != 0 and SNo != 0 and skyNo != 0:
+        #calculate relative flux of object wrt each reference star
+        Ir = Io/catI
+        Io_err = Io/SNo
+        catI_err = catI/catSN
+        Ir_err = Ir*np.sqrt(np.square(Io_err/Io)+np.square(catI_err/catI))
+
+        #calculate weighted mean
+        w = 1/np.square(Ir_err)
+        Io = np.sum(Ir*w)/np.sum(w)
+        Io_rand = np.sqrt(1/np.sum(w))
+        Io_err = np.sqrt(Io_err**2 + Io_rand**2)
+        SNo = Io/Io_err
+    else:
+        #no valid source
         Io, SNo = float('NaN'), float('NaN')
     #try to compute magnitude if source is present
     if Io != float('NaN') and Io > 0 and skyNo != 0:
