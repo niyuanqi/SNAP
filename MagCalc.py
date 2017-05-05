@@ -264,7 +264,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         #calculate weighted mean
         w = 1/np.square(Ir_err)
         I = np.sum(Ir*w)/np.sum(w)
-        I_rand = np.sqrt(np.sum(w))
+        I_rand = np.sqrt(1/np.sum(w))
         I_err = np.sqrt(Io_err**2 + I_rand**2)
         SN = I/I_err
 
