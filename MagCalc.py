@@ -257,10 +257,10 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
 
         #calculate weighted mean
         w = 1/np.square(Ir_err)
-        Io = np.sum(Ir*w)/np.sum(w)
-        Io_rand = np.sqrt(1/np.sum(w))
-        Io_err = np.sqrt(Io_err**2 + Io_rand**2)
-        SNo = Io/Io_err
+        I = np.sum(Ir*w)/np.sum(w)
+        I_rand = np.sqrt(1/np.sum(w))
+        I_err = np.sqrt(Io_err**2 + I_rand**2)
+        SN = I/I_err
     else:
         #no valid source
         Io, SNo = float('NaN'), float('NaN')
@@ -288,13 +288,13 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         rl = 0.1 #recursion seed
         mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catpopt, np.mean(catSN), skyNo, catM, catMerr, catSN, catI, verbosity)
         #return calculated magnitude, magnitude errors, and limiting magnitude
-        return RAo, DECo, Io, SNo, mo, mo_err, mlim
+        return RAo, DECo, I, SN, mo, mo_err, mlim
     elif limsnr != 0:
         #no sky noise estimate
-        return RAo, DECo, Io, SNo, mo, mo_err, float('NaN')
+        return RAo, DECo, I, SN, mo, mo_err, float('NaN')
     else:
         #return calculated magnitude and magnitude errors
-        return RAo, DECo, Io, SNo, mo, mo_err
+        return RAo, DECo, I, SN, mo, mo_err
 
 #function: recursively calculates limiting magnitude by scaling PSF to SN3.0
 def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
