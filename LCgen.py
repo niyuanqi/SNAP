@@ -34,7 +34,7 @@ cattype = 'phot'
 #year observed
 year = 2015
 #current time
-t_now = "170503_1500"
+t_now = "170505_1830"
 #user running this code
 user = "Chris Ni"
 #noise level
@@ -51,9 +51,9 @@ files = [Bfile, Vfile, Ifile]
 #photometric radius
 radphot = 1000.0
 #output light curve filenames
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170503.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
 
 #observation filters
 bands = ['B','V','I']
