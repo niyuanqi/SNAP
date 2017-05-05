@@ -255,39 +255,36 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     if Io != 0 and SNo != 0 and skyNo != 0:
         #calculate relative flux of object wrt each reference star
         Ir = fluxes[bands[band]]*np.power(10,-catM/2.512)*Io/catI
-        print Ir
         Io_err = Io/SNo
         catI_err = catI/catSN
-        Ir_err = Ir*np.sqrt(np.square(Io_err/Io)+np.square(catI_err/catI)+np.square(np.log(10)*catMerr/2.512))
-        print Ir_err
+        Ir_err = Ir*np.sqrt(np.square(1/SNo)+np.square(1/catSN)+np.square(np.log(10)*catMerr/2.512))
 
         #calculate weighted mean
         w = 1/np.square(Ir_err)
         I = np.sum(Ir*w)/np.sum(w)
         I_rand = np.sqrt(1/np.sum(w))
         I_err = np.sqrt((I*Io_err/Io)**2 + I_rand**2)
-        SN = I/I_err
-
-        print I_rand
-        print Io, Io_err
-        print I, I_err, SN
+        #SN = I/I_err
     else:
         #no valid source
-        Io, SNo = float('NaN'), float('NaN')
+        I, SNo = float('NaN'), float('NaN')
     #try to compute magnitude if source is present
-    if Io != float('NaN') and Io > 0 and skyNo != 0:
+    if I != float('NaN') and I > 0 and skyNo != 0:
         #convert position to world coordinates
         Xp, Yp = PSFpopt[3], PSFpopt[4]
         RAo, DECo = wcs.all_pix2world(Xp, Yp, 0)
     
         #calculate magnitude of object wrt each reference star
-        mi = catM - 2.512*np.log10(Io/catI)
-        mi_err = np.sqrt(np.square((2.512/np.log(10))*(1/catSN))+np.square(catMerr))
+        #mi = catM - 2.512*np.log10(Io/catI)
+        #mi_err = np.sqrt(np.square((2.512/np.log(10))*(1/catSN))+np.square(catMerr))
         #calculate weighted mean
-        w = 1/np.square(mi_err)
-        mo = np.sum(mi*w)/np.sum(w)
-        mo_rand = np.sqrt(1/np.sum(w))
-        mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
+        #w = 1/np.square(mi_err)
+        #mo = np.sum(mi*w)/np.sum(w)
+        #mo_rand = np.sqrt(1/np.sum(w))
+        #mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
+
+        mo = -2.512*np.log10(I/fluxes[bands[band]])
+        mo_err = (2.512/np.log(10))*(I_err/I)
     else:
         mo, mo_err = float('NaN'), float('NaN')
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
@@ -298,13 +295,13 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         rl = 0.1 #recursion seed
         mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catpopt, np.mean(catSN), skyNo, catM, catMerr, catSN, catI, verbosity)
         #return calculated magnitude, magnitude errors, and limiting magnitude
-        return RAo, DECo, I, SN, mo, mo_err, mlim
+        return RAo, DECo, I, SNo, mo, mo_err, mlim
     elif limsnr != 0:
         #no sky noise estimate
-        return RAo, DECo, I, SN, mo, mo_err, float('NaN')
+        return RAo, DECo, I, SNo, mo, mo_err, float('NaN')
     else:
         #return calculated magnitude and magnitude errors
-        return RAo, DECo, I, SN, mo, mo_err
+        return RAo, DECo, I, SNo, mo, mo_err
 
 #function: recursively calculates limiting magnitude by scaling PSF to SN3.0
 def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
