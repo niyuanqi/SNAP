@@ -21,6 +21,10 @@ from Catalog import*
 from Photometry import*
 from Astrometry import*
 
+#band definitions
+bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4}
+fluxes = [1810, 4260, 3640, 3080, 2550] #Jansky
+
 #class: exception to clarify cause of crash as inability to extract psf on image
 class PSFError(Exception):
     def __init__(self, value):
@@ -250,10 +254,12 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     #check if source is valid
     if Io != 0 and SNo != 0 and skyNo != 0:
         #calculate relative flux of object wrt each reference star
-        Ir = Io/catI
+        Ir = fluxes[bands[band]]*np.power(10,-catM/2.512)*Io/catI
+        print Ir
         Io_err = Io/SNo
         catI_err = catI/catSN
-        Ir_err = Ir*np.sqrt(np.square(Io_err/Io)+np.square(catI_err/catI))
+        Ir_err = Ir*np.sqrt(np.square(Io_err/Io)+np.square(catI_err/catI)+np.square(np.log(10)*catMerr/2.512))
+        print Ir_err
 
         #calculate weighted mean
         w = 1/np.square(Ir_err)
