@@ -265,7 +265,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         w = 1/np.square(Ir_err)
         I = np.sum(Ir*w)/np.sum(w)
         I_rand = np.sqrt(1/np.sum(w))
-        I_err = np.sqrt(Io_err**2 + I_rand**2)
+        I_err = np.sqrt((I*Io_err/Io)**2 + I_rand**2)
         SN = I/I_err
 
         print I_rand
