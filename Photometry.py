@@ -407,7 +407,7 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         PSF_extract, x, y = ap_get(image, x0, y0, 0, opt_r*FWHM)
         PSF_sky = D2plane((x,y),*skypopt)
         PSF_nosky = PSF_extract - PSF_sky
-        xf, yf, PSF_final = PSFclean(x, y, PSF_final, skyN)
+        xf, yf, PSF_final = PSFclean(x, y, PSF_nosky, skyN)
         print np.sum(PSF_final)
         #calculate PSF fit
         PSF_fit = D2moff((x,y),*PSFpopt)
