@@ -21,39 +21,39 @@ from Catalog import*
 from Photometry import*
 
 #object position
-RA = 14.263303
-DEC = -37.039900
+RA = 140.92247
+DEC = -21.969278
 #object name
-name = 'N300-1.Q0.SN'
+name = 'KSP-OT-1'
 #file prefix
-prefix = 'N300-1.Q0.'
+prefix = 'N2784-7.Q1.'
 #catalog to use
-catname = 'N300_1_Q0_SN.csv'
+catname = 'N2784-7.Q1.DPRS.cat'
 #type of catalog
-cattype = 'phot'
+cattype = 'dprs'
 #year observed
 year = 2015
 #current time
-t_now = "170505_1830"
+t_now = "170509_1200"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 3.0
+SNRnoise = 2.0
 #saturation level
 satlvl = 14.0
 #number of reference stars used in each band
 nrefs = [1,1,1]
 #SExtractor time series data files at source
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.txt"
+Bfile = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
+Vfile = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
+Ifile = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
 files = [Bfile, Vfile, Ifile]
 #photometric radius
 radphot = 1000.0
 #output light curve filenames
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
+outBname = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
+outVname = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
+outIname = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
 
 #observation filters
 bands = ['B','V','I']
@@ -89,8 +89,8 @@ def headGen():
     sMs_err = padstr("MAGERR_SE",10)
     sRAo = padstr("RA_MC(\")",10)
     sDECo = padstr("DEC_MC(\")",10)
-    sIo = padstr("Flux_MC",10)
-    sSNo = padstr("SNR_MC",10)
+    sIo = padstr("Flux(uJy)",10)
+    sSNo = padstr("SNR",10)
     sMo = padstr("MAG_MC",10)
     sMo_err = padstr("MAGERR_MC",10)
     sMlim = padstr("LIM_MC",10)
