@@ -10,6 +10,44 @@
 #essential modules
 import numpy as np
 
+#function: load stable star location
+def catDiff(catname, band=False):
+    #load stable reference star location
+    ID,RA,DEC,B,Berr,V,Verr,i,ierr = np.loadtxt(catname, unpack=True, comments=';')
+
+    #standard filters
+    bands = {'V':0,'B':1,'I':2}
+    #catalog magnitudes
+    M = [V,B,i]
+    Merr = [Verr,Berr,ierr]
+    if band:
+        #choose magnitude using band argument
+        catM = [M[bands[band]]]
+        catMerr = [Merr[bands[band]]]
+    else:
+        #give back all magnitudes
+        catM = M
+        catMerr = Merr
+
+    #filter out bad values
+    j=0
+    while (j<len(ID)):
+        if any([(val[j]=='NA' or val[j]=='-0') for val in list(catM)+list(catMerr)]):
+            ID,RA,DEC = np.delete([ID,RA,DEC],j,1)
+            catM,catMerr = np.delete([catM,catMerr],j,2)
+        else:
+            j = j+1
+    RA,DEC = RA.astype(float),DEC.astype(float)
+    #return catalog magnitudes
+    if band:
+        catM =  np.array(catM).squeeze().astype(float)
+        catMerr =  np.array(catMerr).squeeze().astype(float)
+        return ID, RA, DEC, catM, catMerr
+    else:
+        catM = [cat.astype(float) for cat in catM]
+        catMerr = [cat.astype(float) for cat in catMerr]
+        return ID, RA, DEC, catM, catMerr
+
 #function: load DPRS catalog (give flag 'dprs' to MagCalc)
 def catDPRS(catname, band=False):
     #load values with DPRS conventions

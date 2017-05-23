@@ -10,11 +10,13 @@
 import numpy as np
 
 #global constants
-H0 = 69.6 #km/s/Mpc Hubble constant
+#Planck 2015 results. XIII. Cosmological parameters from CMB
+H0 = 73.24 #km/s/Mpc Hubble constant (1.74)
 H = H0*1e3/1e6 #m/s/pc Hubble Constant
 c = 2.9979e8 #m/s
-Wm = 0.286 #matter density parameter
-Wl = 0.714 #vacuum density parameter
+Wm = 0.27 #matter density parameter
+Wl = 0.73 #vacuum density parameter
+#Reiss  Cosmological parameters from SN1a
 
 #function: cosmological infinitesimal comoving distance [pc]
 def comov(z):
