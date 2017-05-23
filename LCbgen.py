@@ -78,7 +78,7 @@ outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.tx
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
     sto = padstr("%.5f"%to,10)
-    sfo = padstr(fo,18)
+    sfo = padstr(fo,27)
     sRAo = padstr("%.1f"%RAo,10)
     sDECo = padstr("%.1f"%DECo,10)
     sIo = padstr(str(Io)[:9],10)
@@ -92,7 +92,7 @@ def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
 #fills first row with column headers
 def headGen():
     sto = padstr("OBSDAY"+str(year),10)
-    sfo = padstr("STRTXT",18)
+    sfo = padstr("STRTXT",27)
     sRAo = padstr("RA_MC(\")",10)
     sDECo = padstr("DEC_MC(\")",10)
     sIo = padstr("Flux(uJy)",10)
@@ -145,6 +145,7 @@ for i in range(len(bands)):
 
         filename = out_name
         to = t_bin
+        fo = bands[i]+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]
         #compute magnitude at 
         Mtest = True
         so = "_"
