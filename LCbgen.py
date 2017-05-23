@@ -127,13 +127,13 @@ for i in range(len(bands)):
         t1 = t_ints[i]
         t2 = t_ints[i+1]
         mask = np.logical_and(t[i]>t1, t[i]<t2)
-        print mask
         #filter out bad images
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
-        print mask
         #bin all that remains
         t_bin = t[i][mask].mean()
         bin_names = f[i][mask]
+        print "Binning the following files:"
+        print bin_names
         bin_files = [glob(prefix+name+'*.fits')[0] for name in bin_names]
         out_base = bindir+prefix+bands[i]+'.'+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]+".coadd."
         out_name = out_base+'fits'
@@ -162,7 +162,7 @@ for i in range(len(bands)):
 
         if Mtest:
             try:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
                 
                 #check if MagCalc returns nonsense
                 if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
@@ -170,12 +170,12 @@ for i in range(len(bands)):
                     
                 if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
                     Io, SNo = -99.99999, -99.99
-                    if any([math.isnan(Mlim),math.isinf(Mlim)]):
-                        Mlim = -99.999
+                    if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
+                        Mlimo = -99.999
                         RAo, DECo = -99.9, -99.9
                         Mtest = False
             
-                if any([math.isnan(Mlim),math.isinf(Mlim)]):
+                if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
                     Mlim = -99.999
                     if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
                         Io, SNo = -99.99999, -99.99
@@ -189,16 +189,16 @@ for i in range(len(bands)):
                     DECo = DECo - DEC
             
             except PSFError: #if image PSF cant be extracted
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
                 so = "PSF_ERROR"
                 Mtest = False
                 print "PSF can't be extracted!"
             except: #General catastrophic failure
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
                 Mtest = False
                 print "Unknown catastrophic failure!"
             else:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
 
         #check for total failure
         if not Mtest:
@@ -206,11 +206,11 @@ for i in range(len(bands)):
         else:
             if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
                 RAo, DECo = 0.0, 0.0
-            if Mlim < 0:
+            if Mlimo < 0:
                 so = "INCONV"
 
         #format output
-        out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so)
+        out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so)
         print out+'\n'
 
         outs[i].write(out)
