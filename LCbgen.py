@@ -122,7 +122,7 @@ for i in range(len(bands)):
 for i in range(len(bands)):
     #cycle through the intervals
     bin_ts = []
-    for j in range(len(t_ints-1)):
+    for j in range(len(t_ints)-1):
         #interval boundaries
         t1 = t_ints[i]
         t2 = t_ints[i+1]
