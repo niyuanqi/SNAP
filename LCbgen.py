@@ -67,8 +67,6 @@ radphot = 1000.0
 #observation filters
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
-#observatory positions
-observatories = {'A':[210.9383,-31.2712,1143.0], 'S':[339.8104,-32.3789,1762.0], 'C':[70.8040,-30.1672,2167.0]}
 
 #N300-1.Q0.SN time series data files
 outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
@@ -120,6 +118,7 @@ for i in range(len(bands)):
     outs[i].write(headGen())
 
 #for each band
+
 for i in range(len(bands)):
     #cycle through the intervals
     bin_ts = []
@@ -128,8 +127,10 @@ for i in range(len(bands)):
         t1 = t_ints[i]
         t2 = t_ints[i+1]
         mask = np.logical_and(t[i]>t1, t[i]<t2)
+        print mask
         #filter out bad images
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
+        print mask
         #bin all that remains
         t_bin = t[i][mask].mean()
         bin_names = f[i][mask]
