@@ -159,7 +159,7 @@ for i in range(len(files)):
         #image critically failed to load
         Mtest = False
         so = "FITS_ERROR"
-        t0 = 0
+        to = 0
         print "Critical error loading image!"
 
     if Mtest:

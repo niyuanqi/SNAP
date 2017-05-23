@@ -131,7 +131,7 @@ for i in range(len(bands)):
         #filter out bad images
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
         #bin all that remains
-        t_bin = t[i][mask].mean
+        t_bin = t[i][mask].mean()
         bin_names = f[i][mask]
         bin_files = [glob(prefix+name+'*.fits')[0] for name in bin_names]
         out_base = bindir+prefix+bands[i]+'.'+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]+".coadd."
@@ -156,7 +156,7 @@ for i in range(len(bands)):
             #image critically failed to load
             Mtest = False
             so = "FITS_ERROR"
-            t0 = 0
+            to = 0
             print "Critical error loading image!"
 
         if Mtest:
