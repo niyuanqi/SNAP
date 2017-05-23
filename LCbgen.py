@@ -31,7 +31,7 @@ t, M, M_err, F, SN, Mlim, f = LCload(files, tcol=0, magcols=10, errcols=11, flux
 #time intervals
 t_ints = [262.8, 263.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
           267.5, 268.64, 268.8, 270.167, 270.28, 270.4, 270.647, 270.8,
-          272.4, 272.8, 274.22, 274.313, 274.4, 274.6, 274.8, 274.8]
+          272.4, 272.8, 274.22, 274.313, 274.4, 274.6, 274.8]
 
 #lowest limiting magnitude (worst image quality)
 lim_lim = 19.0
