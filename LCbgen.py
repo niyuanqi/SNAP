@@ -124,8 +124,8 @@ for i in range(len(bands)):
     bin_ts = []
     for j in range(len(t_ints)-1):
         #interval boundaries
-        t1 = t_ints[i]
-        t2 = t_ints[i+1]
+        t1 = t_ints[j]
+        t2 = t_ints[j+1]
         mask = np.logical_and(t[i]>t1, t[i]<t2)
         #filter out bad images
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
