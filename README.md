@@ -61,6 +61,20 @@ Try in terminal
 
 for explanation of flags and inputs
 
+**DiffIm.py :**
+
+Uses SWarp routine (Emmanuel Bertin) to create binned files with matched wcs.
+
+Basic usage (sample)
+
+*% python -m SNAP.BinIm t1 t2 outfile_name*
+
+Try in terminal
+
+*% python -m SNAP.BinIm -h*
+
+for explanation of flags and inputs
+
 **AutoSEx.py :**
 
 Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create catalog files.

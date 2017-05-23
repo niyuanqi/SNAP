@@ -48,6 +48,7 @@ if __name__ == "__main__":
     parser.add_argument('t1', type=float, help='start time, day of year float')
     parser.add_argument('t2', type=float, help='end time, day of year float')
     parser.add_argument('out_name', type=str, help='output binned file name')
-
+    args = parser.parse_args()
+    
     #create binned image
     binTimes(args.t1, args.t2, args.out_name)
