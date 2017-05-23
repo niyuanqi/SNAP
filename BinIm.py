@@ -18,7 +18,6 @@ def binTimes(band, t1, t2, out_name, delete_temp=True):
     #essential modules
     from glob import glob
     import subprocess
-    import os
 
     #read all files
     files = glob('*.fits')

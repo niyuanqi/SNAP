@@ -139,7 +139,7 @@ def LCsplit(valerrs):
     return mags, errs
 
 #function: filter bad data from light curve
-def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, flags=['_'], aflag='sn'):
+def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, flags=['_'], aflag='sn'):
     '''
     #######################################################################
     # Input                                                               #
@@ -248,6 +248,8 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
             strs[i] = strs[i][index]
         if lims is not None:
             lims[i] = lims[i][index]
+        if fs is not None:
+            fs[i] = fs[i][index]
     retlist = [ts, mags, errs]
     if fluxes is not None:
         retlist += [fluxes]
@@ -255,6 +257,8 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         retlist += [snrs]
     if lims is not None:
         retlist += [lims]
+    if fs is not None:
+        retlist += [fs]
     return retlist
 
 #function: crop time segment from dataset
@@ -331,7 +335,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: load light curve from text file
-def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
+def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
     '''
     #######################################################################
     # Input                                                               #
@@ -364,6 +368,9 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #            If given, rows of light curve will be purged when        #
     #            measured magnitude is below detection threshold.         #
     #                                                                     #
+    #     fcols; int location of filename indicator column (multi) or     #
+    #            location of filename columns (single).                   #
+    #                                                                     #
     #     scols; int location of comments column (multi) or location of   #
     #            comments columns (single).                               #
     #                                                                     #
@@ -394,6 +401,9 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #                                                                     #
     #   lims; list of float limiting magnitude arrays (if given) where    #
     #         bad elements defined by flags, snrs, and lims were purged.  #
+    #                                                                     #
+    #     fs; list of filename arrays (if given) where bad elements       #
+    #         defined by flags, snrs, and lims were purged.               #
     #######################################################################
     '''
     #check load mode, multifile or singlefile
@@ -435,6 +445,13 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
             strs = np.loadtxt(filenames,usecols=scols,comments=';',unpack=True)
         else: #no strings given
             strs = [np.array(['_']*len(t)) for t in ts]
+
+        #check if filename strings are given
+        if fcols is not None:
+            #extract comments from files
+            fs = np.loadtxt(filenames,usecols=fcols,comments=';',unpack=True)
+        else: #no strings given
+            fs = [np.array(['_']*len(t)) for t in ts]
             
     elif mode == 'multi':
         #load from each file
@@ -495,19 +512,30 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         else:
             strs = [np.array(['_']*len(t)) for t in ts]
 
+        #check if filename strings are given
+        if fcols is not None:
+            #extract comments from files
+            fs = []
+            for filename in filenames:
+                #load comment column
+                f = np.loadtxt(filename,dtype=str,usecols=(fcols,),comments=';',unpack=True)
+                fs.append(f)
+        else: #no strings given
+            fs = [np.array(['_']*len(t)) for t in ts]
+
     #check if SN filter is applied
     if SNthres is not None:
         #filter out bad data with all information
-        ts, mags, errs, fluxes, snrs, lims = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, flags=flags, aflag=aflag)
+        ts, mags, errs, fluxes, snrs, lims, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, fs=fs, flags=flags, aflag=aflag)
     #check if SNR are given
     else:
         #check if limiting magnitudes are given
         if limcols is not None:
             #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs, lims = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, lims, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, flags=flags, aflag=aflag)
         else:
             #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, flags=flags, aflag=aflag)
             
     #convert mags to float
     mags = [mag.astype(float) for mag in mags]
@@ -524,5 +552,7 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         retlist += [snrs]
     if limcols is not None:
         retlist += [lims]
+    if fcols is not None:
+        retlist += [fs]
     #return arrays of data
     return retlist
