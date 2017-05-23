@@ -29,7 +29,7 @@ files = [Bfile, Vfile, Ifile]
 t, M, M_err, F, SN, Mlim, f = LCload(files, tcol=0, magcols=10, errcols=11, fluxcols=8, SNcols=9, limcols=12, SNthres=-10.0, fcols=1, scols=13, flags=['-99.99999'], mode='multi')
 
 #time intervals
-t_ints = [262.8, 263.0, 264.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
+t_ints = [262.8, 263.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
           267.5, 268.64, 268.8, 270.1, 270.167, 270.28, 270.4, 270.647, 270.8,
           272.4, 272.8, 274.22, 274.313, 274.4, 274.6, 274.8, 274.8]
 
