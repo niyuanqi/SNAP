@@ -141,7 +141,7 @@ for i in range(len(bands)):
         #swarp files between t1 and t2
         subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
                          out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
-                         xml_name]+binfiles)
+                         xml_name]+bin_files)
 
     filename = out_name
     to = t_bin
