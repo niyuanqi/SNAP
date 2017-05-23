@@ -212,9 +212,9 @@ for i in range(len(bands)):
         RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
 
     #check for total failure
-    if (not Stest) and (not Mtest):
+    if not Mtest:
         so = so + "_BAD_IMAGE"
-    elif Mtest:
+    else:
         if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
             RAo, DECo = 0.0, 0.0
         if Mlim < 0:
