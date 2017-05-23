@@ -61,7 +61,7 @@ Try in terminal
 
 for explanation of flags and inputs
 
-**DiffIm.py :**
+**BinIm.py :**
 
 Uses SWarp routine (Emmanuel Bertin) to create binned files with matched wcs.
 
