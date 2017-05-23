@@ -11,6 +11,7 @@ import numpy as np
 import os
 from glob import glob
 import math
+import subprocess
 
 #essential files
 from Analysis.LCRoutines import *
