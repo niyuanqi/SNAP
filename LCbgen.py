@@ -143,89 +143,74 @@ for i in range(len(bands)):
                          out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
                          xml_name]+bin_files)
 
-    filename = out_name
-    to = t_bin
-    #compute magnitude at 
-    Mtest = True
-    so = "_"
-    try: #try to load image
-        image, to, wcs = loadFits(filename, verbosity=0)
+        filename = out_name
         to = t_bin
-    except FitsError:
-        #image critically failed to load
-        Mtest = False
-        so = "FITS_ERROR"
-        t0 = 0
-        print "Critical error loading image!"
+        #compute magnitude at 
+        Mtest = True
+        so = "_"
+        try: #try to load image
+            image, to, wcs = loadFits(filename, verbosity=0)
+            to = t_bin
+        except FitsError:
+            #image critically failed to load
+            Mtest = False
+            so = "FITS_ERROR"
+            t0 = 0
+            print "Critical error loading image!"
 
-    if Mtest:
-        #get moon ephemeris
-        obs = fo[-1]
-        loc = observatories[obs]
-        time = day_isot(to,year)
-        RAmoon, DECmoon = moonEQC(time,loc)
-        ALTmoon, AZmoon = moonLC(time,loc)
-        #check if moon bright
-        if ALTmoon > 15.0:
-            so = "MOON_BRIGHT"
-        elif ALTmoon > 0.0 and sepAngle((RA,DEC),(RAmoon,DECmoon)) < 90.0:
-            so = "MOON_BRIGHT"
-
-    if Mtest:
-        try:
-            
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
-            
-            #check if MagCalc returns nonsense
-            if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
-                Mo, Mo_err = -99.999, -99.999
-            
-            if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                Io, SNo = -99.99999, -99.99
-                if any([math.isnan(Mlim),math.isinf(Mlim)]):
-                    Mlim = -99.999
-                    RAo, DECo = -99.9, -99.9
-                    Mtest = False
-            
-            if any([math.isnan(Mlim),math.isinf(Mlim)]):
-                Mlim = -99.999
+        if Mtest:
+            try:
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
+                
+                #check if MagCalc returns nonsense
+                if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
+                    Mo, Mo_err = -99.999, -99.999
+                    
                 if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
                     Io, SNo = -99.99999, -99.99
-                    RAo, DECo = -99.9, -99.9
-                    Mtest = False
+                    if any([math.isnan(Mlim),math.isinf(Mlim)]):
+                        Mlim = -99.999
+                        RAo, DECo = -99.9, -99.9
+                        Mtest = False
+            
+                if any([math.isnan(Mlim),math.isinf(Mlim)]):
+                    Mlim = -99.999
+                    if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
+                        Io, SNo = -99.99999, -99.99
+                        RAo, DECo = -99.9, -99.9
+                        Mtest = False
+                    else:
+                        RAo = RAo - RA
+                        DECo = DECo - DEC
                 else:
                     RAo = RAo - RA
                     DECo = DECo - DEC
-            else:
-                RAo = RAo - RA
-                DECo = DECo - DEC
             
-        except PSFError: #if image PSF cant be extracted
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
-            so = "PSF_ERROR"
-            Mtest = False
-            print "PSF can't be extracted!"
-        except: #General catastrophic failure
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
-            Mtest = False
-            print "Unknown catastrophic failure!"
-    else:
-        RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+            except PSFError: #if image PSF cant be extracted
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                so = "PSF_ERROR"
+                Mtest = False
+                print "PSF can't be extracted!"
+            except: #General catastrophic failure
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                Mtest = False
+                print "Unknown catastrophic failure!"
+            else:
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlim  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
 
-    #check for total failure
-    if not Mtest:
-        so = so + "_BAD_IMAGE"
-    else:
-        if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
-            RAo, DECo = 0.0, 0.0
-        if Mlim < 0:
-            so = "INCONV"
+        #check for total failure
+        if not Mtest:
+            so = so + "_BAD_IMAGE"
+        else:
+            if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
+                RAo, DECo = 0.0, 0.0
+            if Mlim < 0:
+                so = "INCONV"
 
-    #format output
-    out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so)
-    print out+'\n'
+        #format output
+        out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so)
+        print out+'\n'
 
-    if band in bands:
-        outs[b].write(out)
+        outs[i].write(out)
 for out in outs:
     out.close()
