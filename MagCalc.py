@@ -138,9 +138,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     Xo, Yo = int(Xo), int(Yo)
     if verbosity > 0:
         print "Source located at: " + str(Xo) + ", " + str(Yo)
-        print "testing"
-        print cat
-        print 1/0
+
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
@@ -450,9 +448,6 @@ if __name__ == "__main__":
 
     #load fits file, get relevant data
     image, time, wcs = loadFits(args.filename, args.verbosity)
-
-    print "testing"
-    print args.catalog
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
