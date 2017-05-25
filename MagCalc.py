@@ -140,7 +140,7 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         print "Source located at: " + str(Xo) + ", " + str(Yo)
 
     print cat
-    break;
+    print 1/0
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
