@@ -433,7 +433,7 @@ if __name__ == "__main__":
     parser.add_argument("filename", type=str, help="fits image containing source")
     parser.add_argument("-c", "--catalog", type=str, default='phot', help="reference stars catalog convention")
     parser.add_argument("catname", type=str, help="tab separated reference stars catalog file")
-    parser.add_argument("-r", "--radius", type=float, default=1000.0, help="radius in which to take reference stars")
+    parser.add_argument("-r", "--radius", type=float, default=1000.0, help="pixel radius in which to take reference stars")
     parser.add_argument("-o", "--source", type=str, default='object', help="target source name")
     parser.add_argument("-b", "--band", type=str, default='V', help="image filter band")
     parser.add_argument("-p", "--position", type=str, help="RA:DEC as deg:deg")
