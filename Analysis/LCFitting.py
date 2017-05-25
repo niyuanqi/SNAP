@@ -302,6 +302,13 @@ def ArnettFit(M_N, MejE):
 def earlyFit(t, t0, C, a):
     return np.concatenate((np.zeros(len(t[t<t0])),C*np.power(t[t>=t0]-t0,a)),axis=0)
 
+#function: Error function for multi-band early light curve leastsq fitting
+def earlyMultiErr(p, t, L, L_err):
+    B_err = (earlyFit(t[0], p[0], p[1], p[4]) - L[0])/L_err[0]
+    V_err = (earlyFit(t[1], p[0], p[2], p[5]) - L[1])/L_err[1]
+    I_err = (earlyFit(t[2], p[0], p[3], p[6]) - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
 #function: normalized planck distribution (wavelength)
 def planck(x, T): 
     sb_const = 5.6704e-5 #erg/s/cm2/K4

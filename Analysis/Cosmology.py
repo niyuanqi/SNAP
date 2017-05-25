@@ -18,6 +18,10 @@ Wm = 0.27 #matter density parameter
 Wl = 0.73 #vacuum density parameter
 #Reiss  Cosmological parameters from SN1a
 
+#band zero fluxes [Jy]
+flux_0 = [1810, 4260, 3640, 3080, 2550]
+bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4, 'i':4}
+
 #function: cosmological infinitesimal comoving distance [pc]
 def comov(z):
     return (c/H)/np.sqrt(Wm*np.power(1.0+z,3)+Wl)
@@ -41,33 +45,77 @@ def intDl(z):
 def sepDistProj(sepRad, z):
     return intDa(z)*sepRad
 
+#function: calculate dereddened magnitudes
+def deredMag(appMag, EBV, Coef):
+    return appMag - EBV*Coef
+#function: calculate dereddened fluxes
+def deredFlux(appFlux, EBV, Coef):
+    return appFlux*np.power(10,EBV*Coef/2.512)
+    
 #function: calculate absolute magnitude at redshift z
 def absMag(appMag, z, appMag_err=None, z_err=None, Kcorr=None):
-    if appMag_err is None:
-        dl = intDl(z)
-        if Kcorr is None:
-            #estimate absolute magnitude using luminosity distance and naive K
-            Mabs = appMag - 5.024*np.log10(dl/10.0) - 2.512*np.log10(1+z)
-        else:
-            #compute absolute magnitude using luminosity distance and K correction
-            Mabs = appMag - 5.024*np.log10(dl/10.0) - Kcorr
-        return Mabs
+    dl = intDl(z)
+    if Kcorr is None:
+        #estimate absolute magnitude using luminosity distance and naive K
+        Mabs = appMag - 5.024*np.log10(dl/10.0) - 2.512*np.log10(1+z)
     else:
-        dl = intDl(z)
+        #compute absolute magnitude using luminosity distance and K correction
+        Mabs = appMag - 5.024*np.log10(dl/10.0) - Kcorr
+    if appMag_err is not None:
+        #calculate corresponding errors
         dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
         if Kcorr is None:
-            #estimate absolute magnitude using luminosity distance and naive K
-            Mabs = appMag - 5.024*np.log10(dl/10.0) - 2.512*np.log10(1.0+z)
             Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5.024/(10*np.log(10)))*(dl_err/dl)) + np.square((2.512/np.log(10))*(z_err/(1.0+z))))
         else:
-            #compute absolute magnitude using luminosity distance and K correction
-            Mabs = appMag - 5.024*np.log10(dl/10.0) - Kcorr
             Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5.024/(10*np.log(10.0)))*(dl_err/dl)))
         return Mabs, Mabs_err
+    else:
+        #don't calculate errors
+        return Mabs
+
+#function: calculate absolute magnitude at redshift z
+def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
+    dl = intDl(z)
+    if Kcorr is None:
+        #estimate absolute flux using luminosity distance and naive K
+        Fabs = appFlux*(1+z)*(dl/10.0)**2
+    else:
+        #compute absolute magnitude using luminosity distance and K correction
+        Fabs = appFlux*np.power(10,Kcorr/2.512)*(dl/10.0)**2
+    if appFlux_err is not None:
+        #calculate corresponding errors
+        dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
+        if Kcorr is None:
+            Fabs_err = np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)) + np.square(z_err/(1.0+z)))
+        else:
+            Fabs_err = np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)))
+        return Fabs, Fabs_err
+    else:
+        #don't calculate errors
+        return Fabs
+
+#function: calculate flux [Jy] from mag
+def Mag_toFlux(band, mag, mag_err=None):
+        flux = flux_0[bands[band]]*np.power(10,mag/-2.512)
+        if mag_err != None:
+            #calculate errors
+            flux_err = flux*np.log(10)*mag_err/-2.512
+            return flux, flux_err
+        else:
+            #don't calculate errors
+            return flux
+#function: calculate flux [Jy] from mag
+def Flux_toMag(band, flux, flux_err=None):
+        mag =  -2.512*np.log10(flux/flux_0[bands[band]])
+        if flux_err != None:
+            #calculate errors
+            mag_err = -2.512*flux_err/(np.log(10)*flux)
+            return mag, mag_err
+        else:
+            #don't calculate errors
+            return mag
 
 #function: calculate absolute time at redshift z
 def absTime(appTime, z):
+    #apply a simple time dilation
     return appTime/(1+z)
-
-
-
