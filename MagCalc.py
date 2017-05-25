@@ -450,6 +450,9 @@ if __name__ == "__main__":
 
     #load fits file, get relevant data
     image, time, wcs = loadFits(args.filename, args.verbosity)
+
+    print "testing"
+    print args.catalog
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
