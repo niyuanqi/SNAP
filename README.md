@@ -17,7 +17,7 @@ To use any of these modules, add SNAP to your PYTHONPATH
 
 **MagCalc.py :**
 
-Automatically performs differential photometry on given fits image files. It includes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. PSFs can be manipulated by a highly customizable set of flags.
+Automatically performs differential photometry on given fits image files. It includes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. PSFs can be manipulated by a highly customizable set of flags. Can use provided reference star catalogs or can automatically query AAVSO (example given below).
 
 Basic usage in command line (some samples)
 
