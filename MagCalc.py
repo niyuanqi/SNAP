@@ -100,7 +100,7 @@ def loadFits(filename, verbosity=0):
 
     return image, time, wcs
 
-def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -109,7 +109,10 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     # ----------------------------------------------------------------- #
     # Input                                                             #
     # ----------------------------------------------------------------- #
-    #     image: numpy array containing image data.                     #
+    #     image: numpy array containing image data on which to measure  #
+    #            source photometry.                                     #
+    #  catimage: numpy array containing image data on which to measure  #
+    #            reference star photometry.                             #
     #       wcs: astropy wcs object, world coordinate system on image.  #
     #       cat: str catalog type (phot, dprs, or diff from Catalog.py) #
     #   catname: str catalog name.                                      #
@@ -159,9 +162,9 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     index = dist(catX,catY,Xo,Yo) < radius
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
     #select catalog stars within edges
-    index = np.logical_and(catX > 15, image.shape[1]-catX > 15)
+    index = np.logical_and(catX > 15, catimage.shape[1]-catX > 15)
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
-    index = np.logical_and(catY > 15, image.shape[0]-catY > 15)
+    index = np.logical_and(catY > 15, catimage.shape[0]-catY > 15)
     ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
     #select unsaturated catalog stars
     index = catM > satmag
@@ -201,8 +204,8 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(image, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
-        I, SN = photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(catimage, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
+        I, SN = photometry(catimage, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
         #check if reference stars are valid
         if I == 0 or SN == 0 or skyN == 0:
             raise PSFError('Unable to perform photometry on reference stars.')
@@ -440,6 +443,7 @@ if __name__ == "__main__":
     parser.add_argument("-fwhm", type=float, default=5.0, help="image fwhm upper bound")
     parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="signal to noise at detection limit")
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
+    parser.add_argument("-d", "--diffImg", type=float, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
     
@@ -447,14 +451,16 @@ if __name__ == "__main__":
     RA, DEC = [float(coord) for coord in args.position.split(':')]
 
     #load fits file, get relevant data
-    image, time, wcs = loadFits(args.filename, args.verbosity)
+    catimage, time, wcs = loadFits(args.filename, args.verbosity)
+    if args.diffImg is not None:
+        image, t, w = loadFits(args.filename, args.verbosity)
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
-        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr, Mlim
     else:
-        RA, DEC, I, SN, M, Merr = magnitude(image, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr
