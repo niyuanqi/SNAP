@@ -135,12 +135,12 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
     
     #convert position of source to pixel 
     Xo, Yo = wcs.all_world2pix(RAo, DECo, 0)
-    Xo, Yo  = int(Xo), int(Yo)
+    Xo, Yo = int(Xo), int(Yo)
     if verbosity > 0:
         print "Source located at: " + str(Xo) + ", " + str(Yo)
 
     print cat
-    1/0
+    print 1/0
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
