@@ -443,7 +443,7 @@ if __name__ == "__main__":
     parser.add_argument("-fwhm", type=float, default=5.0, help="image fwhm upper bound")
     parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="signal to noise at detection limit")
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
-    parser.add_argument("-d", "--diffImg", type=float, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
+    parser.add_argument("-d", "--diffImg", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
     
