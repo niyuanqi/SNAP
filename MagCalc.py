@@ -183,7 +183,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
 
     if verbosity > 3:
         #plot image of catalog positions
-        plt.imshow(image, cmap='Greys', vmax=0.0001*np.amax(image), vmin=0)
+        plt.imshow(catimage, cmap='Greys', vmax=0.0001*np.amax(catimage), vmin=0)
         plt.scatter(catX, catY)
         plt.scatter(Xo,Yo,c='r')
         plt.show()
