@@ -84,11 +84,11 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
         Fabs = appFlux*np.power(10,Kcorr/2.512)*(dl/10.0)**2
     if appFlux_err is not None:
         #calculate corresponding errors
-        dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
+        dl_err = (intDl(z+z_err)-intDl(z-z_err))/(2.0*np.sqrt(3))
         if Kcorr is None:
-            Fabs_err = Fabs*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)) + np.square(z_err/(1.0+z)))
+            Fabs_err = np.absolute(Fabs)*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)) + np.square(z_err/(1.0+z)))
         else:
-            Fabs_err = Fabs*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)))
+            Fabs_err = np.absolute(Fabs)*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)))
         return Fabs, Fabs_err
     else:
         #don't calculate errors

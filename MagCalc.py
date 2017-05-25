@@ -18,6 +18,7 @@ import numpy as np
 
 #essential files
 from Catalog import*
+from Vizier import*
 from Photometry import*
 from Astrometry import*
 
@@ -147,7 +148,9 @@ def magnitude(image, wcs, cat, catname, (RAo,DECo), radius=500, name='object', b
         ID, RA, DEC, catM, catMerr = catDPRS(catname,band=band)
     elif cat == 'diff':
         ID, RA, DEC, catM, catMerr = catDiff(catname,band=band)
-        print catM
+    elif cat == 'aavso':
+        fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
+        ID, RA, DEC, catM, catMerr, catLines = aavso(RAo,DECo,fovam,band,out=catname)
 
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)

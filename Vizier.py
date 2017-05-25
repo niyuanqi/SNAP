@@ -16,11 +16,6 @@ def aavso(radeg,decdeg,fovam,band,out=False):
     
     str1 = 'http://webviz.u-strasbg.fr/viz-bin/asu-tsv/?-source=II/336' 
     str2 = '&-c.ra={:4.6f}&-c.dec={:4.6f}&-c.bm={:4.7f}/{:4.7f}&-out.max=unlimited'.format(radeg,decdeg,fovam,fovam)
-
-    RAcol = 1
-    DEcol = 2
-    bands = {'B': 12, 'V': 10, 'I': 18}
-    null = '      '
      
     # Make sure str2 does not have any spaces or carriage returns/line feeds when you # cut and paste into your code  
     sr = str1+str2 
@@ -32,36 +27,20 @@ def aavso(radeg,decdeg,fovam,band,out=False):
     
     #write text file
     if out:
-        outname = 'AAVSO-APASS-DR9_ra{:4.6f}dec{:4.6f}bm{:4.1f}x{:4.1f}.cat'.format(radeg,decdeg,fovam,fovam)
+        #outname = 'AAVSO-APASS-DR9_ra{:4.6f}dec{:4.6f}bm{:3.1f}x{:3.1f}.cat'.format(radeg,decdeg,fovam,fovam)
+        outname = out
         f = open(outname, 'w')
         f.write(s)
         f.close()
         
-    #parse text
-    sl = s.splitlines()
-    sl = sl[50:-1] # get rid of header
-    name = np.array([]) 
-    rad = np.array([]) # RA in degrees 
-    ded = np.array([]) # DEC in degrees 
-    rmag = np.array([]) # rmage 
-     
-    for k in sl:
-        kw = k.split('\t')
-        if kw[0] != '':  
-            name = np.append(name,kw[0])
-            rad = np.append(rad,float(kw[1])) 
-            ded = np.append(ded,float(kw[2]))
-            if kw[bands[band]] != null: # deal with case where no mag is reported
-                rmag = np.append(rmag,float(kw[bands[band]])) 
-            else: rmag = np.append(rmag,np.nan)  
-        
-    return name,rad,ded,rmag,s
+    return aavso_static(s, band)
 
 #read static Vizier AAVSO APASS DR9 catalog
 def aavso_static(lines, band):
     RAcol = 1
     DEcol = 2
     bands = {'B': 12, 'V': 10, 'I': 18}
+    banderrs = {'B': 13, 'V': 11, 'I': 19}
     null = '      '
 
     #parse text
@@ -70,19 +49,24 @@ def aavso_static(lines, band):
     name = np.array([]) 
     rad = np.array([]) # RA in degrees 
     ded = np.array([]) # DEC in degrees 
-    rmag = np.array([]) # rmage 
-     
+    rmag = np.array([]) # rmag
+    rmagerr = np.array([]) # rmag error
+
     for k in sl:
         kw = k.split('\t')
         if kw[0] != '':  
             name = np.append(name,kw[0])
             rad = np.append(rad,float(kw[1])) 
             ded = np.append(ded,float(kw[2]))
-            if kw[bands[band]] != null: # deal with case where no mag is reported
-                rmag = np.append(rmag,float(kw[bands[band]])) 
-            else: rmag = np.append(rmag,np.nan)  
+            # deal with case where no mag is reported
+            if (kw[bands[band]] != null) and (kw[banderrs[band]]) != null:
+                rmag = np.append(rmag,float(kw[bands[band]]))
+                rmagerr = np.append(rmagerr,float(kw[banderrs[band]]))
+            else:
+                rmag = np.append(rmag,np.nan)
+                rmagerr = np.append(rmagerr,np.nan)
         
-    return name,rad,ded,rmag
+    return name,rad,ded,rmag,rmagerr,lines
 
 #query Vizier USNO-B1 catalog
 def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV in arc min. 
@@ -95,6 +79,7 @@ def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV
     RAcol = 1
     DEcol = 2
     bands = {'B': 12}
+    bands = {'B': 13}
     null = '      '
      
     # Make sure str2 does not have any spaces or carriage returns/line feeds when you # cut and paste into your code  
@@ -124,9 +109,13 @@ def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV
         if kw[0] != '':  
             name = np.append(name,kw[0])
             rad = np.append(rad,float(kw[1])) 
-            ded = np.append(ded,float(kw[2])) 
-            if kw[bands[band]] != null: # deal with case where no mag is reported
-                rmag = np.append(rmag,float(kw[bands[band]])) 
-            else: rmag = np.append(rmag,np.nan)  
+            ded = np.append(ded,float(kw[2]))
+            # deal with case where no mag is reported
+            if (kw[bands[band]] != null) and (kw[banderrs[band]]) != null:
+                rmag = np.append(rmag,float(kw[bands[band]]))
+                rmagerr = np.append(rmag,float(kw[banderrs[band]]))
+            else:
+                rmag = np.append(rmag,np.nan)
+                rmagerr = np.append(rmagerr,np.nan)
         
-    return name,rad,ded,rmag,s
+    return name,rad,ded,rmag,rmagerr,s
