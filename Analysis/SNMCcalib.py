@@ -40,8 +40,6 @@ SNM_err = [SNB_err[SNB<90],SNV_err[SNV<90],SNi_err[SNi<90]]
 
 #don't plot fit
 s.replot = 0
-#don't plot fit
-s.replot = 0
 #arrays to store Monte Carlo values
 print "Performing Monte Carlo Calculations"
 z = np.linspace(0.035,0.075,N)

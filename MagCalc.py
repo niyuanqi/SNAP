@@ -45,7 +45,7 @@ class FitsError(Exception):
         #set error message as value
         return repr(self.value)
 
-def loadFits(filename, verbosity=0):
+def loadFits(filename, getwcs=False, verbosity=0):
     """
     #################################################################
     # Desc: Load fits file for MagCalc.                             #
@@ -91,14 +91,17 @@ def loadFits(filename, verbosity=0):
     except KeyError:
         time = 0
 
-    try: #try to load WCS
-        if verbosity > 0:
-            print "loading world coordinate system"
-        wcs = WCS(filename)
-    except:
-        raise FitsError('Unable to load wcs data.')
+    if getwcs:
+        try: #try to load WCS
+            if verbosity > 0:
+                print "loading world coordinate system"
+            wcs = WCS(filename)
+        except:
+            raise FitsError('Unable to load wcs data.')
 
-    return image, time, wcs
+        return image, time, wcs
+    else:
+        return image, time
 
 def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
     """
@@ -451,10 +454,10 @@ if __name__ == "__main__":
     RA, DEC = [float(coord) for coord in args.position.split(':')]
 
     #load fits file, get relevant data
-    catimage, time, wcs = loadFits(args.filename, args.verbosity)
+    catimage, time, wcs = loadFits(args.filename, getwcs=True, args.verbosity)
     if args.diffIm is not None:
         #load difference image for source photometry
-        image, t, w = loadFits(args.diffIm, args.verbosity)
+        image, t = loadFits(args.diffIm, args.verbosity)
     else:
         #use original image for source photometry
         image = catimage

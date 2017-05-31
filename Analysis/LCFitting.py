@@ -18,6 +18,12 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
 
     import warnings
     import matplotlib.pyplot as plt
+
+    #crop out peak section of light curve
+    #mask = np.logical_and(t<20, t>-10)
+    #t = t[mask]
+    #M = M[mask]
+    #M_err = M_err[mask]
     
     #ignore least square coefficient matrix rank deficiency
     warnings.simplefilter('ignore', np.RankWarning)
