@@ -249,13 +249,15 @@ def LCtemplateFit(t, M, M_err=None, template=None, plot=False):
     return s_opt
 
 #function: Fit Arnett Ni56 mass to bolometric light curve
-def ArnettFit(M_N, MejE):
+def ArnettFit(t, t0, M_N, MejE):
     #Inputs
     #################################
     #M_N = Mass of Nickel (Solar Mass)
     #MejE = (Mej^3/Ek)^(1/4)
     #Mej = Mass of ejecta (Solar mass)
     #Ek = Kinetic energy of ejecta (*10^51 ergs)
+    #t = time from epoch in days
+    #t0 = epoch
 
     #Outputs
     #################################
@@ -270,7 +272,9 @@ def ArnettFit(M_N, MejE):
     M_Ni=M_N*M_sun
     M_ejE_K = MejE*((M_sun)**3/(1.e51))**(0.25)
     #time axis (sec)
-    dt=(np.arange(103*4)/4.+0.25)*86400.
+    #dt=(np.arange(103*4)/4.+0.25)*86400.
+    #dt = np.arange(0.25,103.25,0.25)*86400.
+    dt = (t-t0)*86400.
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.07 #g/cm^2 optical opacity (this corresponds to electron scattering)
@@ -302,7 +306,23 @@ def ArnettFit(M_N, MejE):
 	L_ph[i]=(M_Ni*np.exp(-1.*np.square(x[i])))*((e_Ni-e_Co)*int_A[i]+e_Co*int_B[i])
 
     #return results
-    return dt/86400., L_ph
+    return L_ph
+
+#function: break Arnett degeneracy
+def ArnettMejE(MejE, MejEerr, vej, vejerr):
+    #Constants
+    M_sun=2.e33
+    #convert to cgs
+    MejEK = MejE*((M_sun)**3/(1.e51))**(0.25)
+    MejEKerr = MejEerr*((M_sun)**3/(1.e51))**(0.25)
+    #calculate ejecta mass, kinetric energy
+    Mej = (3.0/10.0)**0.5*MejEK**2*vej
+    Kej = (3.0/10.0)*Mej*vej**2
+    #calculate errors
+    Mejerr = Mej*((2*MejEKerr/MejEK)**2 + (vejerr/vej)**2)**0.5
+    Kejerr = Kej*((2*vejerr/vej)**2 + (Mejerr/Mej)**2)**0.5
+    #return M[Msun], K[ergs]
+    return Mej/M_sun, Mejerr/M_sun, Kej, Kejerr
 
 #function: Fit power law to early light curve
 def earlyFit(t, t0, C, a):
