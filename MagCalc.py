@@ -454,7 +454,7 @@ if __name__ == "__main__":
     RA, DEC = [float(coord) for coord in args.position.split(':')]
 
     #load fits file, get relevant data
-    catimage, time, wcs = loadFits(args.filename, getwcs=True, args.verbosity)
+    catimage, time, wcs = loadFits(args.filename, getwcs=True, verbosity=args.verbosity)
     if args.diffIm is not None:
         #load difference image for source photometry
         image, t = loadFits(args.diffIm, args.verbosity)
