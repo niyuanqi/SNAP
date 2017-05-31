@@ -457,7 +457,7 @@ if __name__ == "__main__":
     catimage, time, wcs = loadFits(args.filename, getwcs=True, verbosity=args.verbosity)
     if args.diffIm is not None:
         #load difference image for source photometry
-        image, t = loadFits(args.diffIm, args.verbosity)
+        image, t = loadFits(args.diffIm, verbosity=args.verbosity)
     else:
         #use original image for source photometry
         image = catimage
