@@ -79,8 +79,8 @@ t, sBerr2, f, l = s.bolometric(['B','V','i'], method='SED', refband='i',
 sBerr = np.absolute((sBerr1-sBerr2)/2.0)
 tB, sB, sBerr = LCcrop(tB, -15, 30, sB, M_err=sBerr)
 #window in which to perform Arnett fit
-t1 = -10
-t2 = 15
+t1 = -8
+t2 = 10
 tfit, sfit, sfiterr = LCcrop(tB, t1, t2, sB, M_err=sBerr)
 #plt.errorbar(tB, np.log10(sB), yerr=sBerr/np.log(10)/sB, marker='o', c='g')
 #plt.show()
@@ -89,7 +89,15 @@ print "Fitting Arnett Function to Peak of LC"
 p0 = [-16.0, 0.2, 1.0]
 popt, pcov = curve_fit(ArnettFit, tfit, sfit, sigma=sfiterr, p0=p0)
 perr = np.sqrt(np.diag(pcov))
+
+MNi, MNi_err = popt[1], perr[1]
+vej, vej_err = 11.0, 1.0
+Mej, Mej_err, Eej, Eej_err = ArnettMejE(popt[2],perr[2],vej*10**8,vej_err*10**8)
 print popt, perr
+print "Assumed ejecta velocity:", vej, vej_err, "km/s"
+print "Nickel mass:", MNi, MNi_err, "Msun"
+print "Ejecta mass:", Mej, Mej_err, "Msun"
+print "Ejecta Ek:", Eej, Eej_err, "x10^51ergs"
 
 t_arnett = np.arange(0.25,103.25,0.25)+popt[0]
 L_arnett = ArnettFit(t_arnett, *popt)

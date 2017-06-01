@@ -20,6 +20,11 @@ Wl = 0.73 #vacuum density parameter
 
 #band zero fluxes [Jy]
 flux_0 = [1810, 4260, 3640, 3080, 2550]
+#band isophotal wavelengths [Angstrom]
+wave_0 = [3663, 4361, 5448, 6407, 7980]
+#band widths [Angstrom]
+widths = [650, 890, 840, 1580, 1540]
+#band numbering convention
 bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4, 'i':4}
 
 #function: cosmological infinitesimal comoving distance [pc]
