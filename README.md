@@ -14,6 +14,8 @@ To use any of these modules, add SNAP to your PYTHONPATH
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
+Also requires latest astropy to function properly.
+
 
 **MagCalc.py :**
 
@@ -141,3 +143,7 @@ Contains python functions for fitting polynomials, supernova templates, etc to l
 **LCRoutines.py :**
 
 Contains python functions for reading and writing light curve files.
+
+## Examples
+
+Contains programs that use various SNAP routines to do things such as generate light curves from raw images, generate binned light curves, plot SN1a light curve, calibrate SN1a using light curve, etc.
