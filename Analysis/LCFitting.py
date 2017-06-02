@@ -249,7 +249,7 @@ def LCtemplateFit(t, M, M_err=None, template=None, plot=False):
     return s_opt
 
 #function: Fit Arnett Ni56 mass to bolometric light curve
-def ArnettFit(t, t0, M_N, MejE):
+def ArnettFit(t, M_N, MejE):
     #Inputs
     #################################
     #M_N = Mass of Nickel (Solar Mass)
@@ -257,7 +257,6 @@ def ArnettFit(t, t0, M_N, MejE):
     #Mej = Mass of ejecta (Solar mass)
     #Ek = Kinetic energy of ejecta (*10^51 ergs)
     #t = time from epoch in days
-    #t0 = epoch
 
     #Outputs
     #################################
@@ -274,7 +273,7 @@ def ArnettFit(t, t0, M_N, MejE):
     #time axis (sec)
     #dt=(np.arange(103*4)/4.+0.25)*86400.
     #dt = np.arange(0.25,103.25,0.25)*86400.
-    dt = (t-t0)*86400.
+    dt = t*86400.
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.1 #g/cm^2 optical opacity (this corresponds to electron scattering)
@@ -308,6 +307,19 @@ def ArnettFit(t, t0, M_N, MejE):
     #return results
     return L_ph
 
+#function: Arnett max light error for leastsq fitting
+def ArnettMaxErr(p, tmax, tmax_err, Lmax, Lmax_err):
+    t_arnett = np.arange(0.25,103.25,0.1)
+    L_arnett = ArnettFit(t_arnett, abs(p[0]), abs(p[1]))
+    La_max = max(L_arnett)
+    ta_max = t_arnett[np.argmax(L_arnett)]
+    LX2 = (La_max-Lmax)/Lmax_err
+    tX2 = (ta_max-tmax)/tmax_err
+    err = np.sqrt(np.square(LX2) + np.square(tX2))
+    #helping to choose step size in leastsq
+    #print p, np.sqrt(np.sum(np.square(err)))
+    return err
+
 #function: break Arnett degeneracy
 def ArnettMejE(MejE, MejEerr, vej, vejerr):
     #Constants
@@ -336,31 +348,36 @@ def earlyMultiErr(p, t, L, L_err):
     return np.concatenate([B_err, V_err, I_err],axis=0)
 
 #function: normalized planck distribution (wavelength)
-def planck(x, T): 
-    sb_const = 5.6704e-5 #erg/s/cm2/K4
-    integ = sb_const*np.power(T,4) #ergs/s/cm2
-    p_rad = (1.1910430e-5)*np.power(x,-5)/(np.exp(1.439/(x*T))-1.0) #erg/s/cm2/rad2/cm power per area per solid angle per wavelength
-    p_int = np.pi*p_rad #erg/s/cm2/cm
-    return (1.0/integ)*(p_int) #1/cm
+def planck(x, T):
+    wave = x*10**-8 #angstrom to cm
+    sb = 5.67051e-5 #erg/s/cm2/K4
+    h = 6.6260755e-27 #erg*s
+    c = 2.99792458e10 #cm/s
+    k = 1.380658e-16 #erg/k
+    integ = sb*np.power(T,4) #ergs/s/cm2
+    p_rad = (2*h*c**2)*np.power(x,-5)/(np.exp(h*c/(x*k*T))-1.0) #erg/s/cm2/rad2/cm power per area per solid angle per wavelength
+    p_int = np.pi*p_rad #erg/s/cm2/cm #power per area per wavelengths
+    return (p_int/integ) #1/cm
 
 #function: Kasen isotropic correction for viewing angle
 def isoAngle(theta):
     return 0.982*np.exp(-np.square(theta/99.7))+0.018
 
-def Kasen2010(a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
+def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
     """This calculates the luminosity, Liso, and Teff for the Kasen2010 analytic models.
     This incorporates the parameterization of viewing angle from Olling 2015
     
+    :param t_day: time array (days since explosion)
     :param a13: semi-major axis of binary separation (10^13 cm)
     :param theta: viewing angle (degrees) minimum at 180.
     :param m_c: ejecta mass in units of M_chandra. default = 1
     :param e_51: explosion energy in units of 10^51 ergs. default=1
     :param kappa: opacity. default = 0.2 cm^2/g
-    :return: time array (days since explosion), luminosity (erg/s), Teff (K)
+    :return: luminosity (erg/s) (isotropic, angular), Teff (K)
     """
 
     # Set-up time array:
-    t_day = np.arange(0,15,0.1)
+    #t_day = np.arange(0,15,0.1)
 
     # Set-up other parameters from inputs
     L_u = 1.69 # constant related to ejecta density profile.
@@ -375,7 +392,13 @@ def Kasen2010(a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
 
     Lc_angle = Lc_iso * S_theta
 
-    return t_day,Lc_iso,Lc_angle,Teff
+    return Lc_iso,Lc_angle,Teff
+
+#function: Observable Kasen model
+def KasenFit(t_day,wave,a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
+    Lc_iso, Lc_angle, Teff = Kasen2010(t_day,a13,theta,m_c,e_51,kappa)
+    Lc_angle_wave = planck(wave, T)*Lc_angle
+    return Lc_angle_wave
 
 #function: Error function for multi-band Kasen leastsq fitting
 def KasenMultiErr(p, t, L, L_err):

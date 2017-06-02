@@ -1,4 +1,5 @@
 import Analysis
+import Examples
 from Astrometry import *
 from Photometry import *
 from Catalog import *

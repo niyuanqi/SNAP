@@ -1,7 +1,7 @@
 #################################################################
 # Name:     Epoch.py                                            #
 # Author:   Yuan Qi Ni                                          #
-# Date:     May, 31, 2017                                      #
+# Date:     May, 31, 2017                                       #
 # Function: Program computes early flux light curve and fits    #
 #           for explosion epoch.                                #
 #################################################################
