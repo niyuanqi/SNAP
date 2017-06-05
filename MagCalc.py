@@ -62,6 +62,8 @@ def loadFits(filename, getwcs=False, verbosity=0):
     from astropy.io import fits
     from astropy.time import Time
     from astropy.wcs import WCS
+
+    from Astrometry import*
     
     try: #try to load image data
         #load HDU image
