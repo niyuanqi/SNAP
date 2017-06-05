@@ -168,27 +168,23 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     catX, catY = catX.astype(float), catY.astype(float)
     #select catalog stars within some radius of object
     index = dist(catX,catY,Xo,Yo) < radius
-    ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
     #select catalog stars within edges
-    index = np.logical_and(catX > 15, catimage.shape[1]-catX > 15)
-    ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
-    index = np.logical_and(catY > 15, catimage.shape[0]-catY > 15)
-    ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
+    index = np.logical_and(index, np.logical_and(catX > 15, catimage.shape[1]-catX > 15))
+    index = np.logical_and(index, np.logical_and(catY > 15, catimage.shape[0]-catY > 15))
     #select unsaturated catalog stars
-    index = catM > satmag
-    ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
+    index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
-    index = catM < 19.0
-    ID, catX, catY, catM, catMerr = ID[index], catX[index], catY[index], catM[index], catMerr[index]
+    index = np.logical_and(index, catM < 19.0)
+    #crop values to mask
+    ID, catX, catY, catRA, catDEC, catM, catMerr = ID[index], catX[index], catY[index], RA[index], DEC[index], catM[index], catMerr[index]
     if len(ID) == 0:
         raise ImageError('No reference stars in image.')
     if verbosity > 0:
         #output selected catalog stars
         print "Selected catalog star IDs:"
-        print ID
         for i in range(len(ID)):
-            print catX[int(i)], catY[int(i)], catM[int(i)], catMerr[int(i)]
-            print wcs.all_pix2world(catX[int(i)], catY[int(i)], 0)
+            print ID[int(i)], catX[int(i)], catY[int(i)]
+            print RA[int(i)], DEC[int(i)], catM[int(i)], catMerr[int(i)]
 
     if verbosity > 3:
         #plot image of catalog positions
