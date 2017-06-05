@@ -99,7 +99,7 @@ def loadFits(filename, getwcs=False, verbosity=0):
     else:
         return image, time
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, verbosity=0):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, refmag=19.0, verbosity=0):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -174,7 +174,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     #select unsaturated catalog stars
     index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
-    index = np.logical_and(index, catM < 19.0)
+    index = np.logical_and(index, catM < refmag)
     #crop values to mask
     ID, catX, catY, catRA, catDEC, catM, catMerr = ID[index], catX[index], catY[index], RA[index], DEC[index], catM[index], catMerr[index]
     if len(ID) == 0:
@@ -448,6 +448,7 @@ if __name__ == "__main__":
     parser.add_argument("-fwhm", type=float, default=5.0, help="image fwhm upper bound")
     parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="signal to noise at detection limit")
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
+    parser.add_argument("-f", "--refMag", type=float, default=19.0, help="Reliable lower bound for reference star brightness")
     parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
@@ -466,10 +467,10 @@ if __name__ == "__main__":
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
-        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr, Mlim
     else:
-        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr
