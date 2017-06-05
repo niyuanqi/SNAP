@@ -16,12 +16,6 @@
 #essential modules
 import numpy as np
 
-#essential files
-from Catalog import*
-from Vizier import*
-from Photometry import*
-from Astrometry import*
-
 #band definitions
 bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4}
 fluxes = [1810, 4260, 3640, 3080, 2550] #Jansky
@@ -138,6 +132,15 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     #       mlim; float detection limit at source position.             #
     #####################################################################
     """
+
+    #essential imports
+    import matplotlib.pyplot as plt
+    
+    #essential files
+    from Catalog import*
+    from Vizier import*
+    from Photometry import*
+    from Astrometry import*
     
     #convert position of source to pixel 
     Xo, Yo = wcs.all_world2pix(RAo, DECo, 0)
