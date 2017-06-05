@@ -347,6 +347,8 @@ def limitingM(ru, rl, limsnr, popt, sno, skyN, catM, catMerr, catSN, catI, verbo
     #       mlim; float detection limit at source position.                  #
     ##########################################################################
     """
+
+    from Photometry import*
     
     if len(popt) == 5:
         #PSF is moffat
