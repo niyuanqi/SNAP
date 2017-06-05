@@ -187,7 +187,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
         print "Selected catalog star IDs:"
         print ID
         for i in range(len(ID)):
-            print RA[int(i)], DEC[int(i)]
+            print RA[int(i)], DEC[int(i)], catM[int(i)], catMerr[int(i)]
 
     if verbosity > 3:
         #plot image of catalog positions
