@@ -414,7 +414,7 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
 
         #proper signal to noise calculation for unscaled intensities
         #noise is sqrt(intensity) is the best we can do
-        sigmar = np.sqrt(Io + (skyN**2)*PSF_fit.size)
+        sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_fit.size)
         SNo = Io/sigmar
 
         """

@@ -349,21 +349,24 @@ def earlyMultiErr(p, t, L, L_err):
 
 #function: normalized planck distribution (wavelength)
 def planck(x, T):
-    wave = x*10**-8 #angstrom to cm
+    #constants
+    wave = x*1e-8 #angstrom to cm
     sb = 5.67051e-5 #erg/s/cm2/K4
     h = 6.6260755e-27 #erg*s
     c = 2.99792458e10 #cm/s
     k = 1.380658e-16 #erg/k
+    freq = c/wave #Hz
+    #black body luminosity
     integ = sb*np.power(T,4) #ergs/s/cm2
-    p_rad = (2*h*c**2)*np.power(x,-5)/(np.exp(h*c/(x*k*T))-1.0) #erg/s/cm2/rad2/cm power per area per solid angle per wavelength
-    p_int = np.pi*p_rad #erg/s/cm2/cm #power per area per wavelengths
-    return (p_int/integ) #1/cm
+    #planck distribution
+    p_rad = (2*h*freq**3/c**2)/(np.exp(h*freq/(k*T))-1.0) #erg/s/cm2/rad2/Hz power per area per solid angle per frequency
+    #integrated planck over solid angle
+    p_int = np.pi*p_rad #erg/s/cm2/Hz #power per area per frequency
+    #normalized planck distribution
+    return (p_int/integ) #1/Hz, luminosity density
 
-#function: Kasen isotropic correction for viewing angle
-def isoAngle(theta):
-    return 0.982*np.exp(-np.square(theta/99.7))+0.018
-
-def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
+#function: Kasen model of shock interaction with companion
+def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=1.0):
     """This calculates the luminosity, Liso, and Teff for the Kasen2010 analytic models.
     This incorporates the parameterization of viewing angle from Olling 2015
     
@@ -376,36 +379,43 @@ def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
     :return: luminosity (erg/s) (isotropic, angular), Teff (K)
     """
 
-    # Set-up time array:
-    #t_day = np.arange(0,15,0.1)
+    #offset t_day to account for time it takes for interaction to begin
+    v9 = 6.0e8 * 1.69 * np.sqrt(e_51/m_c) / 1.0e9
+    ti = (1.0e4 * a13 / v9) / 86400.0
+    t_day = t_day - ti
 
     # Set-up other parameters from inputs
     L_u = 1.69 # constant related to ejecta density profile.
     vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
     v9 = vt / 10**9
-    S_theta = 0.982 * np.exp(-(theta/99.7)**2) + 0.018
+    S_theta = Kasen_isocorr(theta)
 
     # Equations for Luminosity and Teff
-
     Lc_iso = 10**43 * a13 * m_c * v9**(7./4.) * kappa**(-3./4.) * t_day**(-1./2.) # (erg/s)
-    Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35/36) * t_day**(-37./72.)
+    Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35./36) * t_day**(-37./72.)
 
     Lc_angle = Lc_iso * S_theta
 
-    return Lc_iso,Lc_angle,Teff
+    return Lc_iso,Lc_angle,Teff #erg/s
+
+#function: Kasen isotropic correction for viewing angle
+def Kasen_isocorr(theta):
+    return 0.982 * np.exp(-(theta/99.7)**2) + 0.018
 
 #function: Observable Kasen model
-def KasenFit(t_day,wave,a13,theta=0.,m_c=1,e_51=1,kappa=0.2):
-    Lc_iso, Lc_angle, Teff = Kasen2010(t_day,a13,theta,m_c,e_51,kappa)
-    Lc_angle_wave = planck(wave, T)*Lc_angle
-    return Lc_angle_wave
+def KasenFit(t_day,Lc_angle,Teff,wave,z,zerr):
+    #give wave in observer frame
 
-#function: Error function for multi-band Kasen leastsq fitting
-def KasenMultiErr(p, t, L, L_err):
-
-    from Cosmology import wave_0
+    from Cosmology import *
     
-    B_err = (KasenFit(t[0], wave_0[1], p[0], p[1], p[4]) - L[0])/L_err[0]
-    V_err = (KasenFit(t[1], wave_0[2], p[0], p[2], p[5]) - L[1])/L_err[1]
-    I_err = (KasenFit(t[2], wave_0[4], p[0], p[3], p[6]) - L[2])/L_err[2]
-    return np.concatenate([B_err, V_err, I_err],axis=0)
+    #luminosity distance [pc -> cm]
+    dl = intDl(z)*3.086*10**18
+    dlerr = (intDl(z+zerr)-intDl(z-zerr))*3.086*10**18/2.0
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    Area_err = 2*Area*dlerr/dl
+    #kasen model in observer band
+    Lc_angle_wave = planck(wave/(1.0+z),Teff)*Lc_angle/Area
+    Lc_angle_wave_err = Lc_angle_wave*Area_err/Area
+    #ergs/s/Hz/cm^2, luminosity density in observer frame
+    #return in uJy, 10**29 uJy = 1 ergs/s/Hz/cm^2
+    return Lc_angle_wave*10**29, Lc_angle_wave_err*10**29

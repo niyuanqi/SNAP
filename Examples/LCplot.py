@@ -21,7 +21,7 @@ Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
 files = [Bfile, Vfile, Ifile]
 
 #get N300-1.Q0.SN light curve
-t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=10, errcols=11, fluxcols=8, SNcols=9, limcols=12, SNthres=3.0, scols=13, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=10, errcols=11, fluxcols=8, SNcols=9, limcols=12, SNthres=2.0, scols=13, flags=['-99.99999'], mode='multi')
 
 #'-99.99999'
 #'-99.999'
