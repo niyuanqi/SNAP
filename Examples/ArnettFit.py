@@ -23,10 +23,6 @@ from SNAP.Analysis.LCFitting import*
 sn_file = "N300-1.Q0.SN.txt"
 plot = False #plot polynomial fits to light curves
 
-#redshift of N300-1.Q0.SN
-z = 0.065
-z_err = 0.005
-
 print "Loading SN File"
 s = get_sn(sn_file)
 #s.z = z

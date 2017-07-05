@@ -101,24 +101,25 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
 
 #function: calculate flux [Jy] from mag
 def Mag_toFlux(band, mag, mag_err=None):
-        flux = flux_0[bands[band]]*np.power(10,mag/-2.512)
-        if mag_err != None:
-            #calculate errors
-            flux_err = flux*np.log(10)*mag_err/-2.512
-            return flux, flux_err
-        else:
-            #don't calculate errors
-            return flux
+    flux = flux_0[bands[band]]*np.power(10,mag/-2.512)
+    if mag_err is not None:
+        #calculate errors
+        flux_err = flux*np.log(10)*mag_err/-2.512
+        return flux, flux_err
+    else:
+        #don't calculate errors
+        return flux
 #function: calculate flux [Jy] from mag
 def Flux_toMag(band, flux, flux_err=None):
-        mag =  -2.512*np.log10(flux/flux_0[bands[band]])
-        if flux_err != None:
-            #calculate errors
-            mag_err = -2.512*flux_err/(np.log(10)*flux)
-            return mag, mag_err
-        else:
-            #don't calculate errors
-            return mag
+    mod = flux/flux_0[bands[band]]
+    mag =  -2.512 * np.array([np.log10(m) for m in mod])
+    if flux_err is not None:
+        #calculate errors
+        mag_err = -2.512*flux_err/(np.log(10)*flux)
+        return mag, mag_err
+    else:
+        #don't calculate errors
+        return mag
 
 #function: calculate absolute time at redshift z
 def absTime(appTime, z):

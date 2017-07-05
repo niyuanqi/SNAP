@@ -276,6 +276,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
         I = np.sum(Ir*w)/np.sum(w)
         I_rand = np.sqrt(1/np.sum(w))
         I_err = np.sqrt((I*Io_err/Io)**2 + I_rand**2)
+
+        if verbosity > 0:
+            print "Contribution of intrinsic error:", Io_err/Io
+            print "Contribution of ref star scatter:", I_rand/I
+            
         #SN = I/I_err
     else:
         #no valid source

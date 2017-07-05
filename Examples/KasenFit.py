@@ -37,6 +37,7 @@ m_c = 1.17/1.4 #Mchandra
 e_51 = 0.85 #x10^51 ergs
 #bands
 band = ['B','V','i']
+Band = ['B','V','I']
 
 print "loading binned data"
 #N300-1.Q0.SN binned time series data files
@@ -87,6 +88,7 @@ plt.show()
 
 print "Trial thetas:", np.linspace(0,180,10)
 tk = np.arange(0.001, 10, 0.001)
+Fks = [[],[],[]]
 ###################################################################
 
 print "Computing 1Ms RG Kasen model"
@@ -105,6 +107,8 @@ for i in range(len(t)):
         #rest time observer frame angle corrected Kasen flux
         Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
+        if theta == thetas[0]:
+            Fks[i].append(Fk)
     #plot red corrected observer frame rest time observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
     ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
@@ -127,6 +131,8 @@ for i in range(len(t)):
         #observer frame angle corrected Kasen flux
         Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
+        if theta == thetas[0]:
+            Fks[i].append(Fk)
     #plot red corrected observer frame observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
     ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
@@ -149,7 +155,111 @@ for i in range(len(t)):
         #observer frame angle corrected Kasen flux
         Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
+        if theta == thetas[0]:
+            Fks[i].append(Fk)
     #plot red corrected observer frame observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
     ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
+plt.show()
+
+"""
+#Make plot of zero theta models over light curve
+f, ax = plt.subplots(len(t), sharex=True) 
+ax[-1].set_xlabel("Days into 2015", fontsize=14)
+#for each band
+for i in range(len(t)):
+    #plot light curve
+    M, M_err = Flux_toMag(Band[i],F[i]*1e-6,F_err[i]*1e-6)
+    Mlim = Flux_toMag(Band[i],Flim[i]*1e-6)
+    ax[i].errorbar(t[i],M,M_err,fmt='g+')
+    ax[i].scatter(tlim[i], Mlim, marker='v', c='r')
+    ax[i].set_ylabel(Band[i]+" mag", fontsize=14)
+    ax[i].set_ylim(25,18)
+    ax[i].yaxis.set_ticks([24,22,20])
+    #plot each zero theta model
+    for Fk in Fks[i]:
+        ts, Fs = tk[Fk>0], Fk[Fk>0]
+        Ms = Flux_toMag(Band[i],Fs*1e-6)
+        ax[i].plot(ts, Ms)
+f.subplots_adjust(hspace=0)
+plt.tight_layout()
+plt.show()
+
+#Make plot of probabilities against model type
+Mass = ['1RG', '6MS', '2MS']
+Prob = [6, 33, 56]
+index = np.arange(3)
+bar_width = 1.0
+f, ax = plt.subplots()
+ax.bar(index, Prob, bar_width, alpha=0.5, color=['b','g','r'])
+ax.xaxis.set_ticks(index + bar_width / 2)
+ax.set_xticklabels(Mass)
+ax.set_ylabel("% of allowed viewing angles", fontsize=14)
+ax.yaxis.set_label_position('right')
+ax.yaxis.tick_right()
+plt.tight_layout()
+plt.show()
+"""
+
+#Load Wang distribution
+Masses, Probs = np.loadtxt("Wang2010.txt", unpack=True)
+print Masses, Probs.sum()
+#For each mass, compute a13
+Radii = []
+for mass in Masses:
+    if mass > 1.0:
+        Radii.append(6.963*10**10*np.power(mass,0.57))
+    else:
+        Radii.append(6.963*10**10*np.power(mass,0.8))
+Radii = np.array(Radii)
+a13s = 5.0*Radii/10**13
+print a13s
+
+Probtheta = []
+for j in range(len(Masses)):
+    a13 = a13s[j]
+    print "Computing model:",Masses[j], a13
+    thetas = np.linspace(0,180,100)
+    mask = np.array([True]*len(thetas))
+    for i in range(len(t)):
+        #fit early light curve
+        for k, theta in enumerate(thetas):
+            #angle corrected Kasen luminosity
+            tk = t[i]
+            Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+            #observer frame angle corrected Kasen flux
+            Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+            #light curve constraint
+            Fk[0] = 0
+            if any(Fk>F[i]+F_err[i]):
+                mask[k] = False
+                
+            tk = tlim[i]
+            Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+            #observer frame angle corrected Kasen flux
+            Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+            #light curve constraint
+            Fk[0] = 0
+            if any(Fk>Flim[i]):
+                mask[k] = False
+    Probtheta.append(float(len(thetas[mask]))/len(thetas))
+Probtheta = np.array(Probtheta)
+Probfinal = Probtheta*Probs
+print Probtheta
+print Probfinal.sum()
+
+
+index = np.arange(len(Masses))
+bar_width = 1.0
+
+f, ax = plt.subplots()
+ax.bar(index, Probfinal, bar_width, alpha=0.5, edgecolor='k', color='b')
+ax.xaxis.set_ticks(index[:10]*2)
+ax.set_xticklabels([0.0, 0.2, 0.4, 0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.0])
+ax.set_yticks([0.0, 0.1, 0.2])
+ax.set_xlabel("$M_{2} (M_{\odot})$", fontsize=14)
+ax.set_ylabel("Observing Probability", fontsize=14)
+ax.set_xlim(0.0,21)
+ax.set_ylim(0.0,0.25)
+plt.tight_layout()
 plt.show()
