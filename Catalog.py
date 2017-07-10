@@ -11,7 +11,7 @@
 import numpy as np
 
 #function: load AAVSO catalog from online
-def catAAVSO(RAo,DECo,fovam,band,out=catname):
+def catAAVSO(radeg,decdeg,fovam,band,out=False):
     import os
     from Vizier import *
 
@@ -24,7 +24,7 @@ def catAAVSO(RAo,DECo,fovam,band,out=catname):
         ID, RA, DEC, catM, catMerr, catLines = aavso_static(s, band) 
     else:
         #fetch file from online
-        ID, RA, DEC, catM, catMerr, catLines =  aavso(RAo,DECo,fovam,band,out=catname)
+        ID, RA, DEC, catM, catMerr, catLines =  aavso(radeg,decdeg,fovam,band,out)
     #filter out nans
     index = np.logical_or(np.isnan(catM), np.isnan(catMerr))
     return ID[index], RA[index], DEC[index], catM[index], catMerr[index]
