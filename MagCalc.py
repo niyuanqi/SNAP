@@ -177,7 +177,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     #crop values to mask
     ID, catX, catY, catRA, catDEC, catM, catMerr = ID[index], catX[index], catY[index], RA[index], DEC[index], catM[index], catMerr[index]
     if len(ID) == 0:
-        raise ImageError('No reference stars in image.')
+        raise PSFError('No reference stars in image.')
     if verbosity > 0:
         #output selected catalog stars
         print "Selected catalog star IDs:"
