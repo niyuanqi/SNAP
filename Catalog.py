@@ -15,16 +15,24 @@ def catAAVSO(radeg,decdeg,fovam,band,out=False):
     import os
     from Vizier import *
 
-    #check if file already present
-    if os.path.isfile(catname):
-        #file already present
-        f = open(catname, 'r')
-        s = f.read()
-        f.close()
-        ID, RA, DEC, catM, catMerr, catLines = aavso_static(s, band) 
+    #output file supplied?
+    if out:
+        #supplied output filename
+        #check if file already present
+        if os.path.isfile(out):
+            #file already present
+            f = open(out, 'r')
+            s = f.read()
+            f.close()
+            ID, RA, DEC, catM, catMerr, catLines = aavso_static(s, band) 
+        else:
+            #fetch file from online
+            ID, RA, DEC, catM, catMerr, catLines =  aavso(radeg,decdeg,fovam,band,out)
     else:
+        #output file not supplied
         #fetch file from online
         ID, RA, DEC, catM, catMerr, catLines =  aavso(radeg,decdeg,fovam,band,out)
+            
     #filter out nans
     index = np.logical_or(np.isnan(catM), np.isnan(catMerr))
     return ID[index], RA[index], DEC[index], catM[index], catMerr[index]
