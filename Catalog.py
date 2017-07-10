@@ -10,6 +10,25 @@
 #essential modules
 import numpy as np
 
+#function: load AAVSO catalog from online
+def catAAVSO(RAo,DECo,fovam,band,out=catname):
+    import os
+    from Vizier import *
+
+    #check if file already present
+    if os.path.isfile(catname):
+        #file already present
+        f = open(catname, 'r')
+        s = f.read()
+        f.close()
+        ID, RA, DEC, catM, catMerr, catLines = aavso_static(s, band) 
+    else:
+        #fetch file from online
+        ID, RA, DEC, catM, catMerr, catLines =  aavso(RAo,DECo,fovam,band,out=catname)
+    #filter out nans
+    index = np.logical_or(np.isnan(catM), np.isnan(catMerr))
+    return ID[index], RA[index], DEC[index], catM[index], catMerr[index]
+
 #function: load stable star location
 def catDiff(catname, band=False):
     #load stable reference star location

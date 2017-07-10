@@ -140,7 +140,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     
     #essential files
     from Catalog import*
-    from Vizier import*
     from Photometry import*
     from Astrometry import*
     
@@ -161,7 +160,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
         ID, RA, DEC, catM, catMerr = catDiff(catname,band=band)
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
-        ID, RA, DEC, catM, catMerr, catLines = aavso(RAo,DECo,fovam,band,out=catname)
+        ID, RA, DEC, catM, catMerr = catAAVSO(RAo,DECo,fovam,band,out=catname)
 
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
@@ -172,7 +171,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     index = np.logical_and(index, np.logical_and(catX > 15, catimage.shape[1]-catX > 15))
     index = np.logical_and(index, np.logical_and(catY > 15, catimage.shape[0]-catY > 15))
     #select unsaturated catalog stars
-    print catM[index]
     index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
     index = np.logical_and(index, catM < refmag)
