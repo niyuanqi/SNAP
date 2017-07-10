@@ -172,6 +172,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     index = np.logical_and(index, np.logical_and(catX > 15, catimage.shape[1]-catX > 15))
     index = np.logical_and(index, np.logical_and(catY > 15, catimage.shape[0]-catY > 15))
     #select unsaturated catalog stars
+    print catM[index]
     index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
     index = np.logical_and(index, catM < refmag)
