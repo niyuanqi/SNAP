@@ -34,7 +34,7 @@ def catAAVSO(radeg,decdeg,fovam,band,out=False):
         ID, RA, DEC, catM, catMerr, catLines =  aavso(radeg,decdeg,fovam,band,out)
             
     #filter out nans
-    index = np.logical_or(np.isnan(catM), np.isnan(catMerr))
+    index = np.invert(np.logical_or(np.isnan(catM), np.isnan(catMerr)))
     return ID[index], RA[index], DEC[index], catM[index], catMerr[index]
 
 #function: load stable star location
