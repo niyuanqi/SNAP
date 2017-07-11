@@ -202,7 +202,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, skypopt, skyN, x0, y0, fsize)
+        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
     elif FWHM == 0:
         print "Unable to plot, catastrophic failure to extract PSF"
 
@@ -280,7 +280,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
 
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, skypopt, skyN, x0, y0, fsize)
+        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
     elif FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
@@ -356,7 +356,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
 
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, skypopt, skyN, x0, y0, fsize)
+        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
     elif FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
@@ -367,7 +367,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         return [0]*5, [0]*5, 0, [0]*3, skyN
 
 #function: plot PSF fitting
-def PSFplot(image, PSFpopt, skypopt, skyN, x0, y0, fsize):
+def PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize):
 
     import matplotlib.pyplot as plt
     
