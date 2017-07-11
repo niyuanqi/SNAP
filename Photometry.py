@@ -372,11 +372,11 @@ def PSFplot(image, PSFpopt, skypopt, skyN, x0, y0, fsize):
     import matplotlib.pyplot as plt
     
     #get fit parameters
-    A, Aerr = PSFpopt[0], PSFperr[0]
-    a, aerr = abs(PSFpopt[1]), PSFperr[1]
-    b, berr = PSFpopt[2], PSFperr[2]
-    X0, X0err = PSFpopt[3], PSFperr[3]
-    Y0, Y0err = PSFpopt[4], PSFperr[4]
+    A = PSFpopt[0]
+    a = abs(PSFpopt[1])
+    b = PSFpopt[2]
+    X0 = PSFpopt[3]
+    Y0 = PSFpopt[4]
     FWHM = moff_toFWHM(a, b)
     
     #compute PSF fit
