@@ -290,6 +290,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
         #ridiculous, try a foolproof fit
+        print "Unable to fit PSF to source, trying a simple scaling."
         return PSFscale(image, PSF0, Err0, x0, y0, verbosity)
 
 #function: scales PSF to source location
@@ -488,7 +489,7 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         print "\n"
         
     #graph photometry if verbosity is high enough
-    if verbosity > 1:
+    if verbosity > 1 and FWHM != 0:
         
         import matplotlib.pyplot as plt
     
@@ -525,6 +526,8 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
         f.subplots_adjust(hspace=0)
         plt.show()
+    elif FWHM == 0:
+        print "Unable to plot, FWHM of PSF is nonsensical"
 
     #return intensity, and signal to noise
     return Io, SNo
