@@ -39,7 +39,7 @@ class FitsError(Exception):
         #set error message as value
         return repr(self.value)
 
-def loadFits(filename, getwcs=False, verbosity=0):
+def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     """
     #################################################################
     # Desc: Load fits file for MagCalc.                             #
@@ -50,6 +50,8 @@ def loadFits(filename, getwcs=False, verbosity=0):
     # ------------------------------------------------------------- #
     #  filename: str fits filename to be opened                     #
     # verbosity; int counts verbosity level                         #
+    #    getwcs; boolean whether to return wcs                      #
+    #      year; int year to measure time to                        #
     # ------------------------------------------------------------- #
     # Output                                                        #
     # ------------------------------------------------------------- #
@@ -83,7 +85,7 @@ def loadFits(filename, getwcs=False, verbosity=0):
         raise FitsError('Unable to load fits data.')
 
     try: #calculate observation time in day of year
-        time = isot_day(Time(header['DATE-OBS']))
+        time = isot_day(Time(header['DATE-OBS']), int(year))
     except KeyError:
         time = 0
 
@@ -449,6 +451,7 @@ if __name__ == "__main__":
     parser.add_argument("catname", type=str, help="tab separated reference stars catalog file")
     parser.add_argument("-r", "--radius", type=float, default=1000.0, help="pixel radius in which to take reference stars")
     parser.add_argument("-o", "--source", type=str, default='object', help="target source name")
+    parser.add_argument("-y", "--year", type=int, default=2016, help="year in which source was observed")
     parser.add_argument("-b", "--band", type=str, default='V', help="image filter band")
     parser.add_argument("-p", "--position", type=str, help="RA:DEC as deg:deg")
     parser.add_argument("-fwhm", type=float, default=5.0, help="image fwhm upper bound")
