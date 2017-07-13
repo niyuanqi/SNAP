@@ -246,7 +246,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(np.sqrt(np.absolute(intens-sky))), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
@@ -324,7 +324,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)]]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(np.sqrt(np.absolute(intens-sky))), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
