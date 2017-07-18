@@ -27,6 +27,7 @@ print "Loading SN File"
 s = get_sn(sn_file)
 #s.z = z
 print s.z
+z_err = 0.005
 print 3663.0/(1+s.z), 8750/(1+s.z)
 
 #Bands in light curve
@@ -136,7 +137,8 @@ L_arnett = ArnettFit(t_arnett, *popt)
 plt.plot(t_arnett, L_arnett)
 plt.errorbar(tmax, Lmax, xerr=tmax_err, yerr=Lmax_err, fmt='r+')
 plt.show()
-logL_arnett = np.log10(L_arnett) 
+logL_arnett = np.log10(L_arnett)
+print max(logL_arnett)
 
 print "plotting peak fit"
 #plot Arnett fit

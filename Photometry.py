@@ -203,7 +203,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
         PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
-    elif FWHM == 0:
+    elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, catastrophic failure to extract PSF"
 
     #check if fit is ridiculous for bright object, give back no fit
@@ -281,7 +281,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
         PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
-    elif FWHM == 0:
+    elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
     #check if fit is ridiculous
@@ -357,7 +357,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
         PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
-    elif FWHM == 0:
+    elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
     #check if fit is ridiculous, give back no fit
