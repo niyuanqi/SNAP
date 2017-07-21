@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.optimize import leastsq
+from scipy.stats import norm
 from snpy import *
 
 #essential files
@@ -67,13 +68,13 @@ for i in range(len(F)):
     #get limiting magnitudes
     Mlim[i] = deredMag(Mlim[i], EBVgal, Coefs[i])
     Flim.append(Mag_toFlux(band[i], Mlim[i])*10**6)
-    tlim.append(t[i][SN[i]<2.0])
-    Flim[i] = Flim[i][SN[i]<2.0]
+    #tlim.append(t[i][SN[i]<2.0])
+    #Flim[i] = Flim[i][SN[i]<2.0]
 
     #get reliable detections
-    t[i] = t[i][SN[i]>=2.0]
-    F[i] = F[i][SN[i]>=2.0]
-    F_err[i] = F_err[i][SN[i]>=2.0]
+    #t[i] = t[i][SN[i]>=2.0]
+    #F[i] = F[i][SN[i]>=2.0]
+    #F_err[i] = F_err[i][SN[i]>=2.0]
     
 print "plotting early data"
 #plot
@@ -83,13 +84,14 @@ ax[1].set_ylabel("L/Lmax")
 for i in range(len(t)):
     #fit early light curve
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
-    ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
+    ax[i].scatter(t[i], Flim[i], marker='v', c='r')
 plt.show()
 
 print "Trial thetas:", np.linspace(0,180,10)
 tk = np.arange(0.001, 10, 0.001)
 Fks = [[],[],[]]
 ###################################################################
+
 
 print "Computing 1Ms RG Kasen model"
 M_comp = 1.0/1.4 #Mchandra
@@ -111,7 +113,7 @@ for i in range(len(t)):
             Fks[i].append(Fk)
     #plot red corrected observer frame rest time observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
-    ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
+    ax[i].scatter(t[i], Flim[i], marker='v', c='r')
 plt.show()
 
 print "Computing 6Ms MS Kasen model"
@@ -135,7 +137,7 @@ for i in range(len(t)):
             Fks[i].append(Fk)
     #plot red corrected observer frame observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
-    ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
+    ax[i].scatter(t[i], Flim[i], marker='v', c='r')
 plt.show()
 
 print "Computing 2Ms MS Kasen model"
@@ -159,10 +161,10 @@ for i in range(len(t)):
             Fks[i].append(Fk)
     #plot red corrected observer frame observed fluxes
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
-    ax[i].scatter(tlim[i], Flim[i], marker='v', c='r')
+    ax[i].scatter(t[i], Flim[i], marker='v', c='r')
 plt.show()
 
-"""
+
 #Make plot of zero theta models over light curve
 f, ax = plt.subplots(len(t), sharex=True) 
 ax[-1].set_xlabel("Days into 2015", fontsize=14)
@@ -172,7 +174,7 @@ for i in range(len(t)):
     M, M_err = Flux_toMag(Band[i],F[i]*1e-6,F_err[i]*1e-6)
     Mlim = Flux_toMag(Band[i],Flim[i]*1e-6)
     ax[i].errorbar(t[i],M,M_err,fmt='g+')
-    ax[i].scatter(tlim[i], Mlim, marker='v', c='r')
+    ax[i].scatter(t[i], Mlim, marker='v', c='r')
     ax[i].set_ylabel(Band[i]+" mag", fontsize=14)
     ax[i].set_ylim(25,18)
     ax[i].yaxis.set_ticks([24,22,20])
@@ -185,22 +187,49 @@ f.subplots_adjust(hspace=0)
 plt.tight_layout()
 plt.show()
 
-#Make plot of probabilities against model type
-Mass = ['1RG', '6MS', '2MS']
-Prob = [6, 33, 56]
-index = np.arange(3)
-bar_width = 1.0
-f, ax = plt.subplots()
-ax.bar(index, Prob, bar_width, alpha=0.5, color=['b','g','r'])
-ax.xaxis.set_ticks(index + bar_width / 2)
-ax.set_xticklabels(Mass)
-ax.set_ylabel("% of allowed viewing angles", fontsize=14)
-ax.yaxis.set_label_position('right')
-ax.yaxis.tick_right()
-plt.tight_layout()
-plt.show()
-"""
+#list of confidence intervals to traverse
+confs = np.arange(1,99,99)
+#list of sample models
+a13s = [2.0, 0.2, 0.05] #1RG, 6MS, 2MS
+#list of viewing angles
+thetas = np.linspace(0,180,100)
 
+#for each sample model
+for a13 in a13s:
+    #array to hold percent of viewing angles ruled out at each conf
+    outangles = np.zeros(len(confs))
+    #for each confidence interval
+    for j, conf in enumerate(confs):
+        #sigma needed to establish confidence below LC
+        sig = norm.ppf(conf/100.0)
+        #boolean mask for whether angle is ruled out to given confidence
+        mask = np.array([True]*len(thetas))
+        #for each band
+        for i in range(len(t)):
+            tk = t[i][t[i]>0]
+            Fobs = F[i][t[i]>0]
+            Ferr = F_err[i][t[i]>0]
+            #for each angle
+            for k, theta in enumerate(thetas):
+                #angle corrected Kasen luminosity
+                Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+                #observer frame angle corrected Kasen flux
+                Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                #total error
+                Err = np.square(Ferr)+np.square(Fk_err)
+                Err = np.array([np.sqrt(E) for E in Err])
+                #check if any points rule out angle with conf
+                if any(Fk > Fobs + sig*Err):
+                    mask[k] = False
+        #At this confidence level, we rule out some percent of angles
+        outangles[j] = 100.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
+    #At this a13, we can plot ruled out angles vs confidence
+    plt.plot(conf, outangles)
+    plt.xlim(0,100)
+    plt.ylim(0,100)
+plt.show()
+
+"""
 #Load Wang distribution
 Masses, Probs = np.loadtxt("Wang2010.txt", unpack=True)
 print Masses, Probs.sum()
@@ -234,7 +263,7 @@ for j in range(len(Masses)):
             if any(Fk>F[i]+F_err[i]):
                 mask[k] = False
                 
-            tk = tlim[i]
+            tk = t[i]
             Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
             #observer frame angle corrected Kasen flux
             Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
@@ -263,3 +292,4 @@ ax.set_xlim(0.0,21)
 ax.set_ylim(0.0,0.25)
 plt.tight_layout()
 plt.show()
+"""

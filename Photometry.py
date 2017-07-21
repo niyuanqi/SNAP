@@ -142,10 +142,10 @@ def PSFverify(PSFpopt, x0, y0):
         return True
 
 #function: extracts PSF from source
-def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
+def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
 
     from scipy.optimize import curve_fit
-    
+
     #fit sky background in an annulus
     skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
 
@@ -159,10 +159,12 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
     y = y.ravel()
     #filter out bad pixels
     x, y, intens = PSFclean(x, y, intens, skyN)
-    #get sky background
-    sky = D2plane((x,y),*skypopt)
-    #subtract sky background
-    intens = intens - sky
+    if fitsky:
+        #get sky background
+        sky = D2plane((x,y),*skypopt)
+        #subtract sky background
+        intens = intens - sky
+    
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm/0.7914,4.765,x0,y0]
@@ -202,7 +204,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
+        PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize)
     elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, catastrophic failure to extract PSF"
 
@@ -213,23 +215,17 @@ def PSFextract(image, x0, y0, fwhm=5.0, verbosity=0):
         return [0]*5, [0]*5, 0, [0]*3, skyN
     
 #function: fits PSF to source
-def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
+def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
 
     from scipy.optimize import curve_fit
 
-    #save original PSF
-    PSF0, Err0 = PSFpopt, PSFperr
-    
+    #get given fit parameters
+    a, aerr = abs(PSF[0]), PSFerr[0]
+    b, berr = PSF[1], PSFerr[1]
+    FWHM = moff_toFWHM(a, b)
+
     #fit sky background in an annulus
     skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
-    
-    #get given fit parameters
-    A, Aerr = PSFpopt[0], PSFperr[0]
-    a, aerr = abs(PSFpopt[1]), PSFperr[1]
-    b, berr = PSFpopt[2], PSFperr[2]
-    X0, X0err = PSFpopt[3], PSFperr[3]
-    Y0, Y0err = PSFpopt[4], PSFperr[4]
-    FWHM = moff_toFWHM(a, b)
     
     #get fit box to fit parameters to psf
     fsize = 3
@@ -239,10 +235,14 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     x, y = np.meshgrid(x, y)
     x = x.ravel()
     y = y.ravel()
-    #filter out cosmic rays
+    #filter out bad pixels
     x, y, intens = PSFclean(x, y, intens, skyN)
-    #get sky background
-    sky = D2plane((x,y),*skypopt)
+    if fitsky:
+        #get sky background
+        sky = D2plane((x,y),*skypopt)
+        #subtract sky background
+        intens = intens - sky
+    
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
@@ -280,7 +280,7 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
 
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
+        PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize)
     elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
@@ -291,10 +291,10 @@ def PSFfit(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     else:
         #ridiculous, try a foolproof fit
         print "Unable to fit PSF to source, trying a simple scaling."
-        return PSFscale(image, PSF0, Err0, x0, y0, verbosity)
+        return PSFscale(image, PSF, PSFerr, x0, y0, verbosity)
 
 #function: scales PSF to source location
-def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
+def PSFscale(image, PSF, PSFerr, x0, y0, verbosity=0):
     
     from scipy.optimize import curve_fit
     
@@ -302,11 +302,8 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
     
     #get given fit parameters
-    A, Aerr = PSFpopt[0], PSFperr[0]
-    a, aerr = abs(PSFpopt[1]), PSFperr[1]
-    b, berr = PSFpopt[2], PSFperr[2]
-    X0, X0err = PSFpopt[3], PSFperr[3]
-    Y0, Y0err = PSFpopt[4], PSFperr[4]
+    a, aerr = abs(PSF[0]), PSFerr[0]
+    b, berr = PSF[1], PSFerr[1]
     FWHM = moff_toFWHM(a, b)
     
     #get fit box to fit parameters to psf
@@ -317,10 +314,14 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
     x, y = np.meshgrid(x, y)
     x = x.ravel()
     y = y.ravel()
-    #filter out cosmic rays
+    #filter out bad pixels
     x, y, intens = PSFclean(x, y, intens, skyN)
-    #get sky background
-    sky = D2plane((x,y),*skypopt)
+    if fitsky:
+        #get sky background
+        sky = D2plane((x,y),*skypopt)
+        #subtract sky background
+        intens = intens - sky
+    
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)]]
@@ -356,7 +357,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
 
     #graph fits if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize)
+        PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize)
     elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
         
@@ -367,7 +368,7 @@ def PSFscale(image, PSFpopt, PSFperr, x0, y0, verbosity=0):
         return [0]*5, [0]*5, 0, [0]*3, skyN
 
 #function: plot PSF fitting
-def PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize):
+def PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize):
 
     import matplotlib.pyplot as plt
     
@@ -380,18 +381,24 @@ def PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize):
     FWHM = moff_toFWHM(a, b)
     
     #compute PSF fit
-    xt = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,0.1)
-    x = np.arange(x0-fsize*FWHM,x0+fsize*FWHM+1,dtype=int)
-    Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
+    xt = np.arange(X0-fsize*FWHM,X0+fsize*FWHM+1,0.1)
+    x = np.arange(X0-fsize*FWHM,X0+fsize*FWHM+1,dtype=int)
+    Ix_theo = D2moff((xt,np.array([int(Y0)]*len(xt))),*PSFpopt)
     Ix_im = np.array([image[int(Y0)][i] for i in x])
-    Ix_res = Ix_im - D2moff((x,np.array([int(Y0)]*len(x))),*PSFpopt)-D2plane((x,np.array([int(Y0)]*len(x))),*skypopt)
+    Ix_res = Ix_im - D2moff((x,np.array([int(Y0)]*len(x))),*PSFpopt)
     
-    yt = np.arange(y0-fsize*FWHM,y0+fsize*FWHM+1,0.1)
-    y = np.arange(y0-fsize*FWHM,y0+fsize*FWHM+1,dtype=int)
-    Iy_theo = D2moff((np.array([int(X0)]*len(yt)),yt),*PSFpopt)+D2plane((np.array([int(X0)]*len(yt)),yt),*skypopt)
+    yt = np.arange(Y0-fsize*FWHM,Y0+fsize*FWHM+1,0.1)
+    y = np.arange(Y0-fsize*FWHM,Y0+fsize*FWHM+1,dtype=int)
+    Iy_theo = D2moff((np.array([int(X0)]*len(yt)),yt),*PSFpopt)
     Iy_im = np.array([image[i][int(X0)] for i in y])
-    Iy_res = Iy_im - D2moff((np.array([int(X0)]*len(y)),y),*PSFpopt)-D2plane((np.array([int(X0)]*len(y)),y),*skypopt)
-    
+    Iy_res = Iy_im - D2moff((np.array([int(X0)]*len(y)),y),*PSFpopt)
+
+    if fitsky:
+        Ix_theo = Ix_theo+D2plane((xt,np.array([int(Y0)]*len(xt))),*skypopt)
+        Ix_res = Ix_res-D2plane((x,np.array([int(Y0)]*len(x))),*skypopt)
+        Iy_theo = Iy_theo+D2plane((np.array([int(X0)]*len(yt)),yt),*skypopt)
+        Iy_res = Iy_res-D2plane((np.array([int(X0)]*len(y)),y),*skypopt)
+        
     #plot psf moffat in X and Y slice side by side
     f, ax = plt.subplots(2, 2, sharex="col", sharey="row")
     ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
@@ -422,7 +429,7 @@ def PSFplot(image, PSFpopt, X2dof, skypopt, skyN, x0, y0, fsize):
     plt.show()
     
 #function: calculates photometric intensity and sky background using PSF
-def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
+def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
     #get some critical values
     A = PSFpopt[0]
     a = abs(PSFpopt[1])
@@ -454,9 +461,6 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         
         #extract PSF aperture
         PSF_extract, x, y = ap_get(image, x0, y0, 0, opt_r*FWHM)
-        #PSF_sky = D2plane((x,y),*skypopt)
-        #PSF_nosky = PSF_extract - PSF_sky
-        #xf, yf, PSF_final = PSFclean(x, y, PSF_nosky, skyN)
         #calculate PSF fit
         PSF_fit = D2moff((x,y),*PSFpopt)
         Io = np.sum(PSF_fit)
@@ -504,13 +508,15 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
 
             #extract PSF aperture
             PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
-            PSF_sky = D2plane((x,y),*skypopt)
-            PSF_nosky = PSF_extract - PSF_sky
+            #PSF_sky = D2plane((x,y),*skypopt)
+            #PSF_nosky = PSF_extract - PSF_sky
+            
             #calculate noise in aperture
             PSF_fit = D2moff((x,y),*PSFpopt)
             Is[i] = np.sum(PSF_fit)
-            PSF_res = np.square(PSF_fit-PSF_nosky)
-            sigmas[i] = np.sqrt(PSF_res.sum())
+            #PSF_res = np.square(PSF_fit-PSF_nosky)
+            #sigmas[i] = np.sqrt(PSF_res.sum())
+            sigmar = np.sqrt(np.absolute(Is) + (skyN**2)*PSF_fit.size)
         SNs = Is/sigmas
 
         f, ax = plt.subplots(2, sharex=True)
@@ -526,7 +532,73 @@ def photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
         f.subplots_adjust(hspace=0)
         plt.show()
-    elif FWHM == 0:
+    elif verbosity > 1 and FWHM == 0:
+        print "Unable to plot, FWHM of PSF is nonsensical"
+
+    #return intensity, and signal to noise
+    return Io, SNo
+
+#function: calculates photometric intensity and sky background using aperture
+def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=True, verbosity=0):
+    if radius is None:
+        #get some critical values
+        frac = 0.9 #Kron aperture light fraction
+        a = abs(PSF[0])
+        b = PSF[1]
+        FWHM = moff_toFWHM(a, b)
+        radius = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)/FWHM
+    #extract PSF aperture
+    PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
+    if fitsky:
+        #subtract sky background
+        PSF_sky = D2plane((x,y),*skypopt)
+        PSF_extract = PSF_extract - PSF_sky
+    #clean out bad pixels
+    xf, yf, PSF_final = PSFclean(x, y, PSF_extract, skyN)
+    #integrate aperture
+    Io = np.sum(PSF_final)
+    #proper signal to noise calculation for unscaled intensities
+    #noise is sqrt(intensity) is the best we can do
+    sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_extract.size)
+    SNo = Io/sigmar
+
+    #graph photometry if verbosity is high enough
+    if verbosity > 1 and FWHM != 0:
+        
+        import matplotlib.pyplot as plt
+    
+        #plot psf aperture to snr, intensity
+        ap_r = np.linspace(1.0/FWHM,3.0,100)
+        Is = np.zeros(len(ap_r))
+        sigmas = np.zeros(len(ap_r))
+        for i, radius in enumerate(ap_r):
+            #extract PSF aperture
+            PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
+            if fitsky:
+                #subtract sky background
+                PSF_sky = D2plane((x,y),*skypopt)
+                PSF_extract = PSF_extract - PSF_sky
+            #clean out bad pixels
+            xf, yf, PSF_final = PSFclean(x, y, PSF_extract, skyN)
+            #integrate aperture
+            Is[i] = np.sum(PSF_final)
+            sigmar = np.sqrt(np.absolute(Is) + (skyN**2)*PSF_fit.size)
+        SNs = Is/sigmas
+
+        f, ax = plt.subplots(2, sharex=True)
+        ax[0].set_title("Aperture Signal to Noise")
+        ax[0].plot(ap_r,SNs,label='SNR')
+        ax[0].set_ylabel("SN")
+        ax[0].legend()
+        ax[1].errorbar(ap_r,Is,yerr=sigmas,fmt='r+',label='summed intens')
+        ax[1].set_ylabel("I")
+        ax[1].set_xlabel("Aperture R (FWHM)")
+        ax[1].legend()
+        plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
+        plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
+        f.subplots_adjust(hspace=0)
+        plt.show()
+    elif verbosity > 1 and FWHM == 0:
         print "Unable to plot, FWHM of PSF is nonsensical"
 
     #return intensity, and signal to noise

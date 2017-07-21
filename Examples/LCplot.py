@@ -33,8 +33,7 @@ tc, C, C_err = LCcolors(t, M, M_err)
 
 #plot
 f, ax = plt.subplots(len(t)+len(t)-1, sharex=True) 
-#ax[0].set_title("N300-1.Q2.Nova.005509D412-374216D5.150625-151103 Light Curve")
-ax[-1].set_xlabel("Days into 2015")
+ax[-1].set_xlabel("Days into 2016")
 
 for i in range(len(t)):
     #ax[i].errorbar(t1[i], M1[i], yerr=M1_err[i], fmt='r+', label='SrcExt')

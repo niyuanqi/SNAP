@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     else:
         return image, time
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, refmag=19.0, verbosity=0):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, refmag=19.0, fitsky=True, verbosity=0):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -119,6 +119,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     #   catname: str catalog name.                                      #
     # RAo, DECo: float equatorial coordinate of object in degrees.      #
     #    radius; float radius around object in which to take ref stars. #
+    #  aperture; float aperture around object in which to integrate     #
+    #            light. If None; PSF is integrated. If not a positive   #
+    #            number; then PSF is used to get Kron aperture.         #
     #      name; str name of object.                                    #
     #      band; char observational filter of data.                     #
     #      fwhm; float estimate of FWHM on image.                       #
@@ -126,6 +129,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     #            if 0.0, then no detection limits are calculated.       #
     #    satmag; float magnitude below which reference stars are        #
     #            considered to be saturated and hence not used.         #
+    #    fitsky; boolean, if True; fit for planar sky around source to  #
+    #            be subtracted from image before fitting/integrating.   #
     # verbosity; int counts verbosity level.                            #
     # ----------------------------------------------------------------- #
     # Output                                                            #
@@ -197,8 +202,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     n = len(catX)
     catI = np.zeros(n) #intensity list
     catSN = np.zeros(n) #signal to noise list
-    catpopt = [] #fits to catalog stars
-    catperr = [] #fit errors
+    catPSF = [] #PSF fits to catalog stars
+    catPSFerr = [] #fit errors
     if verbosity > 0:
         print "Calculating intensity for "+str(n)+" catalog stars."
 
@@ -210,8 +215,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(catimage, x0, y0, fwhm=fwhm, verbosity=verbosity-1)
-        I, SN = photometry(catimage, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky, verbosity=verbosity-1)
+        I, SN = PSF_photometry(catimage, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
         #check if reference stars are valid
         if I == 0 or SN == 0 or skyN == 0:
             raise PSFError('Unable to perform photometry on reference stars.')
@@ -219,10 +224,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
         catI[i] = I
         catSN[i] = SN
         #save catalog star fits
-        catpopt.append(PSFpopt)
-        catperr.append(PSFperr)
-    catpopt = np.array(catpopt)
-    catperr = np.array(catperr)
+        catPSF.append(PSFpopt[1], PSFpopt[2])
+        catPSF_err.append(PSFperr[1], PSFperr[2])
+    catPSF = np.array(catPSF)
+    catPSFerr = np.array(catPSFerr)
     """
     #diagnostic for SNR, N, I calculation routine
     #checks for wrong correlation between intensity and noise
@@ -250,20 +255,35 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, name='
     """
 
     #calculate average psf among reference stars
-    w = 1/np.square(catperr)
-    catpopt = (catpopt*w).sum(0)/w.sum(0)
-    catperr = np.sqrt(1/w.sum(0))
+    w = 1/np.square(catPSF)
+    catPSF = (catPSF*w).sum(0)/w.sum(0)
+    catPSFerr = np.sqrt(1/w.sum(0))
     if verbosity > 0:
-        print "Average PSF [A,a,b,X0,Y0,B] = "+str(catpopt)
-        print "parameter errors = "+str(catperr)
+        print "Average PSF [a,b] = "+str(catPSF)
+        print "Average FWHM = "+str(moff_toFWHM(*catPSF))
+        print "parameter errors = "+str(catPSFerr)
         print "\nMean SN of reference stars:",np.mean(catSN)
         print ""
 
     #calculate photometry for source object
     if verbosity > 0:
         print "Computing magnitude of source "+name
-    PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catpopt, catperr, Xo, Yo, verbosity=verbosity)
-    Io, SNo = photometry(image, Xo, Yo, PSFpopt, skypopto, skyNo, verbosity=verbosity)
+
+    #extract PSF to as great a degree as possible from source
+    PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catPSF, catPSFerr, Xo, Yo, fitsky=fitsky, verbosity=verbosity)
+    #check preferred intensity calculation method
+    if aperture is None:
+        #integrate PSF directly
+        Io, SNo = PSF_photometry(image, Xo, Yo, PSFpopt, skypopto, skyNo, verbosity=verbosity)
+    else:
+        #perform aperture photometry
+        if aperture <= 0:
+            #use FWHM of catPSF to define Kron aperture
+            Io, SNo = Ap_photometry(image, Xo, Yo, skypopto, skyNo, PSF=catPSF, fitsky=fitsky, verbosity=verbosity)
+        else:
+            #use aperture given directly
+            Io, SNo = Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
+        
     #check if source is valid
     if Io != 0 and SNo != 0 and skyNo != 0:
         #calculate relative flux of object wrt each reference star
@@ -450,6 +470,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--catalog", type=str, default='phot', help="reference stars catalog convention")
     parser.add_argument("catname", type=str, help="tab separated reference stars catalog file")
     parser.add_argument("-r", "--radius", type=float, default=1000.0, help="pixel radius in which to take reference stars")
+    parser.add_argument("-a", "--aperture", type=float, default=None, help="Aperture on which to perform aperture photometry. If not given, default is PSF photometry. If not a positive number, will use PSF to define Kron radius as aperture.")
     parser.add_argument("-o", "--source", type=str, default='object', help="target source name")
     parser.add_argument("-y", "--year", type=int, default=2016, help="year in which source was observed")
     parser.add_argument("-b", "--band", type=str, default='V', help="image filter band")
@@ -459,6 +480,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
     parser.add_argument("-f", "--refMag", type=float, default=19.0, help="Reliable lower bound for reference star brightness")
     parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
+    parser.add_argument("--fit_sky", action='store_const', const=True, default=False, help="Give this flag if it is desirable to fit for and subtract planar sky around the source.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
     
@@ -476,10 +498,10 @@ if __name__ == "__main__":
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
-        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.aperture, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.fit_sky, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr, Mlim
     else:
-        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.verbosity)
+        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), args.radius, args.aperture, args.source, args.band, args.fwhm, args.noiseSNR, args.satMag, args.refMag, args.fit_sky, args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr
