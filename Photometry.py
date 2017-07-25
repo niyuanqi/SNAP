@@ -184,14 +184,14 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm/0.7914,4.765,x0,y0]
-        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=1000000)
+        PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=1000000)
         try:
             #try to calculate fit error
             PSFperr = np.sqrt(np.diag(PSFpcov))
         except:
             try:
                 #take closer initial conditions
-                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(intens+skyN**2) , p0=PSFpopt, maxfev=100000)
+                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, maxfev=100000)
                 PSFperr = np.sqrt(np.diag(PSFpcov))
             except:
                 PSFperr = [0]*5
@@ -262,14 +262,14 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]*3
@@ -305,9 +305,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         #not ridiculous, give back fit
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
-        #ridiculous, try a foolproof fit
-        print "Unable to fit PSF to source, trying a simple scaling."
-        return PSFscale(image, PSF, PSFerr, x0, y0, fitsky=fitsky, verbosity=verbosity)
+        return [0]*5, [0]*5, 0, [0]*3, skyN
 
 #function: scales PSF to source location
 def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
@@ -341,14 +339,14 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)]]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]
@@ -417,22 +415,22 @@ def PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize):
         
     #plot psf moffat in X and Y slice side by side
     f, ax = plt.subplots(2, 2, sharex="col", sharey="row")
-    ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
+    ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(np.absolute(Ix_im)+skyN**2),fmt='r+', label='slice at Y='+str(int(Y0)))
     ax[0][0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
     ax[0][0].set_xlabel('x-pixel')
     ax[0][0].set_ylabel('data #')
     ax[0][0].set_xlim(min(x),max(x))
     ax[0][0].legend()
-    ax[1][0].errorbar(x,Ix_res,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='residuals')
+    ax[1][0].errorbar(x,Ix_res,yerr=np.sqrt(np.absolute(Ix_im)+skyN**2),fmt='r+', label='residuals')
     ax[1][0].plot(x,np.zeros(len(x)))
     ax[1][0].legend()
-    ax[0][1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
+    ax[0][1].errorbar(y,Iy_im,yerr=np.sqrt(np.absolute(Iy_im)+skyN**2),fmt='r+', label='slice at X='+str(int(X0)))
     ax[0][1].plot(yt, Iy_theo, label='fit X2/dof='+str(X2dof)[:6])
     ax[0][1].set_xlabel('y-pixel')
     ax[0][1].set_ylabel('data #')
     ax[0][1].set_xlim(min(y),max(y))
     ax[0][1].legend()
-    ax[1][1].errorbar(y,Iy_res,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='residuals')
+    ax[1][1].errorbar(y,Iy_res,yerr=np.sqrt(np.absolute(Iy_im)+skyN**2),fmt='r+', label='residuals')
     ax[1][1].plot(y,np.zeros(len(y)))
     ax[1][1].legend()
     f.subplots_adjust(wspace=0)
@@ -605,12 +603,12 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         
         #plot psf moffat in X and Y slice side by side
         f, ax = plt.subplots(1, 2, sharey="row")
-        ax[0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(y0)))
+        ax[0].errorbar(x,Ix_im,yerr=np.sqrt(np.absolute(Ix_im)+skyN**2),fmt='r+', label='slice at Y='+str(int(y0)))
         ax[0].set_xlabel('x-pixel')
         ax[0].set_ylabel('data #')
         ax[0].set_xlim(min(x),max(x))
         ax[0].legend()
-        ax[1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(x0)))
+        ax[1].errorbar(y,Iy_im,yerr=np.sqrt(np.absolute(Iy_im)+skyN**2),fmt='r+', label='slice at X='+str(int(x0)))
         ax[1].set_xlabel('y-pixel')
         ax[1].set_ylabel('data #')
         ax[1].set_xlim(min(y),max(y))
