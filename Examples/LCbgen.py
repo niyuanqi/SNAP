@@ -162,7 +162,7 @@ for i in range(len(bands)):
 
         if Mtest:
             try:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (RA,DEC), radius=radphot, aperture=0, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
                 
                 #check if MagCalc returns nonsense
                 if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):

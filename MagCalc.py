@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     else:
         return image, time
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, name='object', band='V', fwhm=5.0, limsnr=0.0, satmag=14.0, refmag=19.0, fitsky=True, verbosity=0):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, verbosity=0):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
