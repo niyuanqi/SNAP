@@ -119,27 +119,43 @@ def PSFclean(x,y,psf,skyN):
     return x, y, psf
 
 #function: check veracity of PSF fit
-def PSFverify(PSFpopt, x0, y0):
-    #extract values from PSF
-    A = PSFpopt[0]
-    a = abs(PSFpopt[1])
-    b = PSFpopt[2]
-    X0 = PSFpopt[3]
-    Y0 = PSFpopt[4]
-    FWHM = moff_toFWHM(a, b)
-    #check all manner of ridiculous scenarios
-    if FWHM > 20.0 or FWHM < 1.0:
-        #unphysical FWHM
-        return False
-    elif dist(X0,Y0,x0,y0)>10:
-        #not our source
-        return False
-    elif b <= 1.0:
-        #divergent PSF
-        return False
-    else:
-        #seems legit
-        return True
+def PSFverify(PSFpopt, x0=None, y0=None):
+    if len(PSFpopt) == 5: #moffat PSF
+        #extract values from PSF
+        A = PSFpopt[0]
+        a = abs(PSFpopt[1])
+        b = PSFpopt[2]
+        X0 = PSFpopt[3]
+        Y0 = PSFpopt[4]
+        FWHM = moff_toFWHM(a, b)
+        #check all manner of ridiculous scenarios
+        if FWHM > 20.0 or FWHM < 1.0:
+            #unphysical FWHM
+            return False
+        elif dist(X0,Y0,x0,y0)>10:
+            #not our source
+            return False
+        elif b <= 1.0:
+            #divergent PSF
+            return False
+        else:
+            #seems legit
+            return True
+    if len(PSFpopt) == 2: #moffat shape
+        #extract values from PSF
+        a = abs(PSFpopt[0])
+        b = PSFpopt[1]
+        FWHM = moff_toFWHM(a, b)
+        #check all manner of ridiculous scenarios
+        if FWHM > 20.0 or FWHM < 1.0:
+            #unphysical FWHM
+            return False
+        elif b <= 1.0:
+            #divergent PSF
+            return False
+        else:
+            #seems legit
+            return True
 
 #function: extracts PSF from source
 def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
@@ -158,7 +174,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
     x = x.ravel()
     y = y.ravel()
     #filter out bad pixels
-    x, y, intens = PSFclean(x, y, intens, skyN)
+    #x, y, intens = PSFclean(x, y, intens, skyN)
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
@@ -236,7 +252,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     x = x.ravel()
     y = y.ravel()
     #filter out bad pixels
-    x, y, intens = PSFclean(x, y, intens, skyN)
+    #x, y, intens = PSFclean(x, y, intens, skyN)
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
@@ -246,14 +262,14 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]*3
@@ -291,10 +307,10 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     else:
         #ridiculous, try a foolproof fit
         print "Unable to fit PSF to source, trying a simple scaling."
-        return PSFscale(image, PSF, PSFerr, x0, y0, verbosity)
+        return PSFscale(image, PSF, PSFerr, x0, y0, fitsky=fitsky, verbosity=verbosity)
 
 #function: scales PSF to source location
-def PSFscale(image, PSF, PSFerr, x0, y0, verbosity=0):
+def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     
     from scipy.optimize import curve_fit
     
@@ -315,7 +331,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, verbosity=0):
     x = x.ravel()
     y = y.ravel()
     #filter out bad pixels
-    x, y, intens = PSFclean(x, y, intens, skyN)
+    #x, y, intens = PSFclean(x, y, intens, skyN)
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
@@ -325,14 +341,14 @@ def PSFscale(image, PSF, PSFerr, x0, y0, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)]]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=est, maxfev=100000)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens-sky, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(intens+skyN**2), p0=fitpopt, maxfev=100000)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]
@@ -465,20 +481,21 @@ def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         PSF_fit = D2moff((x,y),*PSFpopt)
         Io = np.sum(PSF_fit)
 
+        #vestigial method: doesn't account for badness of fit
         #proper signal to noise calculation for unscaled intensities
         #noise is sqrt(intensity) is the best we can do
-        sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_fit.size)
-        SNo = Io/sigmar
+        #sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_fit.size)
+        #SNo = Io/sigmar
 
-        """
-        #vestigial method, moffat function is not good enough fit
-        #residual cant be used as noise, because it contains PSF
+        #Note: moffat function is not good enough fit
+        #residuals contain fit residuals dues to bad fit
         #calculate noise in aperture
+        PSF_sky = D2plane((x,y),*skypopt)
+        PSF_nosky = PSF_extract - PSF_sky
         PSF_res = np.square(PSF_fit-PSF_nosky)
         sigmao = np.sqrt(PSF_res.sum())
-        #calculate signal to noise for scaled intensities
-        SNr = Io/sigmao
-        """
+        SNo = Io/sigmao
+        
     else:
         print "Fit not viable for aperture photometry"
         Io = 0
@@ -508,15 +525,16 @@ def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
 
             #extract PSF aperture
             PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
-            #PSF_sky = D2plane((x,y),*skypopt)
-            #PSF_nosky = PSF_extract - PSF_sky
             
             #calculate noise in aperture
             PSF_fit = D2moff((x,y),*PSFpopt)
             Is[i] = np.sum(PSF_fit)
-            #PSF_res = np.square(PSF_fit-PSF_nosky)
-            #sigmas[i] = np.sqrt(PSF_res.sum())
-            sigmar = np.sqrt(np.absolute(Is) + (skyN**2)*PSF_fit.size)
+            #sigmas[i] = np.sqrt(np.absolute(Is[i]) + (skyN**2)*PSF_fit.size)
+
+            PSF_sky = D2plane((x,y),*skypopt)
+            PSF_nosky = PSF_extract - PSF_sky
+            PSF_res = np.square(PSF_fit-PSF_nosky)
+            sigmas[i] = np.sqrt(PSF_res.sum())
         SNs = Is/sigmas
 
         f, ax = plt.subplots(2, sharex=True)
@@ -546,26 +564,62 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         a = abs(PSF[0])
         b = PSF[1]
         FWHM = moff_toFWHM(a, b)
-        radius = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)/FWHM
+        radius = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)
     #extract PSF aperture
-    PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
+    PSF_extract, x, y = ap_get(image, x0, y0, 0, radius)
     if fitsky:
         #subtract sky background
         PSF_sky = D2plane((x,y),*skypopt)
         PSF_extract = PSF_extract - PSF_sky
     #clean out bad pixels
-    xf, yf, PSF_final = PSFclean(x, y, PSF_extract, skyN)
+    #xf, yf, PSF_final = PSFclean(x, y, PSF_extract, skyN)
     #integrate aperture
-    Io = np.sum(PSF_final)
+    Io = np.sum(PSF_extract)
     #proper signal to noise calculation for unscaled intensities
     #noise is sqrt(intensity) is the best we can do
     sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_extract.size)
     SNo = Io/sigmar
+    
+    if verbosity > 0:
+        print "\noutput values"
+        print "signal to noise: "+str(SNo)
+        print "full width half maximum: "+str(FWHM)
+        print "optimal at aperture: "+str(radius/FWHM)+"FWHM"
+        print "Pixel aperture radius: "+str(radius)
+        print "\n"
 
     #graph photometry if verbosity is high enough
     if verbosity > 1 and FWHM != 0:
-        
+
         import matplotlib.pyplot as plt
+
+        #compute PSF fit
+        x = np.arange(x0-radius,x0+radius+1,dtype=int)
+        Ix_im = np.array([image[int(y0)][i] for i in x])  
+        y = np.arange(y0-radius,y0+radius+1,dtype=int)
+        Iy_im = np.array([image[i][int(x0)] for i in y])
+        
+        if fitsky:
+            Ix_im = Ix_im-D2plane((x,np.array([int(y0)]*len(x))),*skypopt)
+            Iy_im = Iy_im-D2plane((np.array([int(x0)]*len(y)),y),*skypopt)
+        
+        #plot psf moffat in X and Y slice side by side
+        f, ax = plt.subplots(1, 2, sharey="row")
+        ax[0].errorbar(x,Ix_im,yerr=np.sqrt(Ix_im+skyN**2),fmt='r+', label='slice at Y='+str(int(y0)))
+        ax[0].set_xlabel('x-pixel')
+        ax[0].set_ylabel('data #')
+        ax[0].set_xlim(min(x),max(x))
+        ax[0].legend()
+        ax[1].errorbar(y,Iy_im,yerr=np.sqrt(Iy_im+skyN**2),fmt='r+', label='slice at X='+str(int(x0)))
+        ax[1].set_xlabel('y-pixel')
+        ax[1].set_ylabel('data #')
+        ax[1].set_xlim(min(y),max(y))
+        ax[1].legend()
+        f.subplots_adjust(wspace=0)
+        plt.suptitle("Aperture Section")
+        plt.show()
+        plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
+        plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
     
         #plot psf aperture to snr, intensity
         ap_r = np.linspace(1.0/FWHM,3.0,100)
@@ -582,7 +636,7 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
             xf, yf, PSF_final = PSFclean(x, y, PSF_extract, skyN)
             #integrate aperture
             Is[i] = np.sum(PSF_final)
-            sigmar = np.sqrt(np.absolute(Is) + (skyN**2)*PSF_fit.size)
+            sigmas[i] = np.sqrt(np.absolute(Is[i]) + (skyN**2)*PSF_final.size)
         SNs = Is/sigmas
 
         f, ax = plt.subplots(2, sharex=True)
