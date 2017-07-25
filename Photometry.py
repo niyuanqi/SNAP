@@ -551,7 +551,7 @@ def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
         f.subplots_adjust(hspace=0)
         plt.show()
     elif verbosity > 1 and FWHM == 0:
-        print "Unable to plot, FWHM of PSF is nonsensical"
+        print "Unable to plot, FWHM of PSF is nonsensical. Fit failed."
 
     #return intensity, and signal to noise
     return Io, SNo
@@ -653,7 +653,7 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         f.subplots_adjust(hspace=0)
         plt.show()
     elif verbosity > 1 and FWHM == 0:
-        print "Unable to plot, FWHM of PSF is nonsensical"
+        print "Unable to plot, FWHM of PSF is nonsensical. Aperture=0."
 
     #return intensity, and signal to noise
     return Io, SNo
