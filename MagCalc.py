@@ -451,7 +451,7 @@ def limitingM(ru, rl, limsnr, PSF, sno, skyN, catM, catMerr, catSN, catI, verbos
         #check convergence
         if abs(SNlim - limsnr) > 0.1:
             #prevent stack overflow
-            if level+1 > 10:
+            if level+1 > 20:
                 if verbosity > 0:
                     print "Convergence terminated to prevent stack overflow."
                 return float('NaN'), float('NaN'), float('NaN'), float('NaN')
