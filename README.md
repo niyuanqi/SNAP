@@ -19,19 +19,19 @@ Also requires latest astropy to function properly.
 
 **MagCalc.py :**
 
-Automatically performs differential photometry on given fits image files. It includes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. PSFs can be manipulated by a highly customizable set of flags. Can use provided reference star catalogs or can automatically query AAVSO (example given below). Can use a science image to perform reference star photometry while performing source photometry on a difference image with the same wcs and gain preferably constructed using DiffIm.py (example given below). 
+Automatically performs differential photometry on given fits image files. It uses functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. Operating conditions can be manipulated by a highly customizable set of flags. Can use provided reference star catalogs or can automatically query AAVSO (example given below). Can use a science image to perform reference star photometry while performing source photometry on a difference image with the same wcs and gain preferably constructed using DiffIm.py (example given below). Can perform either PSF photometry, automatic aperture photometry, or fixed aperture photometry. Can fit for background sky.
 
 Basic usage in command line (some samples)
 
-*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 example_image.fits catalog.csv*
+*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 0 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits catalog.csv*
 
-*% python -m SNAP.MagCalc -c aavso -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 example_image.fits -d example_diffIm.fits my_aavso_catalog_name.cat*
+*% python -m SNAP.MagCalc -c aavso -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 10 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits -d example_diffIm.fits my_aavso_catalog_name.cat*
 
-*% python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv*
+*% python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv*
 
-*% python -m SNAP.MagCalc -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
+*% python -m SNAP.MagCalc -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
 
-*% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
+*% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
 Try in terminal
 
@@ -119,7 +119,7 @@ Contains python functions for computing astrometric quantities, like angles and 
 
 **Catalog.py :**
 
-Contains python functions for parsing various differential photometric reference star catalogs.
+Contains python functions for parsing various differential photometric reference star catalogs. Can automatically query aavso for a catalog, given catalog name will be name of saved file. Can also use a custom catalog given in "diff" format with columns ID,RA,DEC,B,Berr,V,Verr,i,ierr with 'NA' string denoting missing values.
 
 **Photometry.py :**
 
