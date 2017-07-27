@@ -107,7 +107,7 @@ def moff_toFWHM(a,b):
 def moff_integrate(A,a,b,A_err=0,a_err=None,b_err=None,f=0.9):
     if b != 0 and np.power(2,1.0/b)-1 > 0:
         Int = f*np.pi*np.square(a)*A/(b-1)
-        opt_r = a*np.sqrt(np.power(1 - f,1/(1-b)) - 1)
+        opt_r = moff_aperture(a,b,f)
         if a_err is None or b_err is None:
             return Int, opt_r
         else:
@@ -116,6 +116,10 @@ def moff_integrate(A,a,b,A_err=0,a_err=None,b_err=None,f=0.9):
             return Int, sig, opt_r 
     else:
         return 0
+#function: find aperture containing f fraction of moffat light
+def moff_aperture(a,b,f=0.9):
+    return a*np.sqrt(np.power(1 - f,1/(1-b)) - 1)
+    
 
 #function: clean out cosmic rays and junk from PSF
 def PSFclean(x,y,psf,skyN):
