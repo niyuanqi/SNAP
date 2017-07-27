@@ -112,7 +112,7 @@ def moff_integrate(A,a,b,A_err=0,a_err=None,b_err=None,f=0.9):
             return Int, opt_r
         else:
             #calculate errors
-            sig = Int*np.sqrt((2*a_err/a)**2+(A_err/A)**2+(b_err/(b-1))**2)
+            sig = abs(Int)*np.sqrt((2*a_err/a)**2+(A_err/A)**2+(b_err/(b-1))**2)
             return Int, sig, opt_r 
     else:
         return 0
@@ -501,11 +501,11 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         print "\noutput values"
         print "signal to noise: "+str(SNo)
         print "full width half maximum: "+str(FWHM)
-        print "optimal at aperture: "+str(opt_r)+"FWHM"
+        print "Kron aperture: "+str(opt_r)+"FWHM"
         print "\n"
         
     #graph photometry if verbosity is high enough
-    if verbosity > 1 and FWHM != 0:
+    if verbosity > 1 and (FWHM != 0 or Io != 0):
         
         import matplotlib.pyplot as plt
     
@@ -514,22 +514,22 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         Is = np.zeros(len(ap_r))
         sigmas = np.zeros(len(ap_r))
         for i, radius in enumerate(ap_r):
-            #aperture = ap_synth(D2moff, PSFpopt, radius*FWHM)
-            #Is[i] = np.sum(aperture)
-            #sigmas[i] = np.sqrt(Is[i] + (skyN**2)*aperture.size)
-
+            """
             #extract PSF aperture
             PSF_extract, x, y = ap_get(image, x0, y0, 0, radius*FWHM)
-            
-            #calculate noise in aperture
+            #integrate aperture
             PSF_fit = D2moff((x,y),*PSFpopt)
-            Is[i] = np.sum(PSF_fit)
+            Is[i] =  np.sum(PSF_fit)
             #sigmas[i] = np.sqrt(np.absolute(Is[i]) + (skyN**2)*PSF_fit.size)
-
             PSF_sky = D2plane((x,y),*skypopt)
             PSF_nosky = PSF_extract - PSF_sky
             PSF_res = np.square(PSF_fit-PSF_nosky)
             sigmas[i] = np.sqrt(PSF_res.sum())
+            """
+
+            #integrate PSF to radius specified
+            f = 1 - np.power((radius*FWHM/a)**2+1,1-b)
+            Is[i], sigmas[i], ap = moff_integrate(A,a,b,Aerr,aerr,berr,f)
         SNs = Is/sigmas
 
         f, ax = plt.subplots(2, sharex=True)
@@ -545,8 +545,8 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
         f.subplots_adjust(hspace=0)
         plt.show()
-    elif verbosity > 1 and FWHM == 0:
-        print "Unable to plot, FWHM of PSF is nonsensical. Fit failed."
+    elif verbosity > 1 and (FWHM == 0 or Io == 0):
+        print "Unable to plot, critical error integrating PSF."
 
     #return intensity, and signal to noise
     return Io, SNo
