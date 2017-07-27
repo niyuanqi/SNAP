@@ -253,6 +253,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     if verbosity > 0:
         print "Number of reference stars used: "+str(len(catI))+"/"+str(n)
+    if float(len(catI))/n < 0.5:
+        #over half reference stars are invalid... how??
+        raise PSFError('Unable to perform photometry on reference stars.')
     catI = np.array(catI)
     catSN = np.array(catSN)
     catMag = np.array(catMag)
