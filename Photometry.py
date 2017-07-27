@@ -282,7 +282,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
                 fitperr = [0]*3
         #parameters fitted to source
         A, Aerr = fitpopt[0], fitperr[0]
-        X0, Y0err = fitpopt[1], fitperr[1]
+        X0, X0err = fitpopt[1], fitperr[1]
         Y0, Y0err = fitpopt[2], fitperr[2]
         PSFpopt = [A,a,b,X0,Y0]
         PSFperr = [Aerr,aerr,berr,X0err,Y0err]
