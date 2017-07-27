@@ -535,7 +535,6 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
             f = 1 - np.power((radius*FWHM/a)**2+1,1-b)
             Is[i], sigmas[i], ap = moff_integrate(A,a,b,Aerr,aerr,berr,f)
         SNs = Is/sigmas
-        print Is, sigmas
 
         f, ax = plt.subplots(2, sharex=True)
         ax[0].set_title("Aperture Signal to Noise")
