@@ -104,9 +104,16 @@ def moff_toFWHM(a,b):
     else:
         return 0
 #function: integrate moffat function
-def moff_integrate(A,a,b):
+def moff_integrate(A,a,b,A_err=0,a_err=None,b_err=None,f=0.9):
     if b != 0 and np.power(2,1.0/b)-1 > 0:
-        return np.pi*np.square(a)*A/(b-1)
+        Int = f*np.pi*np.square(a)*A/(b-1)
+        opt_r = a*np.sqrt(np.power(1 - f,1/(1-b)) - 1)
+        if a_err is None or b_err is None:
+            return Int, opt_r
+        else:
+            #calculate errors
+            sig = Int*np.sqrt((2*a_err/a)**2+(A_err/A)**2+(b_err/(b-1))**2)
+            return Int, sig, opt_r 
     else:
         return 0
 
@@ -443,11 +450,11 @@ def PSF_plot(image, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize):
     plt.show()
     
 #function: calculates photometric intensity and sky background using PSF
-def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
+def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
     #get some critical values
-    A = PSFpopt[0]
-    a = abs(PSFpopt[1])
-    b = PSFpopt[2]
+    A, Aerr = PSFpopt[0], PSFperr[0]
+    a, aerr = abs(PSFpopt[1]), PSFperr[1]
+    b, berr = PSFpopt[2], PSFperr[2]
     X0 = PSFpopt[3]
     Y0 = PSFpopt[4]
     FWHM = moff_toFWHM(a, b)
@@ -456,35 +463,22 @@ def PSF_photometry(image, x0, y0, PSFpopt, skypopt, skyN, verbosity=0):
     Io = 0
     SNo = 0
     opt_r = 0
+    #fraction of light to include (Kron)
+    frac = 0.9
     if PSFverify(PSFpopt, x0, y0):
-        #integrate moffat PSF to infinity
-        I_total = moff_integrate(A,a,b)
         #compute optimal aperture radius (90% source light)
-        frac = 0.9
-        I90 = frac*I_total
-        opt_r = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)/FWHM
+        Io, sigmao, opt_r = moff_integrate(A,a,b,Aerr,aerr,berr,frac)
+        opt_r = opt_r/FWHM
         #check if wings are too large to be sensical
         opt_r = min(opt_r, 3.0)
         #check if psf is too small
         opt_r = max(opt_r, 1.0/FWHM)
-        
-        #synthetic aperture containing PSF
-        #aperture = ap_synth(D2moff, PSFpopt, opt_r*FWHM)
-        #Io = np.sum(aperture)
-        #sigmao = np.sqrt(Io + (skyN**2)*aperture.size)
         
         #extract PSF aperture
         PSF_extract, x, y = ap_get(image, x0, y0, 0, opt_r*FWHM)
         #calculate PSF fit
         PSF_fit = D2moff((x,y),*PSFpopt)
         Io = np.sum(PSF_fit)
-
-        #vestigial method: doesn't account for badness of fit
-        #proper signal to noise calculation for unscaled intensities
-        #noise is sqrt(intensity) is the best we can do
-        #sigmar = np.sqrt(np.absolute(Io) + (skyN**2)*PSF_fit.size)
-        #SNo = Io/sigmar
-
         #Note: moffat function is not good enough fit
         #residuals contain fit residuals dues to bad fit
         #calculate noise in aperture

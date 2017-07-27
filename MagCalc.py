@@ -227,7 +227,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #check preferred intensity calculation method
             if aperture is None:
                 #integrate PSF directly
-                I, SN = PSF_photometry(catimage, x0, y0, PSFpopt, skypopt, skyN, verbosity=verbosity-1)
+                I, SN = PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=verbosity-1)
             else:
                 #perform aperture photometry
                 if aperture <= 0:
@@ -266,27 +266,29 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #checks for wrong correlation between intensity and noise
         import matplotlib.pyplot as plt
         plt.title("SNR calculation for various reference stars")
-        plt.scatter(catM, np.log(catSN), c='r')
-        plt.plot(catM, max(np.log(catSN))-(catM-min(catM))/2)
+        plt.scatter(catMag, np.log(catSN), c='r')
+        plt.plot(catMag, max(np.log(catSN))-(catMag-min(catMag))/2)
         plt.ylabel("log SNR")
         plt.xlabel("Mag (~log I)")
         plt.legend()
         plt.show()
         plt.title("Noise under various reference stars")
-        plt.scatter(catM, np.log(catI/catSN), c='r')
-        plt.plot(catM, max(np.log(catI/catSN))-(catM-min(catM))/2)
+        plt.scatter(catMag, np.log(catI/catSN), c='r')
+        plt.plot(catMag, max(np.log(catI/catSN))-(catMag-min(catMag))/2)
+        plt.plot(catMag, max(np.log(catI/catSN))-(catMag-min(catMag)))
         plt.ylabel("log Noise")
         plt.xlabel("Mag (~log I)")
         plt.legend()
         plt.show()
         plt.title("Intensity of various reference stars")
-        plt.scatter(catM, np.log(catI), c='r')
-        plt.plot(catM, max(np.log(catI))-(catM-min(catM)))
+        plt.scatter(catMag, np.log(catI), c='r')
+        plt.plot(catMag, max(np.log(catI))-(catM-min(catM)))
         plt.ylabel("log I")
         plt.xlabel("Mag (catalog)")
         plt.legend()
         plt.show()
     """
+    
         
     #calculate average psf among reference stars
     w = 1/np.square(catPSF)
@@ -318,7 +320,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     #check preferred intensity calculation method
     if aperture is None:
         #integrate PSF directly
-        Io, SNo = PSF_photometry(image, Xo, Yo, PSFpopt, skypopto, skyNo, verbosity=verbosity)
+        Io, SNo = PSF_photometry(image, Xo, Yo, PSFpopt, PSFperr, skypopto, skyNo, verbosity=verbosity)
     else:
         #perform aperture photometry
         if aperture <= 0:
@@ -355,19 +357,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #convert position to world coordinates
         Xp, Yp = PSFpopt[3], PSFpopt[4]
         RAo, DECo = wcs.all_pix2world(Xp, Yp, 0)
-    
-        #calculate magnitude of object wrt each reference star
-        #mi = catMag - 2.512*np.log10(Io/catI)
-        #mi_err = np.sqrt(np.square((2.512/np.log(10))*(1/catSN))+np.square(catMagerr))
-        #calculate weighted mean
-        #w = 1/np.square(mi_err)
-        #mo = np.sum(mi*w)/np.sum(w)
-        #mo_rand = np.sqrt(1/np.sum(w))
-        #mo_err = np.sqrt(np.square((2.512/np.log(10))*(1/SNo)) + mo_rand**2)
-
+        #calculate magnitude from flux
         mo = -2.512*np.log10(I/fluxes[bands[band]])
         mo_err = (2.512/np.log(10))*(I_err/I)
     else:
+        #bad source
         mo, mo_err = float('NaN'), float('NaN')
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
@@ -375,7 +369,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #sky noise properly estimated, calculate limiting magnitude
         ru = 10.0 #recursion seed
         rl = 0.1 #recursion seed
-        mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catPSF, skyNo, catMag, catMagerr, catSN, catI, verbosity)
+        mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catPSF, catPSFerr, skyNo, catMag, catMagerr, catSN, catI, verbosity)
         #return calculated magnitude, magnitude errors, and limiting magnitude
         return RAo, DECo, I, SNo, mo, mo_err, mlim
     elif limsnr != 0:
@@ -386,7 +380,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         return RAo, DECo, I, SNo, mo, mo_err
 
 #function: recursively calculates limiting magnitude by scaling PSF to SN3.0
-def limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
+def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, verbosity=0, level=0):
     """
     ##########################################################################
     # Desc: Recursively calculates limiting magnitude by scaling PSF to SNR. #
@@ -422,6 +416,7 @@ def limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity=0
     if len(PSF) == 2:
         #PSF is moffat
         a,b = PSF[0], PSF[1]
+        aerr, berr = PSFerr[0], PSFerr[1]
         A = np.mean(catSN)*(b-1)/np.pi/np.square(a)
         FWHM = moff_toFWHM(a,b)
         #estimate upper bound for factor shift
@@ -434,7 +429,8 @@ def limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity=0
         SN_trials = np.zeros(len(A_trials))
         #compute optimal aperture radius (90% source light)
         frac = 0.9
-        opt_r = a*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)/FWHM
+        I, sigma, opt_r = moff_integrate(A,a,b,a_err=aerr,b_err=berr,f=frac)
+        opt_r = opt_r/FWHM
         #check if wings are too large to be sensical
         opt_r = min(opt_r, 3.0)
         #check if psf is too small
@@ -454,7 +450,7 @@ def limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity=0
             I = np.sum(aperture)
             #sigma = np.sqrt(I + (skyN**2)*aperture.size)
             #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
-            sigma = np.sqrt(aperture.size*skyN**2)
+            sigma = np.sqrt(np.absolute(I) + aperture.size*skyN**2)
             SN = I/sigma
             #append to trials
             I_trials[j] = I
@@ -488,17 +484,17 @@ def limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity=0
                     print "mlim Monte Carlo inconvergent, refine.\n"
                 ru = A_trials[SN_trials>limsnr][0]/Aest
                 rl = A_trials[SN_trials<limsnr][-1]/Aest
-                return limitingM(ru, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
+                return limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
             elif SNUbound < limsnr:
                 #need to rise more to converge
                 if verbosity > 0:
                     print "mlim Monte Carlo inconvergent, upstep.\n"
-                return limitingM(ru*10.0, rl, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
+                return limitingM(ru*10.0, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
             elif SNLbound > limsnr:
                 #need to drop more to converge
                 if verbosity > 0:
                     print "mlim Monte Carlo inconvergent, downstep.\n"
-                return limitingM(ru, rl/10.0, limsnr, PSF, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
+                return limitingM(ru, rl/10.0, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, verbosity, level+1)
         else:
             #convergent
             return mlim, SNlim, ru, rl          

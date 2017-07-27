@@ -21,39 +21,41 @@ from Catalog import*
 from Photometry import*
 
 #object position
-RA = 140.92247
-DEC = -21.969278
+RA = 14.263303
+DEC = -37.039900
 #object name
-name = 'KSP-OT-1'
+name = 'N300-1.Q0.SN'
 #file prefix
-prefix = 'N2784-7.Q1.'
+prefix = 'N300-1.Q0.'
 #catalog to use
-catname = 'N2784-7.Q1.DPRS.cat'
+catname = 'N300_1_Q0_SN.csv'
 #type of catalog
-cattype = 'dprs'
+cattype = 'phot'
 #year observed
 year = 2015
 #current time
-t_now = "170509_1200"
+t_now = "170725_1500"
 #user running this code
 user = "Chris Ni"
 #noise level
 SNRnoise = 2.0
 #saturation level
 satlvl = 14.0
+#reliability lvl
+rellvl = 16.0
 #number of reference stars used in each band
 nrefs = [1,1,1]
 #SExtractor time series data files at source
-Bfile = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
-Vfile = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
-Ifile = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.txt"
 files = [Bfile, Vfile, Ifile]
 #photometric radius
-radphot = 1000.0
+radphot = 1500.0
 #output light curve filenames
-outBname = "N2784-7.Q1.B.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
-outVname = "N2784-7.Q1.V.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
-outIname = "N2784-7.Q1.I.092341D394-215809D4.150301_0131-150626_0842.0046-0375.0.0066.var.lc.CN_170509.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170725.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170725.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170725.txt"
 
 #observation filters
 bands = ['B','V','I']
@@ -178,7 +180,7 @@ for i in range(len(files)):
     if Mtest:
         try:
             
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, wcs, cattype, catname, (RA,DEC), radius=radphot, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
+            RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image, image, wcs, cattype, catname, (RA,DEC), radius=radphot, aperture=0, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, verbosity=0)
             
             #check if MagCalc returns nonsense
             if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):

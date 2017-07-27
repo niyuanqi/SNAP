@@ -64,6 +64,17 @@ def plotFits(image, rmax=1., rmin=0., title=None, invert=True, cmap='gray'):
         raise DataError([fits.HDUList,fits.PrimaryHDU,
                          fits.ImageHDU,np.ndarray])
 
+#function: plot fits images
+def genFits(filename):
+    """
+    Generate a blank HDUlist
+    Input------------------------------
+    filename  : name of HDUlist
+    """
+    print "gen"
+
+
+
 #function: replace fits hdu image with noise
 def map_Noise(hdulist, val, scale):
     """
@@ -106,3 +117,4 @@ def map_Noise(hdulist, val, scale):
                          fits.ImageHDU,np.ndarray])
     #return noise mapped hdu
     return out
+
