@@ -429,12 +429,14 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
         SN_trials = np.zeros(len(A_trials))
         #compute optimal aperture radius (90% source light)
         frac = 0.9
+        """
         I, sigma, opt_r = moff_integrate(A,a,b,a_err=aerr,b_err=berr,f=frac)
         opt_r = opt_r/FWHM
         #check if wings are too large to be sensical
         opt_r = min(opt_r, 3.0)
         #check if psf is too small
         opt_r = max(opt_r, 1.0/FWHM)
+        """
         #do photometry over synthetic sources for each A
         if verbosity > 0:
             print "Computing "+str(n)+" synthetic sources to find mlim"
@@ -443,12 +445,14 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
         for j in range(len(A_trials)):
             if verbosity > 2:
                 print "Computing "+str(j+1)+"/"+str(n)
+            
+            #integrate synthetic PSF
+            I, opt_r = moff_integrate(A_trials[j],a,b,f=frac)
             popt_trial = [A_trials[j],a,b,0,0]
             #get apertures around synthetic star
             aperture = ap_synth(D2moff, popt_trial, opt_r*FWHM)
             #photometry over synthetic aperture
-            I = np.sum(aperture)
-            #sigma = np.sqrt(I + (skyN**2)*aperture.size)
+            #I = np.sum(aperture)
             #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
             sigma = np.sqrt(np.absolute(I) + aperture.size*skyN**2)
             SN = I/sigma

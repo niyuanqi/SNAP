@@ -468,6 +468,8 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
     if PSFverify(PSFpopt, x0, y0):
         #compute optimal aperture radius (90% source light)
         Io, sigmao, opt_r = moff_integrate(A,a,b,Aerr,aerr,berr,frac)
+        SNo = Io/sigmao
+        """
         opt_r = opt_r/FWHM
         #check if wings are too large to be sensical
         opt_r = min(opt_r, 3.0)
@@ -487,6 +489,7 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         PSF_res = np.square(PSF_fit-PSF_nosky)
         sigmao = np.sqrt(PSF_res.sum())
         SNo = Io/sigmao
+        """
         
     else:
         print "Fit not viable for aperture photometry"
