@@ -450,7 +450,7 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
             I, opt_r = moff_integrate(A_trials[j],a,b,f=frac)
             popt_trial = [A_trials[j],a,b,0,0]
             #get apertures around synthetic star
-            aperture = ap_synth(D2moff, popt_trial, opt_r*FWHM)
+            aperture = ap_synth(D2moff, popt_trial, opt_r)
             #photometry over synthetic aperture
             #I = np.sum(aperture)
             #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
