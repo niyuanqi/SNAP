@@ -222,8 +222,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky, verbosity=verbosity-1)
         PSF, PSFerr = [PSFpopt[1], PSFpopt[2]], [PSFperr[1], PSFperr[2]]
         x0, y0 = PSFpopt[3], PSFpopt[4]
-        #Take only reference stars whose fits are good
-        if X2dof < 20 and moff_aperture(*PSF) < 3*moff_toFWHM(*PSF):
+        #Take only reference stars whose fits are sane
+        if moff_aperture(*PSF) < 3*moff_toFWHM(*PSF):
             #check preferred intensity calculation method
             if aperture is None:
                 #integrate PSF directly
