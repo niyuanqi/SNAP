@@ -89,13 +89,16 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             #read image
             image = make_stamp_image(filename, ra, dec, radius)
             #leave some space to place image from marker
+            print "Deciding marker placement"
             corner1 = [marker[0]+spacing, marker[1]+spacing]
             corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
+            print corner1, corner2
             if corner2[1] > width:
                 print "New row"
                 #go to new row
                 corner1 = [corner2[0]+spacing, spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
+                print corner1, corner2
             if corner2[0] > length:
                 print "New page"
                 #save current page
@@ -112,6 +115,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 textname = []
                 corner1 = [marker[0]+spacing, marker[1]+spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
+                print corner1, corner2
             print "Image stamped"
             paper[corner1[0]:corner2[0]][corner1[1]:corner2[1]] = image
             textloc.append(corner1[0], corner2[0])
