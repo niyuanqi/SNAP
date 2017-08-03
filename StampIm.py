@@ -102,7 +102,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 for j in range(len(textloc)):
                     plt.text(textloc[j][0], textloc[j][1], textname[j])
                 plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-                pdf.savefig()
+                pdf.savefig(papertype = 'a4')
                 plt.close()
                 #make new page
                 paper = np.zeros([length, width])
@@ -123,5 +123,5 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
         for j in range(len(textloc)):
             plt.text(textloc[j][0], textloc[j][1], textname[j])
         plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-        pdf.savefig()
+        pdf.savefig(papertype = 'a4')
         plt.close()
