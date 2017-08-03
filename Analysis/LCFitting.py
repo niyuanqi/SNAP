@@ -366,7 +366,7 @@ def planck(x, T):
     return (p_int/integ) #1/Hz, luminosity density
 
 #function: Kasen model of shock interaction with companion
-def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=1.0):
+def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     """This calculates the luminosity, Liso, and Teff for the Kasen2010 analytic models.
     This incorporates the parameterization of viewing angle from Olling 2015
     
@@ -388,22 +388,23 @@ def Kasen2010(t_day,a13,theta=0.,m_c=1,e_51=1,kappa=1.0):
     L_u = 1.69 # constant related to ejecta density profile.
     vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
     v9 = vt / 10**9
-    S_theta = Kasen_isocorr(theta)
 
     # Equations for Luminosity and Teff
     Lc_iso = 10**43 * a13 * m_c * v9**(7./4.) * kappa**(-3./4.) * t_day**(-1./2.) # (erg/s)
     Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35./36) * t_day**(-37./72.)
 
-    Lc_angle = Lc_iso * S_theta
+    Lc_iso = np.nan_to_num(Lc_iso)
+    Teff = np.nan_to_num(Teff)
 
-    return Lc_iso,Lc_angle,Teff #erg/s
+    return Lc_iso,Teff #erg/s
 
 #function: Kasen isotropic correction for viewing angle
 def Kasen_isocorr(theta):
+    #param theta: viewing angle (degrees) minimum at 180.
     return 0.982 * np.exp(-(theta/99.7)**2) + 0.018
 
 #function: Observable Kasen model
-def KasenFit(t_day,Lc_angle,Teff,wave,z,zerr):
+def KasenFit(Lc_angle,Teff,wave,z,zerr):
     #give wave in observer frame
 
     from Cosmology import *

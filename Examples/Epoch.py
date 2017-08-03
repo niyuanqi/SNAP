@@ -21,9 +21,9 @@ from SNAP.Analysis.Cosmology import*
 plot = False #plot polynomial fits to light curves
 
 #max magnitudes
-maxes = np.array([-18.7773,-18.9290,-18.5175])
+maxes = np.array([-18.8394,-19.0216,-18.2893])
 #redshift of N300-1.Q0.SN
-z = 0.056
+z = 0.057
 zerr = 0.005
 #Extinction coefficient (galactic) in each band S & F (2011)
 EBVgal = 0.107
@@ -31,9 +31,9 @@ Coefs = np.array([3.641, 2.682, 1.516])
 band = ['B','V','i']
 
 #N300-1.Q0.SN binned time series data files
-binBfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
-binVfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
-binIfile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
+binBfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+binVfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+binIfile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
 binfiles = [binBfile, binVfile, binIfile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
@@ -45,7 +45,7 @@ print "Loading reliable total light curve"
 #get absolute fluxes
 s = get_sn("N300-1.Q0.SN.txt")
 #don't plot fit
-#s.replot = 0
+s.replot = 0
 #fit model
 s.choose_model("EBV_model2", stype="st")
 print "Performing SNpy fit and conversion of LC to rest frame"
@@ -91,14 +91,19 @@ plt.show()
 
 print "Fitting power law to section of early light curve"
 #for each band crop to right section
-f = 0.45
+f = 0.52
 t = [time[L[i]<f] for i, time in enumerate(t)]
 L_err = [lerr[L[i]<f] for i, lerr in enumerate(L_err)]
 L = [l[l<f] for l in L]
 
+t1 = -20
+t2 = -8
+for i in range(len(t)):
+    t[i], L[i], L_err[i] = LCcrop(t[i], t1, t2, L[i], L_err[i])
+
 #plot
 f, ax = plt.subplots(3, sharex=True)
-ax[-1].set_xlabel("Time to maximum [rest-frame days]", fontsize = 14)
+ax[-1].set_xlabel("Time [rest-frame days]", fontsize = 14)
 ax[1].set_ylabel("L/Lmax", fontsize = 14)
 tT = np.linspace(t[0][0]-10, t[0][-1]+10, 1000)
 #fit for early light curve using leastsq
@@ -125,14 +130,15 @@ for i in range(len(t)):
     ax[i].plot(tT, LT[i])
     ax[i].set_xlim(-19.0,-7.0)
     ax[i].set_ylim(-0.1,1.0)
-ax[0].text(-18.5,0.8,'B', fontsize = 14)
-ax[1].text(-18.5,0.8,'V', fontsize = 14)
-ax[2].text(-18.5,0.8,'I', fontsize = 14)
+ax[0].text(-18.5,0.8,'B', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[1].text(-18.5,0.8,'V', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[2].text(-18.5,0.8,'I', fontsize = 14, fontstyle='italic', fontweight='bold')
+plt.tight_layout()
 plt.show()
 
 #plot residuals
 f, ax = plt.subplots(3, sharex=True)
-ax[-1].set_xlabel("Time to maximum [rest-frame days]", fontsize = 14)
+ax[-1].set_xlabel("Time [rest-frame days]", fontsize = 14)
 ax[1].set_ylabel("L/Lmax", fontsize = 14)
 for i in range(len(t)):
     #plot residuals
@@ -141,7 +147,8 @@ for i in range(len(t)):
     ax[i].plot(tT,[0]*len(tT),label='power fit')
     ax[i].set_xlim(-19.0,-7.0)
     ax[i].set_ylim(-0.09,0.09)
-ax[0].text(-18.5,0.05,'B', fontsize = 14)
-ax[1].text(-18.5,0.05,'V', fontsize = 14)
-ax[2].text(-18.5,0.05,'I', fontsize = 14)
+ax[0].text(-18.5,0.05,'B', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[1].text(-18.5,0.05,'V', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[2].text(-18.5,0.05,'I', fontsize = 14, fontstyle='italic', fontweight='bold')
+plt.tight_layout()
 plt.show()

@@ -1,7 +1,7 @@
 #################################################################
 # Name:     CropIm.py                                           #
 # Author:   Yuan Qi Ni                                          #
-# Date:     July, 25, 2017                                      #
+# Date:     July 25, 2017                                       #
 # Function: Program crops fits file to small, source centered   #
 #           square with dimension D.                            #
 #################################################################

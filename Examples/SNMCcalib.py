@@ -39,11 +39,11 @@ SNM = [SNB[SNB<90],SNV[SNV<90],SNi[SNi<90]]
 SNM_err = [SNB_err[SNB<90],SNV_err[SNV<90],SNi_err[SNi<90]]
 
 #don't plot fit
-s.replot = 0
+#s.replot = 0
 #arrays to store Monte Carlo values
 print "Performing Monte Carlo Calculations"
 z = np.linspace(0.035,0.075,N)
-#z = np.array([0.056])
+#z = np.array([0.057])
 Mdm = np.zeros([N,len(band)])
 Mdm_err = np.zeros([N,len(band)])
 dm, dm_err = np.zeros(N), np.zeros(N)
@@ -60,6 +60,7 @@ for i in range(N):
     s.choose_model("EBV_model2", stype="dm15")
     s.fit(band)
     s.kcorr()
+    print s.Tmax, s.e_Tmax
     dm[i] = s.dm15
     dm_err[i] = s.e_dm15
     #get max magnitude of light curve from model fit
@@ -88,6 +89,7 @@ for i in range(N):
     s.choose_model("EBV_model2", stype="st")
     s.fit(band)
     s.kcorr()
+    print s.Tmax, s.e_Tmax
     t, m, e, b = s.get_max(band, restframe=1, deredden=1, use_model=1)
     st[i] = s.st
     st_err[i] = s.e_st
@@ -125,13 +127,13 @@ error_kwargs = {"zorder":0}
 f, ax = plt.subplots(3,2)
 ax[1][0].set_ylabel(r"$M_{\lambda}-A_{\lambda}$", fontsize = 14)
 ax[2][1].set_xlabel(r"$\Delta M_{15}(B)$", fontsize = 14)
-ax[2][0].set_xlabel(r"$s_{BV}$", fontsize = 14)
-ax[0][0].text(0.3,-19.2,"B", fontsize = 14)
-ax[1][0].text(0.3,-19.2,"V", fontsize = 14)
-ax[2][0].text(0.3,-19.2,"I", fontsize = 14)
-ax[0][1].text(1.95,-19.2,"B", fontsize = 14)
-ax[1][1].text(1.95,-19.2,"V", fontsize = 14)
-ax[2][1].text(1.95,-19.2,"I", fontsize = 14)
+ax[2][0].set_xlabel(r"$s_{BV}$", fontsize = 16)
+ax[0][0].text(0.3,-19.2,"B", fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[1][0].text(0.3,-19.2,"V", fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[2][0].text(0.3,-19.2,"I", fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[0][1].text(1.95,-19.2,"B", fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[1][1].text(1.95,-19.2,"V", fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[2][1].text(1.95,-19.2,"I", fontsize = 14, fontstyle='italic', fontweight='bold')
 
 for i in range(len(band)):
     ax[i][1].errorbar(SNdm15[i],SNM[i], xerr=SNdm15_err[i],yerr=SNM_err[i], fmt='r+')
@@ -162,5 +164,4 @@ cbar_ax.set_yticks([0.035,0.045,0.055,0.065,0.075])
 cbar_ax.set_yticklabels(z,rotation=90)
 cb1 = mpl.colorbar.ColorbarBase(cbar_ax, cmap=cmap,norm=norm, orientation='vertical')
 cb1.set_label('Trial Redshifts', fontsize = 14)
-
 plt.show()

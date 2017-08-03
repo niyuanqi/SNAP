@@ -79,6 +79,10 @@ Try in terminal
 
 for explanation of flags and inputs
 
+**StampIm.py :**
+
+Contains functions for creating stamp png images and stamp collages from fits files.
+
 **AutoSEx.py :**
 
 Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create catalog files.

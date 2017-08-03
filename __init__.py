@@ -7,6 +7,7 @@ from Vizier import *
 from MagCalc import *
 from DiffIm import *
 from CropIm import *
+from StampIm import *
 from BinIm import *
 from AutoSEx import *
 from MatchPhot import *

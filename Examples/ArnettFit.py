@@ -36,8 +36,8 @@ band = ['B','V','i']
 EBVgal = 0.107
 Coefs = np.array([3.641, 2.682, 1.516])
 #Epoch of explosion
-t0 = -16.71
-t0_err = 0.52
+t0 = -17.66
+t0_err = 0.89
 
 s = get_sn("N300-1.Q0.SN.txt")
 #don't plot fit
@@ -103,8 +103,8 @@ x2diff = x2edge - x2cent
 print np.sqrt(x2cent)
 
 print "Fitting Arnett Function to Peak of LC"
-p1 = np.linspace(0.26,0.27,10)
-p2 = np.linspace(1.1,1.2,10)
+p1 = np.linspace(0.275,0.285,10)
+p2 = np.linspace(1.15,1.25,10)
 p1, p2 = np.meshgrid(p1, p2)
 p1 = p1.flatten()
 p2 = p2.flatten()
@@ -115,7 +115,8 @@ for i in range(len(p)):
     chi2[i] = np.square(ArnettMaxErr(p[i], tmax, tmax_err, Lmax, Lmax_err)).sum()
     print i, chi2[i]
 chiarg = (chi2-x2cent)<x2diff
-popt = p[chiarg].mean(axis=0)
+chimin = np.argmin(chi2)
+popt = p[chimin]
 perr = p[chiarg].std(axis=0)
 print popt, perr
 
@@ -149,7 +150,7 @@ plt.plot(t_arnett+t0, logL_arnett, c='r')
 #plt.errorbar(tB, sB, yerr=sBerr, marker='o', c='g')
 #plt.plot(t_arnett, L_arnett, c='r')
 plt.ylabel('$log_{10}(L)$ [erg/s]', fontsize = 14)
-plt.xlabel('Time to maximum [rest-frame days]', fontsize = 14)
+plt.xlabel('Time [rest-frame days]', fontsize = 14)
 plt.xlim(-20,40)
 plt.ylim(41,43)
 #plt.legend()

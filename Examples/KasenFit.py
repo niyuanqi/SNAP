@@ -22,29 +22,29 @@ from SNAP.Analysis.Cosmology import*
 plot = False #plot polynomial fits to light curves
 
 #Epoch
-t0 = -16.71
-t0err = 0.52
+t0 = -17.66
+t0err = 0.89
 #redshift of N300-1.Q0.SN
-z = 0.056
+z = 0.057
 zerr = 0.005
 #Extinction coefficient (galactic) in each band S & F (2011)
 EBVgal = 0.107
 Coefs = np.array([3.641, 2.682, 1.516])
 band = ['B','V','i']
 #max time
-Tmax = 281.3
+Tmax = 281.982
 #explosion parameters
-m_c = 1.17/1.4 #Mchandra
-e_51 = 0.85 #x10^51 ergs
+m_c = 1.24/1.4 #Mchandra
+e_51 = 0.90 #x10^51 ergs
 #bands
 band = ['B','V','i']
 Band = ['B','V','I']
 
 print "loading binned data"
 #N300-1.Q0.SN binned time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170505.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
 binfiles = [Bfile, Vfile, Ifile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
@@ -92,7 +92,6 @@ tk = np.arange(0.001, 10, 0.001)
 Fks = [[],[],[]]
 ###################################################################
 
-
 print "Computing 1Ms RG Kasen model"
 M_comp = 1.0/1.4 #Mchandra
 a13 = 2.0 #10^13cm
@@ -105,9 +104,10 @@ for i in range(len(t)):
     thetas = np.linspace(0,180,10)
     for theta in thetas:
         #rest time angle corrected Kasen luminosity
-        Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+        Lk, Tk = Kasen2010(tk, a13, m_c, e_51)
+        Lk_theta = Lk*Kasen_isocorr(theta)
         #rest time observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
@@ -129,9 +129,10 @@ for i in range(len(t)):
     thetas = np.linspace(0,180,10)
     for theta in thetas:
         #angle corrected Kasen luminosity
-        Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+        Lk, Tk = Kasen2010(tk, a13, m_c, e_51)
+        Lk_theta = Lk*Kasen_isocorr(theta)
         #observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
@@ -153,9 +154,10 @@ for i in range(len(t)):
     thetas = np.linspace(0,180,10)
     for theta in thetas:
         #angle corrected Kasen luminosity
-        Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+        Lk, Tk = Kasen2010(tk, a13, m_c, e_51)
+        Lk_theta = Lk*Kasen_isocorr(theta)
         #observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
@@ -164,18 +166,20 @@ for i in range(len(t)):
     ax[i].scatter(t[i], Flim[i], marker='v', c='r')
 plt.show()
 
-
+print "Plotting zero theta models"
 #Make plot of zero theta models over light curve
 f, ax = plt.subplots(len(t), sharex=True) 
-ax[-1].set_xlabel("Days into 2015", fontsize=14)
+ax[-1].set_xlabel("Time since epoch (Days)", fontsize=14)
 #for each band
 for i in range(len(t)):
     #plot light curve
-    M, M_err = Flux_toMag(Band[i],F[i]*1e-6,F_err[i]*1e-6)
+    Fp, Fp_err = F[i][F[i]>0], F_err[i][F[i]>0]
+    tp = t[i][F[i]>0]
+    M, M_err = Flux_toMag(Band[i],Fp*1e-6,Fp_err[i]*1e-6)
     Mlim = Flux_toMag(Band[i],Flim[i]*1e-6)
-    ax[i].errorbar(t[i],M,M_err,fmt='g+')
+    ax[i].errorbar(tp,M,M_err,fmt='g+')
     ax[i].scatter(t[i], Mlim, marker='v', c='r')
-    ax[i].set_ylabel(Band[i]+" mag", fontsize=14)
+    ax[i].set_ylabel(Band[i], fontsize=14, fontstyle='italic', fontweight='bold')
     ax[i].set_ylim(25,18)
     ax[i].yaxis.set_ticks([24,22,20])
     #plot each zero theta model
@@ -184,16 +188,26 @@ for i in range(len(t)):
         Ms = Flux_toMag(Band[i],Fs*1e-6)
         ax[i].plot(ts, Ms)
 f.subplots_adjust(hspace=0)
-plt.tight_layout()
 plt.show()
 
+print "Computing viewing angles at each confidence interval"
 #list of confidence intervals to traverse
-confs = np.arange(1,99,99)
+confs = np.linspace(65,99.99,50)
 #list of sample models
 a13s = [2.0, 0.2, 0.05] #1RG, 6MS, 2MS
 #list of viewing angles
 thetas = np.linspace(0,180,100)
 
+Lk_terr = []
+for i in range(len(t)):
+    tk = t[i][t[i]>0]
+    #perturb time axis by error in epoch
+    dts = np.random.normal(0.0, t0err, 1000)
+    Lk_dif = np.zeros([len(dts), len(tk)])
+    for r, dt in enumerate(dts):
+        Lk_dif[r] = Kasen2010(tk+dt, a13, m_c, e_51)[0]
+    Lk_terr.append(Lk_dif.std(axis=0))
+    
 #for each sample model
 for a13 in a13s:
     #array to hold percent of viewing angles ruled out at each conf
@@ -202,6 +216,7 @@ for a13 in a13s:
     for j, conf in enumerate(confs):
         #sigma needed to establish confidence below LC
         sig = norm.ppf(conf/100.0)
+        print conf
         #boolean mask for whether angle is ruled out to given confidence
         mask = np.array([True]*len(thetas))
         #for each band
@@ -209,24 +224,35 @@ for a13 in a13s:
             tk = t[i][t[i]>0]
             Fobs = F[i][t[i]>0]
             Ferr = F_err[i][t[i]>0]
+            #get theoretical light curve
+            Lk, Tk = Kasen2010(tk, a13, m_c, e_51)
             #for each angle
             for k, theta in enumerate(thetas):
                 #angle corrected Kasen luminosity
-                Lk, Lk_theta, Tk = Kasen2010(tk, a13, theta, m_c, e_51)
+                Lk_theta = Lk*Kasen_isocorr(theta)
                 #observer frame angle corrected Kasen flux
-                Fk, Fk_err = KasenFit(tk,Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                Fk, Fk_zerr = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                #epoch error
+                Lk_theta_terr = Lk_terr[i]*Kasen_isocorr(theta)
+                Fk_terr = KasenFit(Lk_theta_terr,Tk,wave_0[bands[band[i]]],z,zerr)[0]
+                #total error
+                Fk_err = np.square(Fk_terr)+np.square(Fk_zerr)
+                Fk_err = np.array([np.sqrt(f) for f in Fk_err])
                 #total error
                 Err = np.square(Ferr)+np.square(Fk_err)
                 Err = np.array([np.sqrt(E) for E in Err])
                 #check if any points rule out angle with conf
                 if any(Fk > Fobs + sig*Err):
                     mask[k] = False
+                else:
+                    print "Consistent!", conf, theta
         #At this confidence level, we rule out some percent of angles
         outangles[j] = 100.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     #At this a13, we can plot ruled out angles vs confidence
-    plt.plot(conf, outangles)
+    print confs, outangles
+    plt.plot(confs, outangles)
     plt.xlim(0,100)
-    plt.ylim(0,100)
+    plt.ylim(0,101)
 plt.show()
 
 """
