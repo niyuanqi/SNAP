@@ -37,14 +37,6 @@ def make_stamp_image(filename, ra, dec, radius=100):
     cX, cY = int(round(cX)), int(round(cY))
     image = image.T[cX-radius:cX+radius+1].T
     image = image[cY-radius:cY+radius+1]
-    
-    #2D plot image
-    #vmax = 0.001*np.amax(image)
-    #plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
-    #plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-    #plt.savefig(outname)
-    #plt.close()
-
     return image
 
 #function: create A4 collage of stamp images with filename as subtext
@@ -120,6 +112,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             print "Image stamped"
             paper[corner1[0]:corner2[0], corner1[1]:corner2[1]] = image
             textloc.append([corner1[0], corner2[0]])
+            textname.append(names[i])
         #all done? save current page
         vmax = scale*np.amax(paper)
         plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
