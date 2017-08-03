@@ -81,6 +81,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
     #make blank array of A4 paper
     paper = np.zeros([length, width])
     marker = [0,0]
+    plt.imshow(paper, extent=[0, width, 0, length])
 
     with PdfPages(outname) as pdf:
         #for each image, place onto A4 paper
@@ -91,20 +92,25 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             corner1 = [marker[0]+spacing, marker[1]+spacing]
             corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             if corner2[1] > width:
+                print "New row"
                 #go to new row
                 corner1 = [corner2[0]+spacing, spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             if corner2[0] > length:
+                print "New page"
                 #save current page
                 pdf.savefig()
                 plt.close()
                 #make new page
                 paper = np.zeros([length, width])
                 marker = [0,0]
+                plt.imshow(paper, extent=[0, width, 0, length])
                 corner1 = [marker[0]+spacing, marker[1]+spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
+            print "Image stamped"
             paper[corner1[0]:corner2[0]][corner1[1]:corner2[1]] = image
             #put name of file over image
+            plt.imshow(img, extent=[corner1[0], corner2[0], corner1[1], corner2[1]])
             plt.text(corner1[0], corner1[1], names[i])
         pdf.savefig()
         plt.close()
