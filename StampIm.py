@@ -113,7 +113,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 print corner1, corner2
             print "Image stamped"
             paper[corner1[0]:corner2[0], corner1[1]:corner2[1]] = image
-            textloc.append([corner1[1], corner1[0]+image.shape[0]+1])
+            textloc.append([corner1[1], corner1[0]+image.shape[0]+5])
             textname.append(names[i])
             marker = [corner2[0]+spacing, corner2[1]]
         #all done? save current page
@@ -122,7 +122,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
 
         vmax = scale*max([np.amax(paper) for paper in papers])
         for i in range(len(papers)):
-            fig = plt.figure(figsize=(8.27,11.69))
+            fig = plt.figure(figsize=(width,length))
             plt.imshow(papers[i], interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
             textloc = texts[i][0]
             textname = texts[i][1]
