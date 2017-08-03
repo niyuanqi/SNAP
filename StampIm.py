@@ -26,6 +26,7 @@ def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
     import numpy as np
     from astropy.io import fits
     from astropy.wcs import WCS
+    import matplotlib.pyplot as plt
 
     #load HDU image
     hdulist = fits.open(filename)
