@@ -70,7 +70,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
 
     #make blank array of A4 paper
     paper = np.zeros([length, width])
-    marker = [0,0]
+    marker = [length-1,0]
     textloc = []
     textname = []
 
@@ -84,16 +84,16 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             print image.shape
             #leave some space to place image from marker
             print "Deciding marker placement"
-            corner1 = [marker[0]+spacing, marker[1]+spacing]
+            corner1 = [marker[0]-spacing-image.shape[0], marker[1]+spacing]
             corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             print corner1, corner2
             if corner2[1] > width:
                 print "New row"
                 #go to new row
-                corner1 = [corner2[0]+spacing, spacing]
+                corner1 = [corner1[0]-spacing-image.shape[0], spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
                 print corner1, corner2
-            if corner2[0] > length:
+            if corner1[0] < 0:
                 print "New page"
                 #save current page
                 vmax = scale*np.amax(paper)
@@ -105,10 +105,10 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 plt.show()
                 #make new page
                 paper = np.zeros([length, width])
-                marker = [0,0]
+                marker = [length-1,0]
                 textloc = []
                 textname = []
-                corner1 = [marker[0]+spacing, marker[1]+spacing]
+                corner1 = [marker[0]-spacing-image.shape[0], marker[1]+spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
                 print corner1, corner2
             print "Image stamped"
