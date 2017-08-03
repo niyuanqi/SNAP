@@ -101,6 +101,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 plt.imshow(paper, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
                 for j in range(len(textloc)):
                     plt.text(textloc[j][0], textloc[j][1], textname[j])
+                plt.tight_layout()
                 pdf.savefig()
                 plt.close()
                 #make new page
@@ -121,5 +122,6 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
         plt.imshow(paper, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
         for j in range(len(textloc)):
             plt.text(textloc[j][0], textloc[j][1], textname[j])
+        plt.tight_layout()
         pdf.savefig()
         plt.close()
