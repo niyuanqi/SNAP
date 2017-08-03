@@ -68,6 +68,10 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
     width = int(8.5*ppi)
     length = int(11*ppi)
 
+    #a4 sheets
+    papers = []
+    texts = []
+
     #make blank array of A4 paper
     paper = np.zeros([length, width])
     marker = [length-1,0]
@@ -97,13 +101,8 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             if corner1[0] < 0:
                 print "New page"
                 #save current page
-                vmax = scale*np.amax(paper)
-                plt.imshow(paper, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
-                for j in range(len(textloc)):
-                    plt.text(textloc[j][0], textloc[j][1], textname[j])
-                plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-                pdf.savefig(papertype = 'a4')
-                plt.close()
+                papers.append(paper)
+                texts.append([textloc, textname])
                 #make new page
                 paper = np.zeros([length, width])
                 marker = [length-1,0]
@@ -118,10 +117,16 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             textname.append(names[i])
             marker = [corner2[0]+spacing, corner2[1]]
         #all done? save current page
-        vmax = scale*np.amax(paper)
-        plt.imshow(paper, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
-        for j in range(len(textloc)):
-            plt.text(textloc[j][0], textloc[j][1], textname[j])
-        plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-        pdf.savefig(papertype = 'a4')
-        plt.close()
+        papers.append(paper)
+        texts.append([textloc, textname])
+
+        vmax = scale*max([np.amax(paper for paper in papers)])
+        for i in range(len(papers)):
+            plt.imshow(papers[i], interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
+            textloc = texts[i][0]
+            textname = texts[i][1]
+            for j in range(len(textloc)):
+                plt.text(textloc[j][0], textloc[j][1], textname[j])
+            plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
+            pdf.savefig(papertype = 'a4')
+            plt.close()
