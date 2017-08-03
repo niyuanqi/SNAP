@@ -89,11 +89,11 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             image = make_stamp_image(filename, ra, dec, radius, scale)
             #leave some space to place image from marker
             corner1 = [marker[0]+spacing, marker[1]+spacing]
-            corner2 = [corner1[0]+image.size[0], corner1[1]+image.size[1]]
+            corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             if corner2[1] > width:
                 #go to new row
                 corner1 = [corner2[0]+spacing, spacing]
-                corner2 = [corner1[0]+image.size[0], corner1[1]+image.size[1]]
+                corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             if corner2[0] > length:
                 #save current page
                 pdf.savefig()
@@ -102,7 +102,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 paper = np.zeros([length, width])
                 marker = [0,0]
                 corner1 = [marker[0]+spacing, marker[1]+spacing]
-                corner2 = [corner1[0]+image.size[0], corner1[1]+image.size[1]]
+                corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
             paper[corner1[0]:corner2[0]][corner1[1]:corner2[1]] = image
             #put name of file over image
             plt.text(corner1[0], corner1[1], names[i])
