@@ -44,7 +44,7 @@ def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
     #2D plot image
     vmax = 0.001*np.amax(image)
     plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
-    plt.subplots_adjust(left=0.1, right=0.1, top=0.1, bottom=0.1)
+    plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
     plt.savefig(outfile)
     plt.close()
 
