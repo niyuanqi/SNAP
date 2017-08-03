@@ -36,9 +36,9 @@ def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
 
     cX, cY = wcs.all_world2pix(ra, dec, 0)
     cX, cY = int(round(cX)), int(round(cY))
-    image = image.T[cX-w:cX+w+1].T
-    image = image[cY-w:cY+w+1]
-    cX, cY = w, w
+    image = image.T[cX-radius:cX+radius+1].T
+    image = image[cY-radius:cY+radius+1]
+    cX, cY = radius, radius
     
     #2D plot image
     vmax = 0.001*np.amax(image)
@@ -48,7 +48,7 @@ def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
     plt.close()
 
 #function: create A4 collage of stamp images with filename as subtext
-def make_image_collage(files, outname, ppi=50, spacing=30):
+def make_image_collage(files, outname, ppi=100, spacing=50):
     """
     Makes stamp image pdf from fits file
     ------------------------------------
