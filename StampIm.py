@@ -77,6 +77,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
     with PdfPages(outname) as pdf:
         #for each image, place onto A4 paper
         for i, filename in enumerate(files):
+            print "Stamping",filename
             #read image
             image = make_stamp_image(filename, ra, dec, radius)
             print "Image size"
