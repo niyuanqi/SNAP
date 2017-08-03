@@ -119,7 +119,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 print corner1, corner2
             print "Image stamped"
             paper[corner1[0]:corner2[0], corner1[1]:corner2[1]] = image
-            textloc.append(corner1[0], corner2[0])
+            textloc.append([corner1[0], corner2[0]])
         #all done? save current page
         vmax = scale*np.amax(paper)
         plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
