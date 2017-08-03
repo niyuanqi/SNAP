@@ -122,11 +122,12 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
 
         vmax = scale*max([np.amax(paper) for paper in papers])
         for i in range(len(papers)):
+            fig = plt.figure(figsize=(8.27,11.69))
             plt.imshow(papers[i], interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
             textloc = texts[i][0]
             textname = texts[i][1]
             for j in range(len(textloc)):
                 plt.text(textloc[j][0], textloc[j][1], textname[j])
             plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-            pdf.savefig(papertype = 'a4')
+            pdf.savefig(fig)
             plt.close()
