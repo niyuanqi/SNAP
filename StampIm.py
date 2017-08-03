@@ -37,7 +37,6 @@ def make_stamp_image(filename, ra, dec, radius=100):
     cX, cY = int(round(cX)), int(round(cY))
     image = image.T[cX-radius:cX+radius+1].T
     image = image[cY-radius:cY+radius+1]
-    cX, cY = radius, radius
     
     #2D plot image
     #vmax = 0.001*np.amax(image)
@@ -88,6 +87,8 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
         for i, filename in enumerate(files):
             #read image
             image = make_stamp_image(filename, ra, dec, radius)
+            print "Image size"
+            print image.shape
             #leave some space to place image from marker
             print "Deciding marker placement"
             corner1 = [marker[0]+spacing, marker[1]+spacing]
