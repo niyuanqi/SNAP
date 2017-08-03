@@ -5,22 +5,21 @@
 # Function: Program makes png stamp images from fits files.     #
 #################################################################
 
-#function: make fits file into png stamp image
-def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
+#function: make fits file into stamp image array
+def make_stamp_image(filename, ra, dec, radius=100, scale=0.001):
     """
     Makes stamp image png from fits file
     ------------------------------------
     Inputs:
     ------------------------------------
     filename = string fits file to be made into stamp
-    outname = string output name of stamp png
     ra, dec = float degree position of center
     radius = float arcsec radius of image
     scale = float fraction of max intensity to set image scale 
     ------------------------------------
     Outputs:
     ------------------------------------
-    pdf file with outname
+    stamp image array
     """
 
     import numpy as np
@@ -42,14 +41,16 @@ def make_stamp_image(filename, outname, ra, dec, radius=100, scale=0.001):
     cX, cY = radius, radius
     
     #2D plot image
-    vmax = 0.001*np.amax(image)
-    plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
-    plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
-    plt.savefig(outname)
-    plt.close()
+    #vmax = 0.001*np.amax(image)
+    #plt.imshow(image, interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower')
+    #plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
+    #plt.savefig(outname)
+    #plt.close()
+
+    return image
 
 #function: create A4 collage of stamp images with filename as subtext
-def make_image_collage(files, outname, ppi=100, spacing=50):
+def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, ppi=100, spacing=50 ):
     """
     Makes stamp image pdf from fits file
     ------------------------------------
@@ -57,6 +58,9 @@ def make_image_collage(files, outname, ppi=100, spacing=50):
     ------------------------------------
     files = stamp images to be incorporated into collage
     outname = string output name of collage pdf
+    ra, dec = float degree position of center
+    radius = float arcsec radius of image
+    scale = float fraction of max intensity to set image scale 
     ppi = int pixels per inch of A4 paper
     spacing = float pixel minimum spacing between stamps
     ------------------------------------
@@ -66,7 +70,6 @@ def make_image_collage(files, outname, ppi=100, spacing=50):
     """
 
     import numpy as np
-    import matplotlib.image as mpimg
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
 
@@ -81,9 +84,9 @@ def make_image_collage(files, outname, ppi=100, spacing=50):
 
     with PdfPages(outname) as pdf:
         #for each image, place onto A4 paper
-        for filename in files:
+        for i, filename in enumerate(files):
             #read image
-            image = mpimg.imread(filename)
+            image = make_stamp_image(filename, ra, dec, radius, scale)
             #leave some space to place image from marker
             corner1 = [marker+spacing, marker+spacing]
             corner2 = [corner1[0]+image.size[0], corner1[1]+image.size[1]]
@@ -102,6 +105,6 @@ def make_image_collage(files, outname, ppi=100, spacing=50):
                 corner2 = [corner1[0]+image.size[0], corner1[1]+image.size[1]]
             paper[corner1[0]:corner2[0]][corner1[1]:corner2[1]] = image
             #put name of file over image
-            plt.text(corner1[0], corner1[1], filename[:-4])
+            plt.text(corner1[0], corner1[1], names[i])
         pdf.savefig()
         plt.close()
