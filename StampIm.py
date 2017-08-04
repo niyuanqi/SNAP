@@ -105,6 +105,7 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 #save current page
                 papers.append(paper)
                 texts.append([textloc, textname])
+                cents.append(centloc)
                 #make new page
                 paper = np.zeros([length, width])
                 marker = [length-1,0]
@@ -135,7 +136,11 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             centloc = cents[i]
             for j in range(len(textloc)):
                 plt.text(textloc[j][0], textloc[j][1], textname[j])
-                plt.Circle(centloc[j], spacing/2.0, color='k')
+                cX, cY = centloc[j][0], centloc[j][1]
+                plt.plot([cX-0.8*spacing,cX-0.4*spacing],[cY,cY],c='k',lw=3)
+                plt.plot([cX+0.4*spacing,cX+0.8*spacing],[cY,cY],c='k',lw=3)
+                plt.plot([cX,cX],[cY-0.8*spacing,cY-0.4*spacing],c='k',lw=3)
+                plt.plot([cX,cX],[cY+0.4*spacing,cY+0.8*spacing],c='k',lw=3)
             plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
             pdf.savefig(fig)
             plt.close()
