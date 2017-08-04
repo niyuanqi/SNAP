@@ -71,12 +71,14 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
     #a4 sheets
     papers = []
     texts = []
+    cents = []
 
     #make blank array of A4 paper
     paper = np.zeros([length, width])
     marker = [length-1,0]
     textloc = []
     textname = []
+    centloc = []
 
     with PdfPages(outname) as pdf:
         #for each image, place onto A4 paper
@@ -108,17 +110,20 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
                 marker = [length-1,0]
                 textloc = []
                 textname = []
+                centloc = []
                 corner1 = [marker[0]-spacing-image.shape[0], marker[1]+spacing]
                 corner2 = [corner1[0]+image.shape[0], corner1[1]+image.shape[1]]
                 print corner1, corner2
             print "Image stamped"
             paper[corner1[0]:corner2[0], corner1[1]:corner2[1]] = image
             textloc.append([corner1[1], corner1[0]+image.shape[0]+5])
+            centloc.append([corner1[1]+image.shape[0]/2.0, corner1[0]+image.shape[0]/2.0])
             textname.append(names[i])
             marker = [corner2[0]+spacing, corner2[1]]
         #all done? save current page
         papers.append(paper)
         texts.append([textloc, textname])
+        cents.append(centloc)
 
         vmax = scale*max([np.amax(paper) for paper in papers])
         for i in range(len(papers)):
@@ -127,8 +132,10 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
             plt.imshow(papers[i], interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
             textloc = texts[i][0]
             textname = texts[i][1]
+            centloc = cents[i]
             for j in range(len(textloc)):
                 plt.text(textloc[j][0], textloc[j][1], textname[j])
+                plt.Circle(centloc[j], spacing/2.0, color='k')
             plt.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0)
             pdf.savefig(fig)
             plt.close()
