@@ -31,9 +31,9 @@ Coefs = np.array([3.641, 2.682, 1.516])
 band = ['B','V','i']
 
 #N300-1.Q0.SN binned time series data files
-binBfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
-binVfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
-binIfile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+binBfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
+binVfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
+binIfile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
 binfiles = [binBfile, binVfile, binIfile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
@@ -96,6 +96,13 @@ t = [time[L[i]<f] for i, time in enumerate(t)]
 L_err = [lerr[L[i]<f] for i, lerr in enumerate(L_err)]
 L = [l[l<f] for l in L]
 
+#crop out early light section for reliable power indices
+#for i in range(len(t)):
+#    mask = np.logical_or(t[i]<-17.0,t[i]>-15.0)
+#    t[i] = t[i][mask]
+#    L_err[i] = L_err[i][mask]
+#    L[i] = L[i][mask]
+    
 t1 = -20
 t2 = -8
 for i in range(len(t)):

@@ -42,9 +42,9 @@ Band = ['B','V','I']
 
 print "loading binned data"
 #N300-1.Q0.SN binned time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170728.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
 binfiles = [Bfile, Vfile, Ifile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
@@ -85,6 +85,7 @@ for i in range(len(t)):
     #fit early light curve
     ax[i].errorbar(t[i],F[i],F_err[i],fmt='g+')
     ax[i].scatter(t[i], Flim[i], marker='v', c='r')
+    ax[i].plot(t[i],[0]*len(t[i]),'k')
 plt.show()
 
 print "Trial thetas:", np.linspace(0,180,10)
@@ -190,9 +191,10 @@ for i in range(len(t)):
 f.subplots_adjust(hspace=0)
 plt.show()
 
+
 print "Computing viewing angles at each confidence interval"
 #list of confidence intervals to traverse
-confs = np.linspace(65,99.99,50)
+confs = np.linspace(65,99.99,200)
 #list of sample models
 a13s = [2.0, 0.2, 0.05] #1RG, 6MS, 2MS
 #list of viewing angles
@@ -202,7 +204,7 @@ Lk_terr = []
 for i in range(len(t)):
     tk = t[i][t[i]>0]
     #perturb time axis by error in epoch
-    dts = np.random.normal(0.0, t0err, 1000)
+    dts = np.random.normal(0.0, t0err, 100)
     Lk_dif = np.zeros([len(dts), len(tk)])
     for r, dt in enumerate(dts):
         Lk_dif[r] = Kasen2010(tk+dt, a13, m_c, e_51)[0]
@@ -252,6 +254,71 @@ for a13 in a13s:
     print confs, outangles
     plt.plot(confs, outangles)
     plt.xlim(0,100)
+    plt.ylim(0,101)
+plt.show()
+
+
+print "Computing viewing angles at each separation distance"
+#list of sample models
+a13s = np.arange(0.05,5.0,0.05) #1RG, 6MS, 2MS
+confs = [68.0, 95.0, 99.7]
+#list of viewing angles
+thetas = np.linspace(0,180,100)
+
+Lk_terr = []
+for i in range(len(t)):
+    tk = t[i][t[i]>0]
+    #perturb time axis by error in epoch
+    dts = np.random.normal(0.0, t0err, 100)
+    Lk_dif = np.zeros([len(dts), len(tk)])
+    for r, dt in enumerate(dts):
+        Lk_dif[r] = Kasen2010(tk+dt, a13, m_c, e_51)[0]
+    Lk_terr.append(Lk_dif.std(axis=0))
+    
+#for each confidence interval
+for conf in confs:
+    #array to hold percent of viewing angles ruled out at each conf
+    outangles = np.zeros(len(a13s))
+    #sigma needed to establish confidence below LC
+    sig = norm.ppf(conf/100.0)
+    #for each sample model
+    for j, a13 in enumerate(a13s):
+        print a13
+        #boolean mask for whether angle is ruled out to given confidence
+        mask = np.array([True]*len(thetas))
+        #for each band
+        for i in range(len(t)):
+            tk = t[i][t[i]>0]
+            Fobs = F[i][t[i]>0]
+            Ferr = F_err[i][t[i]>0]
+            #get theoretical light curve
+            Lk, Tk = Kasen2010(tk, a13, m_c, e_51)
+            #for each angle
+            for k, theta in enumerate(thetas):
+                #angle corrected Kasen luminosity
+                Lk_theta = Lk*Kasen_isocorr(theta)
+                #observer frame angle corrected Kasen flux
+                Fk, Fk_zerr = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                #epoch error
+                Lk_theta_terr = Lk_terr[i]*Kasen_isocorr(theta)
+                Fk_terr = KasenFit(Lk_theta_terr,Tk,wave_0[bands[band[i]]],z,zerr)[0]
+                #total error
+                Fk_err = np.square(Fk_terr)+np.square(Fk_zerr)
+                Fk_err = np.array([np.sqrt(f) for f in Fk_err])
+                #total error
+                Err = np.square(Ferr)+np.square(Fk_err)
+                Err = np.array([np.sqrt(E) for E in Err])
+                #check if any points rule out angle with conf
+                if any(Fk > Fobs + sig*Err):
+                    mask[k] = False
+                else:
+                    print "Consistent!", a13, conf, theta
+        #At this confidence level, we rule out some percent of angles
+        outangles[j] = 100.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
+    #At this conf, we can plot ruled out angles vs a13
+    print conf, outangles
+    plt.plot(a13s, outangles)
+    plt.xlim(0,5)
     plt.ylim(0,101)
 plt.show()
 

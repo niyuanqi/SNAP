@@ -127,10 +127,11 @@ def make_image_collage(files, names, outname, ra, dec, radius=100, scale=0.001, 
         cents.append(centloc)
 
         vmax = scale*max([np.amax(paper) for paper in papers])
+        vmin = scale*min([np.amin(paper) for paper in papers])
         for i in range(len(papers)):
             print "plotting page",str(i+1)
             fig = plt.figure(figsize=(8.5, 11.0))
-            plt.imshow(papers[i], interpolation='nearest', vmin=0, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
+            plt.imshow(papers[i], interpolation='nearest', vmin=vmin, vmax=vmax, cmap='Greys', origin='lower', extent=[0, width-1, 0, length-1])
             textloc = texts[i][0]
             textname = texts[i][1]
             centloc = cents[i]
