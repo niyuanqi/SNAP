@@ -56,14 +56,14 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
     skyi, skyx, skyy = (outer_annulus, outer_x, outer_y) if outerB<innerB else (inner_annulus, inner_x, inner_y)
     #fit sky background
     try:
-        skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=[0,0,skyB], maxfev=100000)
+        skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=[0,0,skyB], maxfev=100000, absolute_sigma=True)
         try:
             #try to calculate fit error
             skyperr = np.sqrt(np.diag(skypcov))
         except:
             try:
                 #take closer initial conditions
-                skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=100000)
+                skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=100000, absolute_sigma=True)
                 skyperr = np.sqrt(np.diag(skypcov))
             except:
                 skyperr = [0]*3
@@ -202,7 +202,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
         except:
             try:
                 #take closer initial conditions
-                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, maxfev=100000)
+                PSFpopt, PSFpcov = curve_fit(D2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, maxfev=100000, absolute_sigma=True)
                 PSFperr = np.sqrt(np.diag(PSFpcov))
             except:
                 PSFperr = [0]*5
@@ -273,14 +273,14 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000, absolute_sigma=True)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000, absolute_sigma=True)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]*3
@@ -350,14 +350,14 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)]]
-        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000)
+        fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, maxfev=100000, absolute_sigma=True)
         try:
             #try to calculate fit error
             fitperr = np.sqrt(np.diag(fitpcov))
         except:
             try:
                 #take closer initial conditions
-                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000)
+                fitpopt, fitpcov = curve_fit(lambda (x, y),A: D2moff((x, y),A,a,b,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, maxfev=100000, absolute_sigma=True)
                 fitperr = np.sqrt(np.diag(fitpcov))
             except:
                 fitperr = [0]
