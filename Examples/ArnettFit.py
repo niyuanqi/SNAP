@@ -27,7 +27,9 @@ print "Loading SN File"
 s = get_sn(sn_file)
 #s.z = z
 print s.z
-z_err = 0.005
+z = s.z
+zerr = 0.003
+n = 50 #number of monte carlo trials
 print 3663.0/(1+s.z), 8750/(1+s.z)
 
 #Bands in light curve
@@ -36,8 +38,8 @@ band = ['B','V','i']
 EBVgal = 0.107
 Coefs = np.array([3.641, 2.682, 1.516])
 #Epoch of explosion
-t0 = -17.66
-t0_err = 0.89
+t0 = -17.73
+t0_err = 0.79
 
 s = get_sn("N300-1.Q0.SN.txt")
 #don't plot fit
@@ -46,37 +48,29 @@ s.replot = 0
 s.choose_model("EBV_model2", stype='st')
 s.fit(['B','V','i'])
 
-#luminosity distance
-dl = intDl(s.z)
-dlerr1 = intDl(s.z+z_err)
-dlerr2 = intDl(s.z-z_err)
-
-#distance modulus
-DM = 5.024*np.log10(dl/10)
-DMerr1 = 5.024*np.log10(dlerr1/10)
-DMerr2 = 5.024*np.log10(dlerr2/10)
-
-#Calculate Bolometric Luminosity
-tB, sB, fB, lB = s.bolometric(['B','V','i'], method='SED', refband='i',
+#calculate Bolometric Luminosity
+sBs = []
+dzs = np.random.normal(0,zerr,n)
+for i in range(n):
+    s.z = z+dzs[i]
+    print i, s.z
+    #luminosity distance
+    dl = intDl(s.z)
+    #distance modulus
+    DM = 5.024*np.log10(dl/10)
+    
+    tB, sB, fB, lB = s.bolometric(['B','V','i'], method='SED', refband='i',
                                   EBVhost=0, Rv=0, SED='H3',
                                   lam1=3663.0/(1+s.z),
                                   lam2=8750/(1+s.z),
                                   DM=DM,
                                   use_stretch=True)
-#calculate Bolometric Luminosity error
-t, sBerr1, f, l = s.bolometric(['B','V','i'], method='SED', refband='i',
-                                  EBVhost=0, Rv=0, SED='H3',
-                                  lam1=3663.0/(1+s.z+z_err),
-                                  lam2=8750/(1+s.z-z_err),
-                                  DM=DMerr1,
-                                  use_stretch=True)
-t, sBerr2, f, l = s.bolometric(['B','V','i'], method='SED', refband='i',
-                                  EBVhost=0, Rv=0, SED='H3',
-                                  lam1=3663.0/(1+s.z-z_err),
-                                  lam2=8750/(1+s.z-z_err),
-                                  DM=DMerr2,
-                                  use_stretch=True)
-sBerr = np.absolute((sBerr1-sBerr2)/2.0)
+    print len(sB)
+    sBs.append(sB)
+sBs = np.array(sBs)
+sB = sBs.mean(axis=0)
+sBerr = sBs.std(axis=0)
+
 tB, sB, sBerr = LCcrop(tB, -15, 30, sB, M_err=sBerr)
 #window in which to perform Arnett fit
 t1 = -10

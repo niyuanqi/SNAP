@@ -370,7 +370,7 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     """This calculates the luminosity, Liso, and Teff for the Kasen2010 analytic models.
     This incorporates the parameterization of viewing angle from Olling 2015
     
-    :param t_day: time array (days since explosion)
+    :param t_day: time (days since explosion in rest frame)
     :param a13: semi-major axis of binary separation (10^13 cm)
     :param theta: viewing angle (degrees) minimum at 180.
     :param m_c: ejecta mass in units of M_chandra. default = 1
@@ -384,39 +384,141 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     ti = (1.0e4 * a13 / v9) / 86400.0
     t_day = t_day - ti
 
-    # Set-up other parameters from inputs
-    L_u = 1.69 # constant related to ejecta density profile.
-    vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
-    v9 = vt / 10**9
+    #check validity of kasen
+    if t_day > 0:
+        # Set-up other parameters from inputs
+        L_u = 1.69 # constant related to ejecta density profile.
+        vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
+        v9 = vt / 10**9
 
-    # Equations for Luminosity and Teff
-    Lc_iso = 10**43 * a13 * m_c * v9**(7./4.) * kappa**(-3./4.) * t_day**(-1./2.) # (erg/s)
-    Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35./36) * t_day**(-37./72.)
-
-    Lc_iso = np.nan_to_num(Lc_iso)
-    Teff = np.nan_to_num(Teff)
-
+        # Equations for Luminosity and Teff
+        Lc_iso = 10**43 * a13 * m_c * v9**(7./4.) * kappa**(-3./4.) * t_day**(-1./2.) # (erg/s)
+        Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35./36) * t_day**(-37./72.)
+        
+        #Lc_iso[np.isnan(Lc_iso)] = 0
+        #Teff[np.isnan(Teff)] = 1
+    else:
+        Lc_iso = 0
+        Teff = 1000
     return Lc_iso,Teff #erg/s
+
+#function: Observable Kasen model from rest frame
+def KasenShift(Lc_angle,Teff,wave,z):
+    #give wave in observer frame
+
+    from Cosmology import intDl
+    
+    #luminosity distance [pc -> cm]
+    dl = intDl(z)*3.086*10**18
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    #kasen model in observer band
+    Lc_angle_wave = planck(wave/(1.0+z),Teff)*Lc_angle/Area
+    Lc_angle_wave = np.nan_to_num(Lc_angle_wave)
+    #ergs/s/Hz/cm^2, luminosity density in observer frame
+    #return in uJy, 10**29 uJy = 1 ergs/s/Hz/cm^2
+    return Lc_angle_wave*10**29
+
+#function: Kasen fitting functyion
+def KasenFit(t_day,a13,kappa,wave,m_c,e_51,z,t0):
+    #shift time to rest frame
+    t_rest = (t_day-t0)/(1+z)
+    #calculate Kasen luminosity in rest frame
+    Lk, Tk = Kasen2010(t_rest,a13,m_c,e_51,kappa)
+    #shift luminosity to observer frame flux in band
+    Fk = KasenShift(Lk,Tk,wave,z)
+    #return predicted flux in band
+    return Fk
 
 #function: Kasen isotropic correction for viewing angle
 def Kasen_isocorr(theta):
     #param theta: viewing angle (degrees) minimum at 180.
     return 0.982 * np.exp(-(theta/99.7)**2) + 0.018
 
-#function: Observable Kasen model
-def KasenFit(Lc_angle,Teff,wave,z,zerr):
-    #give wave in observer frame
+#function: rule out Kasen model to sig at angle theta
+def ruleout(F, Ferr, Fk, Fkerr, theta, sig):
+    #angle corrected Kasen luminosity
+    Fk_theta = Fk*Kasen_isocorr(theta)
+    Fk_theta_err = Fkerr*Kasen_isocorr(theta)
+    #total error
+    Err = np.sqrt(np.square(Ferr)+np.square(Fk_theta_err))
+    #check if any points rule out angle with conf
+    if any(Fk_theta > F + sig*Err):
+        return True
+    else:
+        return False
 
-    from Cosmology import *
+#function: Monte Carlo Error Analysis (independent gaussian errors)
+def MCerr(func, ins, params, errs, nums):
+    #func : function taking in parameters
+    #ins : list of inputs to function
+    #params : list of parameters to put into function
+    #err : list of error associated with parameters
+    #nums: list of number of trials to compute for each parameter
     
-    #luminosity distance [pc -> cm]
-    dl = intDl(z)*3.086*10**18
-    dlerr = (intDl(z+zerr)-intDl(z-zerr))*3.086*10**18/2.0
-    Area = 4.0*np.pi*np.square(dl) #cm^2
-    Area_err = 2*Area*dlerr/dl
-    #kasen model in observer band
-    Lc_angle_wave = planck(wave/(1.0+z),Teff)*Lc_angle/Area
-    Lc_angle_wave_err = Lc_angle_wave*Area_err/Area
-    #ergs/s/Hz/cm^2, luminosity density in observer frame
-    #return in uJy, 10**29 uJy = 1 ergs/s/Hz/cm^2
-    return Lc_angle_wave*10**29, Lc_angle_wave_err*10**29
+    n = len(params)
+    val_errs = np.zeros(n)
+    val_means = np.zeros(n)
+    #for each parameter
+    for i in range(n):
+        #perturb parameter N times by STD
+        trials = np.random.normal(params[i], errs[i], nums[i])
+
+        vals = np.zeros(nums[i])
+        #for each perturbation
+        for j in range(nums[i]):
+            #calculate value using perturbed perameter
+            trial_params = params
+            trial_params[i] = trials[j]
+            #perform processes in parallel
+            vals[j] = func(*(ins+trial_params))
+        #error associated with perturbation of parameter
+        val_errs[i] = vals.std()
+        val_means[i] = vals.mean()
+    #total summed error associated with all perturbation
+    val_err = np.sqrt(np.square(val_errs).sum())
+    #function evaluated at central values
+    val = val_means.mean()
+    #return value and error
+    return val, val_err
+
+#function: least chi2 fitting method
+def fit_leastchi2(p0, datax, datay, function, yerr):
+
+    from scipy.optimize import leastsq
+    
+    #define error function for leastsq
+    errfunc = lambda p, x, y: (function(x,p) - y)/yerr
+    # Fit
+    pfit, perr = optimize.leastsq(errfunc, p0, args=(datax, datay), full_output=0)
+    return pfit, perr
+
+#function: bootstrap fitting method (Pedro Duarte)
+def fit_bootstrap(p0, datax, datay, function, yerr, n=3000, nproc=4):
+
+    from multiprocessing import Pool
+    pool = Pool(nproc)
+
+    #fit chi2 first time
+    pfit, perr = fit_leastchi2(p0, datax, datay, function, yerr)
+    
+    # n random data sets are generated and fitted
+    randomDelta = np.random.normal(0., yerr, (n, len(datay)))
+    randomdataY = datay + randomDelta
+    #perform processes asynchronously
+    procs = [pool.apply_async(fit_leastchi2, [p0, datax, randY, function, yerr]) for randY in randomdataY]
+    ps = np.array([proc.get(timeout=10) for proc in procs])
+    pool.terminate()
+    #mean fit parameters
+    #mean_pfit = np.mean(ps,0)
+
+    # You can choose the confidence interval that you want for your
+    # parameter estimates: 
+    Nsigma = 1. # 1sigma gets approximately the same as methods above
+                # 1sigma corresponds to 68.3% confidence interval
+                # 2sigma corresponds to 95.44% confidence interval
+    err_pfit = Nsigma * np.std(ps,0) 
+
+    #pfit_bootstrap = mean_pfit
+    pfit_bootstrap = pfit
+    perr_bootstrap = err_pfit
+    return pfit_bootstrap, perr_bootstrap 

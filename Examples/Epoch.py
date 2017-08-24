@@ -24,7 +24,7 @@ plot = False #plot polynomial fits to light curves
 maxes = np.array([-18.8394,-19.0216,-18.2893])
 #redshift of N300-1.Q0.SN
 z = 0.057
-zerr = 0.005
+zerr = 0.003
 #Extinction coefficient (galactic) in each band S & F (2011)
 EBVgal = 0.107
 Coefs = np.array([3.641, 2.682, 1.516])
@@ -110,8 +110,8 @@ for i in range(len(t)):
 
 #plot
 f, ax = plt.subplots(3, sharex=True)
-ax[-1].set_xlabel("Time [rest-frame days]", fontsize = 14)
-ax[1].set_ylabel("L/Lmax", fontsize = 14)
+ax[-1].set_xlabel("Days from peak", fontsize = 14)
+ax[1].set_ylabel("Normalized Flux", fontsize = 14)
 tT = np.linspace(t[0][0]-10, t[0][-1]+10, 1000)
 #fit for early light curve using leastsq
 p0 = [-16.2, 0.0004,0.0004,0.0004, 2.0,2.0,2.0]
@@ -133,20 +133,21 @@ print "Fit Chi2", x2dof
 #plot fit
 for i in range(len(t)):
     #plot fluxes
-    ax[i].errorbar(t[i],L[i],L_err[i],fmt='g+')
-    ax[i].plot(tT, LT[i])
+    ax[i].errorbar(t[i],L[i],L_err[i],fmt='k+')
+    ax[i].plot(tT, LT[i], 'k-')
     ax[i].set_xlim(-19.0,-7.0)
-    ax[i].set_ylim(-0.1,1.0)
-ax[0].text(-18.5,0.8,'B', fontsize = 14, fontstyle='italic', fontweight='bold')
-ax[1].text(-18.5,0.8,'V', fontsize = 14, fontstyle='italic', fontweight='bold')
-ax[2].text(-18.5,0.8,'I', fontsize = 14, fontstyle='italic', fontweight='bold')
+    ax[i].set_ylim(-0.1,0.8)
+ax[0].text(-18.5,0.6,'B', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[1].text(-18.5,0.6,'V', fontsize = 14, fontstyle='italic', fontweight='bold')
+ax[2].text(-18.5,0.6,'I', fontsize = 14, fontstyle='italic', fontweight='bold')
+f.subplots_adjust(hspace=0)
 plt.tight_layout()
 plt.show()
 
 #plot residuals
 f, ax = plt.subplots(3, sharex=True)
-ax[-1].set_xlabel("Time [rest-frame days]", fontsize = 14)
-ax[1].set_ylabel("L/Lmax", fontsize = 14)
+ax[-1].set_xlabel("Days from peak", fontsize = 14)
+ax[1].set_ylabel("Normalized Flux", fontsize = 14)
 for i in range(len(t)):
     #plot residuals
     ax[i].errorbar(t[i],L[i]-earlyFit(t[i],t0,C[i],a[i]),L_err[i],fmt='g+')
@@ -157,5 +158,6 @@ for i in range(len(t)):
 ax[0].text(-18.5,0.05,'B', fontsize = 14, fontstyle='italic', fontweight='bold')
 ax[1].text(-18.5,0.05,'V', fontsize = 14, fontstyle='italic', fontweight='bold')
 ax[2].text(-18.5,0.05,'I', fontsize = 14, fontstyle='italic', fontweight='bold')
+f.subplots_adjust(hspace=0)
 plt.tight_layout()
 plt.show()

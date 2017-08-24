@@ -16,7 +16,7 @@ from SNAP.Analysis.Cosmology import *
 
 sn_file = "N300-1.Q0.SN.txt"
 ph_file = "Phillips_dm15+st_results.dat"
-N = 9 #number of Monte Carlo trials to run
+N = 18 #number of Monte Carlo trials to run
 #N=1
 plot = False #plot polynomial fits to light curves
 
@@ -42,7 +42,7 @@ SNM_err = [SNB_err[SNB<90],SNV_err[SNV<90],SNi_err[SNi<90]]
 #s.replot = 0
 #arrays to store Monte Carlo values
 print "Performing Monte Carlo Calculations"
-z = np.linspace(0.035,0.075,N)
+z = np.linspace(0.035,0.075,18)
 #z = np.array([0.057])
 Mdm = np.zeros([N,len(band)])
 Mdm_err = np.zeros([N,len(band)])
