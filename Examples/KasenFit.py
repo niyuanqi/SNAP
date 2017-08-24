@@ -13,7 +13,6 @@ from scipy.optimize import curve_fit
 from scipy.optimize import leastsq
 from scipy.stats import norm
 from multiprocessing import Pool
-from snpy import *
 
 #essential files
 from SNAP.Analysis.LCRoutines import*
