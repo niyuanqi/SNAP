@@ -440,7 +440,7 @@ def test_a13(a13, sig):
             #check if any points rule out angle with conf
             if ruleout(F[i], F_err[i], Fk, Fk_err, theta, sig):
                 mask[k] = False
-            else:
+            #else:
                 #print "Consistent!", band[i], a13, norm.cdf(sig), theta
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
