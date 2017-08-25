@@ -436,9 +436,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [100,100,100,100])
-            if r < 6:
-                plt.scatter(a13, Fk_err[r], marker=shapes[r], color=colors[i])
+                                     [1000,1000,1000,10000])
             #print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
