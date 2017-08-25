@@ -410,10 +410,12 @@ for n, conf in enumerate(confs):
     plt.tick_params(labelsize=14)
 plt.show()
 """
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
 a13s = np.arange(0.001,0.31,0.01) #1RG, 6MS, 2MS
 confs = [68.27, 95.45, 99.73]
+print [norm.ppf(conf/100.0) for conf in confs]
 #list of viewing angles
 thetas = np.linspace(0,180,50)
 
@@ -433,15 +435,15 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000,1000,1000,10000])
-            #print Fk[r], Fk_err[r]
+                                     [1000,1000,1000,100000])
+            print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
             if ruleout(F[i], F_err[i], Fk, Fk_err, theta, sig):
                 mask[k] = False
-            #else:
-                #print "Consistent!", band[i], a13, norm.cdf(sig), theta
+            else:
+                print "Consistent!", band[i], a13, norm.cdf(sig), theta
                 
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
@@ -453,7 +455,7 @@ outangles = []
 for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
-
+    
     pool = Pool(8)
     procs = []
     #for each sample model
