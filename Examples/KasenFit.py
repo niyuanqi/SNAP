@@ -412,7 +412,7 @@ plt.show()
 """
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,0.21,0.005) #1RG, 6MS, 2MS
+a13s = np.arange(0.001,0.31,0.005) #1RG, 6MS, 2MS
 confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,50)
@@ -433,8 +433,8 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [100,100,100,1000])
-            print Fk[r], Fk_err[r]
+                                     [100,100,100,100])
+            #print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
