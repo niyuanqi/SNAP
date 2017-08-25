@@ -417,6 +417,9 @@ confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,50)
 
+colors = ['b','g','r']
+shapes = ['^','v','<','>','o','s']
+
 #function: test a given a13
 def test_a13(a13, sig):
     print a13
@@ -434,6 +437,8 @@ def test_a13(a13, sig):
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
                                      [100,100,100,100])
+            if r < 6:
+                plt.scatter(a13, Fk_err, marker=shapes[r], color=colors[i])
             #print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
@@ -442,12 +447,13 @@ def test_a13(a13, sig):
                 mask[k] = False
             #else:
                 #print "Consistent!", band[i], a13, norm.cdf(sig), theta
-        
+                
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     return outangles
 
 style = ['k:', 'k--', 'k-']
+outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
@@ -459,12 +465,15 @@ for n, conf in enumerate(confs):
     for j, a13 in enumerate(a13s):
         procs.append(pool.apply_async(test_a13, [a13, sig]))
     #array to hold percent of viewing angles ruled out at each conf
-    outangles = [proc.get() for proc in procs]
+    outangles.append([proc.get() for proc in procs])
     pool.terminate()
+    plt.show()
     
     #At this conf, we can plot ruled out angles vs a13
     print conf, outangles
-    plt.plot(a13s, outangles, style[n])
+    
+for n, conf in enumerate(confs):
+    plt.plot(a13s, outangles[n], style[n])
 
 plt.xlim(0,1.0)
 plt.ylim(0,185)
