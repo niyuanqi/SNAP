@@ -433,7 +433,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [5,5,5,1000])
+                                     [5,5,5,10000])
             print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
@@ -441,7 +441,7 @@ def test_a13(a13, sig):
             if ruleout(F[i], F_err[i], Fk, Fk_err, theta, sig):
                 mask[k] = False
             else:
-                print "Consistent!", a13, sig, theta
+                print "Consistent!", band[i], a13, norm.cdf(sig), theta
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     return outangles
