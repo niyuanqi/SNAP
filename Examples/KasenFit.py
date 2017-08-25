@@ -412,13 +412,10 @@ plt.show()
 """
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,0.31,0.005) #1RG, 6MS, 2MS
+a13s = np.arange(0.001,0.31,0.01) #1RG, 6MS, 2MS
 confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,50)
-
-colors = ['b','g','r']
-shapes = ['^','v','<','>','o','s']
 
 #function: test a given a13
 def test_a13(a13, sig):
