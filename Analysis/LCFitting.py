@@ -454,7 +454,7 @@ def MCerr(func, ins, params, errs, nums):
     #params : list of parameters to put into function
     #err : list of error associated with parameters
     #nums: list of number of trials to compute for each parameter
-    
+    np.random.seed(0)
     n = len(params)
     val_errs = np.zeros(n)
     val_means = np.zeros(n)
