@@ -412,7 +412,7 @@ plt.show()
 """
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,0.21,0.005) #1RG, 6MS, 2MS
+a13s = np.arange(0.001,0.31,0.005) #1RG, 6MS, 2MS
 confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,100)
@@ -464,18 +464,21 @@ for n, conf in enumerate(confs):
     #At this conf, we can plot ruled out angles vs a13
     print conf, outangles
     plt.plot(a13s, outangles, style[n])
-    plt.xlim(0,1.0)
-    plt.ylim(0,185)
-    plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
-    plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
-    plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
-    plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
-    plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
-    plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
-    plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
-    plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
-    plt.tick_params(labelsize=14)
-plt.show()
+
+plt.xlim(0,1.0)
+plt.ylim(0,185)
+plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
+plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
+plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
+plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
+plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
+plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
+plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
+plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
+plt.tick_params(labelsize=14)
+plt.tight_layout()
+plt.savefig("kasen.pdf")
+#plt.show()
 
 """
 print Ls
