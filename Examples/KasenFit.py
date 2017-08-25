@@ -23,7 +23,7 @@ plot = False #plot polynomial fits to light curves
 
 #Epoch
 t0 = -18.74
-t0err = 0.84
+t0err = 0.64 #in rest frame
 #t0 = t0 + t0err
 #redshift of N300-1.Q0.SN
 z = 0.057
@@ -35,8 +35,8 @@ band = ['B','V','i']
 #max time
 Tmax = 281.982
 #explosion parameters
-m_c = 0.914 #1.28/1.4 Mchandra
-e_51 = 0.93 #x10^51 ergs
+m_c = 0.900 #1.26/1.4 Mchandra
+e_51 = 0.92 #x10^51 ergs
 m_c_err = 0.086
 e_51_err = 0.19
 #bands
@@ -412,10 +412,10 @@ plt.show()
 """
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,0.31,0.005) #1RG, 6MS, 2MS
-confs = [68.27, 95.45, 99.73]
+a13s = np.arange(0.001,0.21,0.005) #1RG, 6MS, 2MS
+confs = [68.27, 95.45]
 #list of viewing angles
-thetas = np.linspace(0,180,100)
+thetas = np.linspace(0,180,50)
 
 #function: test a given a13
 def test_a13(a13, sig):
@@ -477,8 +477,8 @@ plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
 plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
-plt.savefig("kasen.pdf")
-#plt.show()
+#plt.savefig("kasen.pdf")
+plt.show()
 
 """
 print Ls

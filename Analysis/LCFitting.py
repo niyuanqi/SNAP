@@ -421,7 +421,7 @@ def KasenShift(Lc_angle,Teff,wave,z):
 #function: Kasen fitting functyion
 def KasenFit(t_day,a13,kappa,wave,m_c,e_51,z,t0):
     #shift time to rest frame
-    t_rest = (t_day-t0)/(1+z)
+    t_rest = (t_day)/(1+z) - t0
     #calculate Kasen luminosity in rest frame
     Lk, Tk = Kasen2010(t_rest,a13,m_c,e_51,kappa)
     #shift luminosity to observer frame flux in band
@@ -482,32 +482,39 @@ def MCerr(func, ins, params, errs, nums):
     return val, val_err
 
 #function: least chi2 fitting method
-def fit_leastchi2(p0, datax, datay, function, yerr):
+def fit_leastchi2(p0, datax, datay, yerr, function, errfunc=False):
 
     from scipy.optimize import leastsq
     
-    #define error function for leastsq
-    errfunc = lambda p, x, y: (function(x,p) - y)/yerr
+    if not errfunc:
+        #define error function for leastsq
+        errfunc = lambda p, x, y, yerr: (function(x,p) - y)/yerr
+    else:
+        errfunc = function
+        
     # Fit
-    pfit, perr = optimize.leastsq(errfunc, p0, args=(datax, datay), full_output=0)
-    return pfit, perr
+    pfit, perr = leastsq(errfunc, p0, args=(datax, datay, yerr), full_output=0, maxfev=100000)
+    return pfit
 
 #function: bootstrap fitting method (Pedro Duarte)
-def fit_bootstrap(p0, datax, datay, function, yerr, n=3000, nproc=4):
+def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True, n=3000, nproc=4):
 
     from multiprocessing import Pool
     pool = Pool(nproc)
 
-    #fit chi2 first time
-    pfit, perr = fit_leastchi2(p0, datax, datay, function, yerr)
-    
-    # n random data sets are generated and fitted
-    randomDelta = np.random.normal(0., yerr, (n, len(datay)))
-    randomdataY = datay + randomDelta
+    popt = fit_leastchi2(p0, datax, datay[0], yerr, function, errfunc)
+
+    if perturb:
+        # n random data sets are generated and fitted
+        randomDelta = np.random.normal(0., yerr, (n, len(datay)))
+        randomdataY = datay + randomDelta
+    else:
+        randomdataY = datay
     #perform processes asynchronously
-    procs = [pool.apply_async(fit_leastchi2, [p0, datax, randY, function, yerr]) for randY in randomdataY]
+    procs = [pool.apply_async(fit_leastchi2, [p0, datax, randY, yerr, function, errfunc]) for randY in randomdataY]
     ps = np.array([proc.get(timeout=10) for proc in procs])
     pool.terminate()
+    
     #mean fit parameters
     #mean_pfit = np.mean(ps,0)
 
@@ -516,9 +523,10 @@ def fit_bootstrap(p0, datax, datay, function, yerr, n=3000, nproc=4):
     Nsigma = 1. # 1sigma gets approximately the same as methods above
                 # 1sigma corresponds to 68.3% confidence interval
                 # 2sigma corresponds to 95.44% confidence interval
-    err_pfit = Nsigma * np.std(ps,0) 
+    err_pfit = Nsigma * np.std(ps,0)
+    mean_pfit = np.mean(ps,0)
 
     #pfit_bootstrap = mean_pfit
-    pfit_bootstrap = pfit
+    pfit_bootstrap = popt
     perr_bootstrap = err_pfit
     return pfit_bootstrap, perr_bootstrap 

@@ -114,9 +114,21 @@ ax[-1].set_xlabel("Days from peak", fontsize = 14)
 ax[1].set_ylabel("Normalized Flux", fontsize = 14)
 tT = np.linspace(t[0][0]-10, t[0][-1]+10, 1000)
 #fit for early light curve using leastsq
-p0 = [-16.2, 0.0004,0.0004,0.0004, 2.0,2.0,2.0]
-x, cov_x, infodict, mesg, ier = leastsq(earlyMultiErr, p0, args=(t, L, L_err), full_output=1)
-err_x = np.sqrt(np.diag(cov_x))
+p0 = [-17.8, 0.003,0.003,0.004, 2.2,2.3,2.3]
+
+#for each band, perturb flux by flux errors
+n = 100000
+randomdataY = [L]
+for j in range(n):
+    L_pert = []
+    for i in range(len(t)):
+        L_pert.append(L[i] + np.random.normal(0., L_err[i], len(L[i])))
+    randomdataY.append(L_pert)
+x, err_x = fit_bootstrap(p0, t, randomdataY, L_err, earlyMultiErr, errfunc=True, perturb=False, n=3000, nproc=4)
+
+#x, cov_x, infodict, mesg, ier = leastsq(earlyMultiErr, p0, args=(t, L, L_err), full_output=1)
+#err_x = np.sqrt(np.diag(cov_x))
+
 t0, t0_err = x[0], err_x[0]
 C = [x[1],x[2],x[3]]
 C_err = [err_x[1],err_x[2],err_x[3]]

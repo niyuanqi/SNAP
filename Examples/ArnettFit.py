@@ -39,7 +39,7 @@ EBVgal = 0.107
 Coefs = np.array([3.641, 2.682, 1.516])
 #Epoch of explosion
 t0 = -17.73
-t0_err = 0.79
+t0_err = 0.64
 
 s = get_sn("N300-1.Q0.SN.txt")
 #don't plot fit
