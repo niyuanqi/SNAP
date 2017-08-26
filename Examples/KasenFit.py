@@ -75,7 +75,7 @@ for i in range(len(F)):
     #Flim[i] = Flim[i][SN[i]<2.0]
 
     #get useful times
-    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10, 6, F[i], F_err[i])
+    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
     
 print "plotting early data"
 #plot
