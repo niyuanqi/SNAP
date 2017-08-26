@@ -74,15 +74,13 @@ for i in range(len(F)):
     #tlim.append(t[i][SN[i]<2.0])
     #Flim[i] = Flim[i][SN[i]<2.0]
 
-    #get reliable detections
-    #t[i] = t[i][SN[i]>=2.0]
-    #F[i] = F[i][SN[i]>=2.0]
-    #F_err[i] = F_err[i][SN[i]>=2.0]
+    #get useful times
+    t[i], F[i], F_err[i] = LCcrop(t[i], -10, 6, F[i], F_err[i])
     
 print "plotting early data"
 #plot
 f, ax = plt.subplots(3, sharex=True)
-ax[-1].set_xlabel("t rest [days]")
+ax[-1].set_xlabel("t [days]")
 ax[1].set_ylabel("L/Lmax")
 for i in range(len(t)):
     #fit early light curve
@@ -435,7 +433,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000,1000,1000,100000])
+                                     [1000,1000,1000,1000000])
             print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
