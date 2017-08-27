@@ -76,7 +76,7 @@ for i in range(len(F)):
 
     #get useful times
     t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
-    
+"""   
 print "plotting early data"
 #plot
 f, ax = plt.subplots(3, sharex=True)
@@ -88,6 +88,7 @@ for i in range(len(t)):
     ax[i].scatter(t[i], Flim[i], marker='v', c='r')
     ax[i].plot(t[i],[0]*len(t[i]),'k')
 plt.show()
+"""
 
 print "Trial thetas:", np.linspace(0,180,10)
 tk = np.arange(0.001, 10, 0.001)
@@ -433,7 +434,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000,1000,1000,1000000])
+                                     [100,100,100,100])
             print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
@@ -482,8 +483,8 @@ plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
 plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
-#plt.savefig("kasen.pdf")
-plt.show()
+plt.savefig("kasen.pdf")
+#plt.show()
 
 """
 print Ls
