@@ -435,7 +435,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [10,10,10,10])
+                                     [1000,1000,1000,1000000])
             #print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
