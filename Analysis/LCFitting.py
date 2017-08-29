@@ -474,7 +474,7 @@ def MCerr(func, ins, params, errs, nums):
         #error associated with perturbation of parameter
         val_errs[i] = vals.std()
         val_means[i] = vals.mean()
-    print ins[1], ins[0], val_errs
+    #print ins[1], ins[0], val_errs
     #total summed error associated with all perturbation
     val_err = np.sqrt(np.square(val_errs).sum())
     #function evaluated at central values

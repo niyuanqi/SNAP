@@ -436,7 +436,7 @@ def test_a13(a13, sig):
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
                                      [10,10,10,10])
-            print Fk[r], Fk_err[r]
+            #print Fk[r], Fk_err[r]
         #for each angle
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
@@ -468,26 +468,30 @@ for n, conf in enumerate(confs):
     
     #At this conf, we can plot ruled out angles vs a13
     #print conf, outangles
+outangles = np.array(outangles)
+out = np.concatenate(([a13s], outangles), axis=0)
     
-for n, conf in enumerate(confs):
-    plt.plot(a13s, outangles[n], style[n])
-    print "DONE!"
-    print "confidence", conf
-    print outangles[n]
+#for n, conf in enumerate(confs):
+    #plt.plot(a13s, outangles[n], style[n])
+    #print "DONE!"
+    #print "confidence", conf
+    #print outangles[n]
 
-plt.xlim(0,1.0)
-plt.ylim(0,185)
-plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
-plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
-plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
-plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
-plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
-plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
-plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
-plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
-plt.tick_params(labelsize=14)
-plt.tight_layout()
-plt.savefig("/home/chrisni/trials/kasen.pdf")
+np.savetxt("kasen.txt", out.T)
+    
+#plt.xlim(0,1.0)
+#plt.ylim(0,185)
+#plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
+#plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
+#plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
+#plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
+#plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
+#plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
+#plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
+#plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
+#plt.tick_params(labelsize=14)
+#plt.tight_layout()
+#plt.savefig("/home/chrisni/trials/kasen.pdf")
 #plt.show()
 
 """
