@@ -483,7 +483,7 @@ plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
 plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
-plt.savefig("kasen.pdf")
+plt.savefig("/home/chrisni/trials/kasen.pdf")
 #plt.show()
 
 """
