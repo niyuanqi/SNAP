@@ -415,6 +415,7 @@ print "Computing viewing angles at each separation distance"
 a13s = np.arange(0.001,0.31,0.01) #1RG, 6MS, 2MS
 confs = [68.27, 95.45, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
+print a13s
 #list of viewing angles
 thetas = np.linspace(0,180,50)
 
@@ -441,8 +442,8 @@ def test_a13(a13, sig):
             #check if any points rule out angle with conf
             if ruleout(F[i], F_err[i], Fk, Fk_err, theta, sig):
                 mask[k] = False
-            else:
-                print "Consistent!", band[i], a13, norm.cdf(sig), theta
+            #else:
+                #print "Consistent!", band[i], a13, norm.cdf(sig), theta
                 
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
@@ -466,10 +467,13 @@ for n, conf in enumerate(confs):
     plt.show()
     
     #At this conf, we can plot ruled out angles vs a13
-    print conf, outangles
+    #print conf, outangles
     
 for n, conf in enumerate(confs):
     plt.plot(a13s, outangles[n], style[n])
+    print "DONE!"
+    print "confidence", conf
+    print outangles[n]
 
 plt.xlim(0,1.0)
 plt.ylim(0,185)
