@@ -456,7 +456,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(7)
+    pool = Pool(8)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
