@@ -457,7 +457,7 @@ def MCerr(func, ins, params, errs, nums):
     #np.random.seed(0)
     n = len(params)
     val_errs = np.zeros(n)
-    val_means = np.zeros(n)
+    #val_means = np.zeros(n)
     #for each parameter
     for i in range(n):
         #perturb parameter N times by STD
@@ -473,12 +473,12 @@ def MCerr(func, ins, params, errs, nums):
             vals[j] = func(*(ins+trial_params))
         #error associated with perturbation of parameter
         val_errs[i] = vals.std()
-        val_means[i] = vals.mean()
-    #print ins[1], ins[0], val_errs
+        #val_means[i] = vals.mean()
     #total summed error associated with all perturbation
     val_err = np.sqrt(np.square(val_errs).sum())
     #function evaluated at central values
-    val = val_means.mean()
+    #val = val_means.mean()
+    val = func(*(ins+params))
     #return value and error
     return val, val_err
 

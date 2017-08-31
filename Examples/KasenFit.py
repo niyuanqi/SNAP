@@ -412,8 +412,8 @@ plt.show()
 
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,0.31,0.01) #1RG, 6MS, 2MS
-confs = [68.27, 95.45, 99.73]
+a13s = np.arange(0.001,1.01,0.05) #1RG, 6MS, 2MS
+confs = [95.45, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
@@ -421,12 +421,12 @@ thetas = np.linspace(0,180,50)
 
 #function: test a given a13
 def test_a13(a13, sig):
-    print a13
+    #print a13
     #boolean mask for whether angle is ruled out to given confidence
     mask = np.array([True]*len(thetas))
     #for each band
     for i in range(len(t)):
-        print band[i]
+        #print band[i]
         Fk = np.zeros(len(t[i]))
         Fk_err = np.zeros(len(t[i]))
         for r in range(len(t[i])):
@@ -437,6 +437,8 @@ def test_a13(a13, sig):
                                      [m_c_err, e_51_err, zerr, t0err],
                                      [1000,1000,1000,1000000])
             #print Fk[r], Fk_err[r]
+        #if i == 0:
+            #print a13, max(Fk), Fk_err[np.argmax(Fk)]
         #for each angle
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
@@ -449,7 +451,7 @@ def test_a13(a13, sig):
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     return outangles
 
-style = ['k:', 'k--', 'k-']
+style = ['k--', 'k-']
 outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
