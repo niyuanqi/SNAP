@@ -412,7 +412,7 @@ plt.show()
 
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(0.001,1.01,0.05) #1RG, 6MS, 2MS
+a13s = np.arange(0.001,2.01,0.05) #1RG, 6MS, 2MS
 confs = [95.45, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
@@ -435,7 +435,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000,1000,1000,1000000])
+                                     [5000,5000,5000,1000000])
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
