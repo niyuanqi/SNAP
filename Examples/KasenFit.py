@@ -412,7 +412,7 @@ plt.show()
 
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(2.01,6.01,0.1) #1RG, 6MS, 2MS
+a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
 confs = [95.45, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
@@ -421,7 +421,6 @@ thetas = np.linspace(0,180,50)
 
 #function: test a given a13
 def test_a13(a13, sig):
-    #print a13
     #boolean mask for whether angle is ruled out to given confidence
     mask = np.array([True]*len(thetas))
     #for each band
@@ -439,6 +438,9 @@ def test_a13(a13, sig):
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
+            #tt = np.linspace(0,40,1000)
+            #Ft = [KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tt]
+            #print a13, tt[np.argmax(Ft)]
         #for each angle
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
@@ -458,7 +460,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(8)
+    pool = Pool(1)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
