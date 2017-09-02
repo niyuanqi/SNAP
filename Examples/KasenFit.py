@@ -410,17 +410,20 @@ for n, conf in enumerate(confs):
 plt.show()
 """
 
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
-a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
-confs = [95.45, 99.73]
+#a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
+a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.05), np.arange(0.2, 2.0, 0.5), np.arange(2.0,10.0,1.0)))
+confs = [99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
-thetas = np.linspace(0,180,50)
+thetas = np.linspace(0,180,100)
 
 #function: test a given a13
 def test_a13(a13, sig):
+    print a13
     #boolean mask for whether angle is ruled out to given confidence
     mask = np.array([True]*len(thetas))
     #for each band
@@ -434,8 +437,8 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [5000,5000,5000,1000000])
-            #print Fk[r], Fk_err[r]
+                                     [100000,100000,100000,1000000])
+            print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
             #tt = np.linspace(0,40,1000)
@@ -460,7 +463,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(1)
+    pool = Pool(4)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
@@ -482,6 +485,7 @@ out = np.concatenate(([a13s], outangles), axis=0)
     #print outangles[n]
 
 np.savetxt("kasen.txt", out.T)
+
     
 #plt.xlim(0,1.0)
 #plt.ylim(0,185)
