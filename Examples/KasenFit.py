@@ -438,7 +438,7 @@ def test_a13(a13, sig):
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
                                      [100000,100000,100000,1000000])
-            print Fk[r], Fk_err[r]
+            #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
             #tt = np.linspace(0,40,1000)
@@ -463,7 +463,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(4)
+    pool = Pool(8)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
