@@ -379,16 +379,16 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     :return: luminosity (erg/s) (isotropic, angular), Teff (K)
     """
 
-    #offset t_day to account for time it takes for interaction to begin
-    L_u = 1.69 # constant related to ejecta density profile.
-    vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
-    v9 = vt / 10**9
-    
-    ti = (1.0e4 * a13 / v9) / 86400.0
-    t_day = t_day - ti
-
     #check validity of kasen
     if t_day > 0 and e_51/m_c > 0:
+        #offset t_day to account for time it takes for interaction to begin
+        L_u = 1.69 # constant related to ejecta density profile.
+        vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
+        v9 = vt / 10**9
+        
+        ti = (1.0e4 * a13 / v9) / 86400.0
+        t_day = t_day - ti
+        
         # Equations for Luminosity and Teff
         Lc_iso = 10**43 * a13 * m_c * v9**(7./4.) * kappa**(-3./4.) * t_day**(-1./2.) # (erg/s)
         Teff = 2.5 * 10**4 * a13**(1./4.) * kappa**(-35./36) * t_day**(-37./72.)
