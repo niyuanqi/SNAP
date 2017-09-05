@@ -10,10 +10,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from scipy.optimize import leas
-I had a hypothesis: we can see in figure 7 of the paper that the rise from a13 = 0 to ~0.5 is very smooth, while this is not so for later a13s.
-
-Well, we said earlier that smaller a13s have error dominated by epoch and tsq
+from scipy.optimize import leastsq
 from scipy.stats import norm
 from multiprocessing import Pool
 
