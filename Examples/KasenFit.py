@@ -316,15 +316,17 @@ for n in range(3):
 plt.show()
 """
 
-"""
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.concatenate([np.arange(0.001,0.2,0.001), np.arange(5.7,5.9,0.001)])#1RG, 6MS, 2MS
-a13s = np.arange(0.001,0.5,0.001) #1RG, 6MS, 2MS
-confs = [68.0, 95.0, 99.7]
+#a13s = np.arange(0.001,0.5,0.001) #1RG, 6MS, 2MS
+a13s = np.concatenate((np.arange(0.001,0.05,0.001), np.arange(0.05,0.2,0.01), np.arange(0.2, 2.0, 0.01), np.arange(2.0,10.1,0.1)))
+confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,100)
 
+"""
 print "Calculating t err"
 Lk_terr = []
 #perturb time axis by error in epoch
@@ -339,7 +341,8 @@ for i in range(len(t)):
     for r, dt in enumerate(dts):
         Lk_dif[r] = Kasen2010(absTime(tk+dt,z), a13, m_c, e_51)[0]
     Lk_terr.append(Lk_dif.std(axis=0))
-
+"""
+"""
 #Ts = []
 #Ls = []
 #Lf = []
@@ -358,11 +361,9 @@ for n, conf in enumerate(confs):
         mask = np.array([True]*len(thetas))
         #for each band
         for i in range(len(t)):
-            tk = t[i][t[i]>0]
-            Fobs = F[i][t[i]>0]
-            Ferr = F_err[i][t[i]>0]
             #get theoretical light curve
-            Lk, Tk = Kasen2010(absTime(tk,z), a13, m_c, e_51)
+            Lk = np.array([KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in t[i]])
+            #Lk, Tk = Kasen2010(absTime(tk,z), a13, m_c, e_51)
 
             #if n == 1 and i == 2:
             #    Ts.append(max(Tk))
@@ -375,19 +376,20 @@ for n, conf in enumerate(confs):
                 #angle corrected Kasen luminosity
                 Lk_theta = Lk*Kasen_isocorr(theta)
                 #observer frame angle corrected Kasen flux
-                Fk, Fk_zerr = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                #Fk, Fk_zerr = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+                Fk = Lk*Kasen_isocorr(theta)
                 #epoch error
-                Lk_theta_terr = Lk_terr[i]*Kasen_isocorr(theta)
-                Fk_terr = KasenFit(Lk_theta_terr,Tk,wave_0[bands[band[i]]],z,zerr)[0]
+                #Lk_theta_terr = Lk_terr[i]*Kasen_isocorr(theta)
+                #Fk_terr = KasenFit(Lk_theta_terr,Tk,wave_0[bands[band[i]]],z,zerr)[0]
                 #total error
-                Fk_err = np.square(Fk_terr)+np.square(Fk_zerr)
-                Fk_err = np.array([np.sqrt(f) for f in Fk_err])
+                #Fk_err = np.square(Fk_terr)+np.square(Fk_zerr)
+                #Fk_err = np.array([np.sqrt(f) for f in Fk_err])
                 #Fk_err = Fk_zerr
                 #total error
-                Err = np.square(Ferr)+np.square(Fk_err)
-                Err = np.array([np.sqrt(E) for E in Err])
+                #Err = np.square(Ferr)+np.square(Fk_err)
+                #Err = np.array([np.sqrt(E) for E in Err])
                 #check if any points rule out angle with conf
-                if any(Fk > Fobs + sig*Err):
+                if any(Fk > F[i] + sig*F_err[i]):
                     mask[k] = False
                 else:
                     print "Consistent!", a13, conf, theta
@@ -396,17 +398,18 @@ for n, conf in enumerate(confs):
     #At this conf, we can plot ruled out angles vs a13
     print conf, outangles
     plt.plot(a13s, outangles, style[n])
-    plt.xlim(0,1.0)
-    plt.ylim(0,185)
-    plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
-    plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
-    plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
-    plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
-    plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
-    plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
-    plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
-    plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
-    plt.tick_params(labelsize=14)
+plt.xlim(0,10.0)
+plt.ylim(0,185)
+plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
+plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
+plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
+plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
+plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
+plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
+plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
+plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
+plt.tick_params(labelsize=14)
+plt.tight_layout()
 plt.show()
 """
 
@@ -415,7 +418,7 @@ print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
 a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.05), np.arange(0.2, 2.0, 0.5), np.arange(2.0,11.0,1.0)))
-confs = [99.54, 99.73]
+confs = [68.27, 99.54, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
@@ -501,6 +504,8 @@ np.savetxt("kasen.txt", out.T)
 #plt.tight_layout()
 #plt.savefig("/home/chrisni/trials/kasen.pdf")
 #plt.show()
+
+
 
 """
 print Ls
