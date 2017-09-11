@@ -316,7 +316,7 @@ for n in range(3):
 plt.show()
 """
 
-
+"""
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.concatenate([np.arange(0.001,0.2,0.001), np.arange(5.7,5.9,0.001)])#1RG, 6MS, 2MS
@@ -326,23 +326,22 @@ confs = [68.27, 95.45, 99.73]
 #list of viewing angles
 thetas = np.linspace(0,180,100)
 
-"""
-print "Calculating t err"
-Lk_terr = []
+#print "Calculating t err"
+#Lk_terr = []
 #perturb time axis by error in epoch
-dts = np.random.normal(0, t0err, 10000000)
+#dts = np.random.normal(0, t0err, 10000000)
 #perturb z by error
-dzs = np.random.normal(0, zerr, 100000)
+#dzs = np.random.normal(0, zerr, 100000)
 #account for epoch error
-for i in range(len(t)):
-    tk = t[i][t[i]>0]
+#for i in range(len(t)):
+#    tk = t[i][t[i]>0]
     #dts = np.random.normal(0, t0err, 10)
-    Lk_dif = np.zeros([len(dts), len(tk)])
-    for r, dt in enumerate(dts):
-        Lk_dif[r] = Kasen2010(absTime(tk+dt,z), a13, m_c, e_51)[0]
-    Lk_terr.append(Lk_dif.std(axis=0))
-"""
-"""
+#    Lk_dif = np.zeros([len(dts), len(tk)])
+#    for r, dt in enumerate(dts):
+#        Lk_dif[r] = Kasen2010(absTime(tk+dt,z), a13, m_c, e_51)[0]
+#    Lk_terr.append(Lk_dif.std(axis=0))
+
+
 #Ts = []
 #Ls = []
 #Lf = []
@@ -413,7 +412,6 @@ plt.tight_layout()
 plt.show()
 """
 
-
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
@@ -459,7 +457,7 @@ def test_a13(a13, sig):
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     return outangles
 
-style = ['k--', 'k-']
+style = ['k:', 'k--', 'k-']
 outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
@@ -504,7 +502,6 @@ np.savetxt("kasen.txt", out.T)
 #plt.tight_layout()
 #plt.savefig("/home/chrisni/trials/kasen.pdf")
 #plt.show()
-
 
 
 """

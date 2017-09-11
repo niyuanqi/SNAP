@@ -450,6 +450,9 @@ def MCerr(func, ins, params, errs, nums):
     #err : list of error associated with parameters
     #nums: list of number of trials to compute for each parameter
     #np.random.seed(0)
+    #function evaluated at central values
+    #val = val_means.mean()
+    val = func(*(ins+params))
     n = len(params)
     val_errs = np.zeros(n)
     #val_means = np.zeros(n)
@@ -471,9 +474,6 @@ def MCerr(func, ins, params, errs, nums):
         #val_means[i] = vals.mean()
     #total summed error associated with all perturbation
     val_err = np.sqrt(np.square(val_errs).sum())
-    #function evaluated at central values
-    #val = val_means.mean()
-    val = func(*(ins+params))
     #return value and error
     return val, val_err
 
