@@ -438,7 +438,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000000,1000000,1000000,1000000])
+                                     [1000000,1000000,1000000,10000000])
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
