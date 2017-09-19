@@ -76,6 +76,7 @@ for i in range(len(F)):
 
     #get useful times
     t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
+    
 """   
 print "plotting early data"
 #plot

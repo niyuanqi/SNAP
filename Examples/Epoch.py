@@ -145,7 +145,7 @@ print "Fit Chi2", x2dof
 #plot fit
 for i in range(len(t)):
     #plot fluxes
-    ax[i].errorbar(t[i],L[i],L_err[i],fmt='k+')
+    ax[i].errorbar(t[i],L[i],2*L_err[i],fmt='k+')
     ax[i].plot(tT, LT[i], 'k-')
     ax[i].set_xlim(-19.0,-7.0)
     ax[i].set_ylim(-0.1,0.8)

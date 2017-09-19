@@ -443,7 +443,7 @@ def ruleout(F, Ferr, Fk, Fkerr, theta, sig):
         return False
 
 #function: Monte Carlo Error Analysis (independent gaussian errors)
-def MCerr(func, ins, params, errs, nums):
+def MCerr(func, ins, params, errs, nums, nproc=1):
     #func : function taking in parameters
     #ins : list of inputs to function
     #params : list of parameters to put into function
@@ -452,6 +452,7 @@ def MCerr(func, ins, params, errs, nums):
     #np.random.seed(0)
     #function evaluated at central values
     #val = val_means.mean()
+
     val = func(*(ins+params))
     n = len(params)
     val_errs = np.zeros(n)
@@ -461,14 +462,31 @@ def MCerr(func, ins, params, errs, nums):
         #perturb parameter N times by STD
         trials = np.random.normal(params[i], errs[i], nums[i])
 
-        vals = np.zeros(nums[i])
-        #for each perturbation
-        for j in range(nums[i]):
-            #calculate value using perturbed perameter
-            trial_params = params
-            trial_params[i] = trials[j]
-            #perform processes in parallel
-            vals[j] = func(*(ins+trial_params))
+        if nproc > 1:
+            from multiprocessing import Pool
+            pool = Pool(nproc)
+            procs = []
+            #vals = np.zeros(nums[i])
+            #for each perturbation
+            for j in range(nums[i]):
+                #calculate value using perturbed perameter
+                trial_params = params
+                trial_params[i] = trials[j]
+                #perform processes in parallel
+                #vals[j] = func(*(ins+trial_params))
+                procs.append(pool.apply_async(func, ins+trial_params))
+            vals = np.array([proc.get(timeout=10) for proc in procs])
+            pool.terminate()
+        else:
+            vals = np.zeros(nums[i])
+            #for each perturbation
+            for j in range(nums[i]):
+                #calculate value using perturbed perameter
+                trial_params = params
+                trial_params[i] = trials[j]
+                #perform process
+                vals[j] = func(*(ins+trial_params))
+        
         #error associated with perturbation of parameter
         val_errs[i] = vals.std()
         #val_means[i] = vals.mean()
