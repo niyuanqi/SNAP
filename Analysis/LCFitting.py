@@ -383,7 +383,7 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     L_u = 1.69 # constant related to ejecta density profile.
     vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
     v9 = vt / 10**9
-    
+    print a13, v9
     ti = (1.0e4 * a13 / v9) / 86400.0
     t_day = t_day - ti
 
@@ -470,11 +470,11 @@ def MCerr(func, ins, params, errs, nums, nproc=1):
             #for each perturbation
             for j in range(nums[i]):
                 #calculate value using perturbed perameter
-                trial_params = params
+                trial_params = np.copy(params)
                 trial_params[i] = trials[j]
                 #perform processes in parallel
                 #vals[j] = func(*(ins+trial_params))
-                procs.append(pool.apply_async(func, ins+trial_params))
+                procs.append(pool.apply_async(func, ins+list(trial_params)))
             vals = np.array([proc.get(timeout=10) for proc in procs])
             pool.terminate()
         else:
@@ -482,7 +482,7 @@ def MCerr(func, ins, params, errs, nums, nproc=1):
             #for each perturbation
             for j in range(nums[i]):
                 #calculate value using perturbed perameter
-                trial_params = params
+                trial_params = np.copy(params)
                 trial_params[i] = trials[j]
                 #perform process
                 vals[j] = func(*(ins+trial_params))
