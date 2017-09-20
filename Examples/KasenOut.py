@@ -81,7 +81,7 @@ for i in range(len(F)):
 print "Computing viewing angles at given separation distance"
 #list of sample models
 a13s = 0.15
-#a13s = sys.argv[-1]
+a13s = sys.argv[-1]
 confs = [68.27, 99.54, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
