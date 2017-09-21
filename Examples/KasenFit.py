@@ -439,8 +439,7 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000000,1000000,1000000,1000000],
-                                     nproc=1)
+                                     [1000000,1000000,1000000,1000000])
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
@@ -457,9 +456,11 @@ def test_a13(a13, sig):
                 
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
+    
     outfile = open("log.txt", 'a')
     outfile.write(str(sig)+"\t"+str(a13)+"\t"+str(outangles)+"\n")
     outfile.close()
+    
     return outangles
 
 style = ['k:', 'k--', 'k-']
