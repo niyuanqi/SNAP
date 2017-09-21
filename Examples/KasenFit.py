@@ -416,7 +416,7 @@ plt.show()
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
-a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.05), np.arange(0.2, 2.0, 0.5), np.arange(2.0,11.0,1.0)))
+a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.05), np.arange(0.2, 2.0, 0.5), np.arange(2.0,11.0,2.0)))
 confs = [68.27, 99.54, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
@@ -439,7 +439,8 @@ def test_a13(a13, sig):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000000,1000000,1000000,10000000])
+                                     [1000000,1000000,1000000,1000000],
+                                     nproc=1)
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
@@ -456,6 +457,9 @@ def test_a13(a13, sig):
                 
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
+    outfile = open("log.txt", 'a')
+    outfile.write(str(sig)+"\t"+str(a13)+"\t"+str(outangles)+"\n")
+    outfile.close()
     return outangles
 
 style = ['k:', 'k--', 'k-']
