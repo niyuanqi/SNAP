@@ -81,7 +81,8 @@ for i in range(len(F)):
 print "Computing viewing angles at given separation distance"
 #list of sample models
 a13s = 0.15
-a13s = float(sys.argv[-1])
+a13s = float(sys.argv[-2])
+outfilename = sys.argv[-1]
 confs = [68.27, 99.54, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
@@ -133,4 +134,6 @@ for n, conf in enumerate(confs):
     #calculate test of a13
     outangles = test_a13(a13s, sig)
     #output
-    print conf, outangles
+    outfile = open(outfilename, 'a')
+    outfile.write("\t".join([conf, outangles])+"\n")
+    outfile.close()
