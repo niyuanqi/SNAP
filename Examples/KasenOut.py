@@ -129,6 +129,7 @@ style = ['k:', 'k--', 'k-']
 outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
+    print conf
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     #calculate test of a13
