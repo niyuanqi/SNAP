@@ -133,6 +133,7 @@ for n, conf in enumerate(confs):
     sig = norm.ppf(conf/100.0)
     #calculate test of a13
     outangles = test_a13(a13s, sig)
+    print outangles, conf
     #output
     outfile = open(outfilename, 'a')
     outfile.write("\t".join([conf, outangles])+"\n")
