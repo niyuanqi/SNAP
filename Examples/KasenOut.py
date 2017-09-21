@@ -78,6 +78,11 @@ for i in range(len(F)):
     #get useful times
     t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
 
+
+outfile = open("log.txt", 'a')
+outfile.write("Starting computation\n")
+outfile.close()
+
 print "Computing viewing angles at given separation distance"
 #list of sample models
 a13s = 0.15
@@ -128,8 +133,16 @@ def test_a13(a13, sig):
 style = ['k:', 'k--', 'k-']
 outangles = []
 #for each confidence interval
+
+outfile = open("log.txt", 'a')
+outfile.write("Trying confidences\n")
+outfile.close()
+
 for n, conf in enumerate(confs):
     print conf
+    outfile = open("log.txt", 'a')
+    outfile.write(str(conf)+"\n")
+    outfile.close()
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     #calculate test of a13
