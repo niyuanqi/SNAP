@@ -486,7 +486,7 @@ def MCerr(func, ins, params, errs, nums, nproc=1):
                 trial_params = np.copy(params)
                 trial_params[i] = trials[j]
                 #perform process
-                vals[j] = func(*(ins+trial_params))
+                vals[j] = func(*(ins+list(trial_params)))
         
         #error associated with perturbation of parameter
         val_errs[i] = vals.std()
