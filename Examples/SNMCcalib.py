@@ -17,8 +17,8 @@ from SNAP.Analysis.Cosmology import *
 sn_file = "N300-1.Q0.SN.txt"
 ph_file = "Phillips_dm15+st_results.dat"
 N = 18 #number of Monte Carlo trials to run
-#N=1
-plot = False #plot polynomial fits to light curves
+N=1
+plot = True #plot polynomial fits to light curves
 
 print "Loading SN File"
 s = get_sn(sn_file)
@@ -42,8 +42,8 @@ SNM_err = [SNB_err[SNB<90],SNV_err[SNV<90],SNi_err[SNi<90]]
 #s.replot = 0
 #arrays to store Monte Carlo values
 print "Performing Monte Carlo Calculations"
-z = np.linspace(0.035,0.075,18)
-#z = np.array([0.057])
+#z = np.linspace(0.035,0.075,18)
+z = np.array([0.057])
 Mdm = np.zeros([N,len(band)])
 Mdm_err = np.zeros([N,len(band)])
 dm, dm_err = np.zeros(N), np.zeros(N)
@@ -157,11 +157,13 @@ for i in range(len(band)):
 
 f.subplots_adjust(wspace=0)
 f.subplots_adjust(hspace=0)
-
+"""
 cbar_ax = f.add_axes([0.91, 0.15, 0.015, 0.7])
 cbar_ax.tick_params(labelsize=12)
 cbar_ax.set_yticks([0.035,0.045,0.055,0.065,0.075])
 cbar_ax.set_yticklabels(z,rotation=90)
 cb1 = mpl.colorbar.ColorbarBase(cbar_ax, cmap=cmap,norm=norm, orientation='vertical')
 cb1.set_label('Trial Redshifts', fontsize = 14)
+"""
 plt.show()
+

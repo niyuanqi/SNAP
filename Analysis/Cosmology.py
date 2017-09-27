@@ -18,11 +18,16 @@ Wm = 0.27 #matter density parameter
 Wl = 0.73 #vacuum density parameter
 #Reiss  Cosmological parameters from SN1a
 
-#band zero fluxes [Jy]
-flux_0 = [1810, 4260, 3640, 3080, 2550]
-#band isophotal wavelengths [Angstrom]
+#calibration information
+#band zero fluxes [Jy] from Bessel 1998
+#flux_0 = [1790, 4063, 3636, 3064, 2416]
+#band zero fluxes [Jy] in UBVri with mix from AB system
+flux_0 = [1790, 4063, 3636, 3631, 3631]
+
+#telescope information
+#band isophotal wavelengths [Angstrom] from Bessel 2005
 wave_0 = [3663, 4361, 5448, 6407, 7980]
-#band widths [Angstrom]
+#band widths [Angstrom] from Bessel 2005
 widths = [650, 890, 840, 1580, 1540]
 #band numbering convention
 bands = {'U':0, 'B':1, 'V':2, 'R':3, 'I':4, 'i':4}

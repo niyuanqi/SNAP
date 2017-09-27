@@ -317,7 +317,7 @@ for n in range(3):
 plt.show()
 """
 
-"""
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.concatenate([np.arange(0.001,0.2,0.001), np.arange(5.7,5.9,0.001)])#1RG, 6MS, 2MS
@@ -403,16 +403,16 @@ plt.ylim(0,185)
 plt.plot([0.05,0.05], [0,5], 'k', linewidth=1)
 plt.plot([0.2,0.2], [0,5], 'k', linewidth=1)
 plt.plot([2.0,2.0], [0,5], 'k', linewidth=1)
-plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
-plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
-plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
+#plt.plot([0.05,0.05], [175,185], 'k', linewidth=1)
+#plt.plot([0.2,0.2], [175,185], 'k', linewidth=1)
+#plt.plot([2.0,2.0], [175,185], 'k', linewidth=1)
 plt.ylabel("Unacceptable viewing angles (deg)", fontsize=16)
 plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
 plt.show()
-"""
 
+"""
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
@@ -492,7 +492,7 @@ out = np.concatenate(([a13s], outangles), axis=0)
     #print outangles[n]
 
 np.savetxt("kasen.txt", out.T)
-
+"""
     
 #plt.xlim(0,1.0)
 #plt.ylim(0,185)
