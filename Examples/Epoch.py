@@ -52,6 +52,9 @@ print "Performing SNpy fit and conversion of LC to rest frame"
 s.fit(band)
 Flim = Mlim
 for i in range(len(F)):
+    #correct I band flux to AB calibration
+    if i == 2:
+        F[i] = F[i]*1.42392
     #correct fluxes for galactic reddening
     F[i] = deredFlux(F[i], EBVgal, Coefs[i])
     F_err[i] = deredFlux(F_err[i], EBVgal, Coefs[i])

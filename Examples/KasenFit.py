@@ -60,6 +60,10 @@ print "Correcting for galactic reddening"
 tlim = []
 Flim = []
 for i in range(len(F)):
+    #correct fluxes for AB calibration
+    if i == 2:
+        F[i] = F[i]*1.42392
+        F_err[i] = F_err[i]*1.42392
     #correct fluxes for galactic reddening
     F[i] = deredFlux(F[i], EBVgal, Coefs[i])
     F_err[i] = deredFlux(F_err[i], EBVgal, Coefs[i])
@@ -317,7 +321,7 @@ for n in range(3):
 plt.show()
 """
 
-
+"""
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.concatenate([np.arange(0.001,0.2,0.001), np.arange(5.7,5.9,0.001)])#1RG, 6MS, 2MS
@@ -411,8 +415,8 @@ plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
 plt.show()
-
 """
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
@@ -492,7 +496,7 @@ out = np.concatenate(([a13s], outangles), axis=0)
     #print outangles[n]
 
 np.savetxt("kasen.txt", out.T)
-"""
+
     
 #plt.xlim(0,1.0)
 #plt.ylim(0,185)
