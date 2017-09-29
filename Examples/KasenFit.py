@@ -79,7 +79,7 @@ for i in range(len(F)):
     #Flim[i] = Flim[i][SN[i]<2.0]
 
     #get useful times
-    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
+    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10, 10, F[i], F_err[i], Flim[i])
     
 """   
 print "plotting early data"
@@ -110,12 +110,10 @@ ax[1].set_ylabel("Flux [uJy]")
 for i in range(len(t)):
     #plot I band fluxes
     thetas = np.linspace(0,180,10)
+    Lk = np.array([KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tk])
     for theta in thetas:
         #rest time angle corrected Kasen luminosity
-        Lk, Tk = Kasen2010(absTime(tk,z), a13, m_c, e_51)
-        Lk_theta = Lk*Kasen_isocorr(theta)
-        #rest time observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk = Lk*Kasen_isocorr(theta)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
@@ -135,12 +133,10 @@ for i in range(len(t)):
     #fit early light curve
     #plot I band fluxes
     thetas = np.linspace(0,180,10)
+    Lk = np.array([KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tk])
     for theta in thetas:
         #angle corrected Kasen luminosity
-        Lk, Tk = Kasen2010(absTime(tk,z), a13, m_c, e_51)
-        Lk_theta = Lk*Kasen_isocorr(theta)
-        #observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk = Lk*Kasen_isocorr(theta)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
@@ -160,12 +156,10 @@ for i in range(len(t)):
     #fit early light curve
     #plot I band fluxes
     thetas = np.linspace(0,180,10)
+    Lk = np.array([KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tk])
     for theta in thetas:
         #angle corrected Kasen luminosity
-        Lk, Tk = Kasen2010(absTime(tk,z), a13, m_c, e_51)
-        Lk_theta = Lk*Kasen_isocorr(theta)
-        #observer frame angle corrected Kasen flux
-        Fk, Fk_err = KasenFit(Lk_theta,Tk,wave_0[bands[band[i]]],z,zerr)
+        Fk = Lk*Kasen_isocorr(theta)
         ax[i].plot(tk, Fk)
         if theta == thetas[0]:
             Fks[i].append(Fk)
