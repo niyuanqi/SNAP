@@ -415,7 +415,7 @@ print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
 a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.02), np.arange(0.2, 2.0, 0.05), np.arange(2.0,11.0,1.0)))
-confs = [68.27, 99.54, 99.73]
+confs = [68.27, 80.0, 90.0, 99.54, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
