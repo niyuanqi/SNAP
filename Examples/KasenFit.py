@@ -415,7 +415,7 @@ print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
 a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.02), np.arange(0.2, 2.0, 0.05), np.arange(2.0,11.0,1.0)))
-confs = [90.0, 93.0, 95.54, 99.73]
+confs = [90.0, 93.0, 95.45, 99.73]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
@@ -456,7 +456,7 @@ def test_a13(a13, sig):
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     
     outfile = open("log.txt", 'a')
-    outfile.write(str(sig)+"\t"+str(a13)+"\t"+str(outangles)+"\n")
+    outfile.write(str(norm.cdf(sig))+"\t"+str(a13)+"\t"+str(outangles)+"\n")
     outfile.close()
     
     return outangles
@@ -476,7 +476,6 @@ for n, conf in enumerate(confs):
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
     pool.terminate()
-    plt.show()
     
     #At this conf, we can plot ruled out angles vs a13
     #print conf, outangles
