@@ -86,7 +86,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
     #return sky plane, sky noise, and goodness of fit
     return skypopt, skyperr, skyX2dof, skyN
 
-#function: general 2D moffat function
+#function: circular 2D moffat function
 def D2moff((x, y), A, a, b, x0, y0):
     """
     This is the most frequently used function to model PSFs,
@@ -119,6 +119,8 @@ def moff_integrate(A,a,b,A_err=0,a_err=None,b_err=None,f=0.9):
 #function: find aperture containing f fraction of moffat light
 def moff_aperture(a,b,f=0.9):
     return a*np.sqrt(np.power(1 - f,1/(1-b)) - 1)
+
+
     
 
 #function: clean out cosmic rays and junk from PSF
