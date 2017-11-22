@@ -65,7 +65,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     from astropy.time import Time
     from astropy.wcs import WCS
 
-    from Astrometry import*
+    from Astrometry import isot_day
     
     try: #try to load image data
         #load HDU image
@@ -144,36 +144,35 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     #essential imports
     import matplotlib.pyplot as plt
-    
-    #essential files
-    from Catalog import*
-    from Photometry import*
-    from Astrometry import*
+    #essential functions
+    import Catalog as ctlg
+    import PSFlib as plib
+    import Photometry as pht
     
     #convert position of source to pixel 
     Xo, Yo = wcs.all_world2pix(RAo, DECo, 0)
     Xo, Yo = int(Xo), int(Yo)
     if verbosity > 0:
         print "Source located at: " + str(Xo) + ", " + str(Yo)
-
+        
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
     if cat == 'phot':
-        ID, RA, DEC, catM, catMerr = catPhot(catname,band=band)
+        ID, RA, DEC, catM, catMerr = ctlg.catPhot(catname,band=band)
     elif cat == 'dprs':
-        ID, RA, DEC, catM, catMerr = catDPRS(catname,band=band)
+        ID, RA, DEC, catM, catMerr = ctlg.catDPRS(catname,band=band)
     elif cat == 'diff':
-        ID, RA, DEC, catM, catMerr = catDiff(catname,band=band)
+        ID, RA, DEC, catM, catMerr = ctlg.catDiff(catname,band=band)
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
-        ID, RA, DEC, catM, catMerr = catAAVSO(RAo,DECo,fovam,band,out=catname)
+        ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo,DECo,fovam,band,out=catname)
 
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
     catX, catY = catX.astype(float), catY.astype(float)
     #select catalog stars within some radius of object
-    index = dist(catX,catY,Xo,Yo) < radius
+    index = pht.dist(catX,catY,Xo,Yo) < radius
     #select catalog stars within edges
     index = np.logical_and(index, np.logical_and(catX > 15, catimage.shape[1]-catX > 15))
     index = np.logical_and(index, np.logical_and(catY > 15, catimage.shape[0]-catY > 15))
@@ -200,109 +199,132 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         for i in range(len(catX)):
             plt.text(catX[i], catY[i], ID[i])
         plt.show()
-    #aperture photometry on catalog stars
-    n = len(catX)
-    catMag = [] #magnitude list
-    catMagerr = []
-    catI = [] #intensity list
-    catSN = [] #signal to noise list
-    catPSF = [] #PSF fits to catalog stars
-    catPSFerr = [] #fit errors
+    #photometry on catalog stars
+    N = len(catM)
+    catMags = [] #magnitude list
+    catMagerrs = []
+    catPSFs = [] #PSF fits to catalog stars
+    catPSFerrs = [] #fit errors
+    catXs = []
+    catYs = []
     if verbosity > 0:
-        print "Calculating intensity for "+str(n)+" catalog stars."
-
-    #calculate photometry for each reference star
-    for i in range(n):
+        print "Calculating intensity for "+str(N)+" catalog stars."
+    
+    #calculate PSF for each reference star
+    for i in range(N):
         if verbosity > 0:
-            print "Computing "+str(i+1)+"/"+str(n)
-            print "Magnitude "+str(catM[i])
+            print "Computing PSF of "+str(i+1)+"/"+str(N)
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky, verbosity=verbosity-1)
-        PSF, PSFerr = [PSFpopt[1], PSFpopt[2]], [PSFperr[1], PSFperr[2]]
-        x0, y0 = PSFpopt[3], PSFpopt[4]
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky, verbosity=verbosity-1)
+        PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
         #Take only reference stars whose fits are sane
-        if moff_aperture(*PSF) < 3*moff_toFWHM(*PSF):
-            #check preferred intensity calculation method
-            if aperture is None:
-                #integrate PSF directly
-                I, SN = PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=verbosity-1)
-            else:
-                #perform aperture photometry
-                if aperture <= 0:
-                    #use FWHM of catPSF to define Kron aperture
-                    I, SN = Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=fitsky, verbosity=verbosity-1)
-                else:
-                    #use aperture given directly
-                    I, SN = Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=fitsky, verbosity=verbosity-1)
-            #check if reference stars are valid
-            if I == 0 or SN == 0 or skyN == 0:
-                raise PSFError('Unable to perform photometry on reference stars.')
-            #save intensity and SN ratio
-            catI.append(I)
-            catSN.append(SN)
-            catMag.append(catM[i])
-            catMagerr.append(catMerr[i])
-            #save catalog star fits
-            catPSF.append(PSF)
-            catPSFerr.append(PSFerr)
-        elif verbosity > 0:
-            #say something about fit being bad
-            print "\nReference star ID"+str(ID[i])+" fit unacceptable\n\n"
+        if plib.E2moff_verify(PSFpopt, x0, y0):
+            #break x,y degeneracy
+            if PSF[0] > PSF[1]:
+                #switched up x,y axes
+                PSF[0], PSF[1] = PSF[1], PSF[0]
+                if PSF[3]<90:
+                    PSF[3] += 90
+                if PSF[3]>90:
+                    PSF[3] -= 90
+                if verbosity > 2:
+                    print "Swapping theta to enforce ax<ay"
+            #save magnitude of catalog star
+            catMags.append(catM[i])
+            catMagerrs.append(catMerr[i])
+            #save catalog star fit
+            catPSFs.append(PSF)
+            catPSFerrs.append(PSFerr)
+            #save ref star position8793.2500572905792, 3071.3548153570159
+            catXs.append(PSFpopt[5])
+            catYs.append(PSFpopt[6])
+        else:
+            if verbosity > 0:
+                #say something about fit being bad for this particular star
+                print "\nReference star ID"+str(ID[i])+" fit unacceptable"
+                print "Criminal located at position "+str([x0,y0])+".\n"
 
+    n = len(catMags) #number of good stars
     if verbosity > 0:
-        print "Number of reference stars used: "+str(len(catI))+"/"+str(n)
-    if float(len(catI))/n < 0.5:
+        print "\nNumber of reference stars used: "+str(n)+"/"+str(N)
+    if float(n)/N < 0.5:
         #over half reference stars are invalid... how??
         raise PSFError('Unable to perform photometry on reference stars.')
-    catI = np.array(catI)
-    catSN = np.array(catSN)
-    catMag = np.array(catMag)
-    catMagerr = np.array(catMagerr)
-    catPSF = np.array(catPSF)
-    catPSFerr = np.array(catPSFerr)
+    catMags = np.array(catMags)
+    catMagerrs = np.array(catMagerrs)
+    catPSFs = np.array(catPSFs)
+    catPSFerrs = np.array(catPSFerrs)
+    catXs = np.array(catXs)
+    catYs = np.array(catYs)
+    
+    #calculate average psf among reference stars
+    w = 1/np.square(catPSFerrs)
+    catPSF = (catPSFs*w).sum(0)/w.sum(0)
+    catPSFerr = np.sqrt(1/w.sum(0))
+    if verbosity > 0:
+        print "Average PSF [a,b] =",str(catPSF)
+        print "Average FWHMx,FWHMy =",str(plib.E2moff_toFWHM(*catPSF[:-1]))
+        print "parameter errors =",str(catPSFerr)
+        print ""
 
-    """
+    #Integration using common PSF
+    catIs = np.zeros(n)
+    catSNs = np.zeros(n)
+    for i in range(n):
+        if verbosity > 0:
+            print "Computing intensity of "+str(i+1)+"/"+str(n)
+        #position of star in catalog
+        x0, y0 = catXs[i], catYs[i]
+        #calculate intensity and SN ratio with reduced verbosity
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(image, catPSF, catPSFerr, x0, y0, fitsky=fitsky, verbosity=verbosity-1)
+        #check preferred intensity calculation method
+        if aperture is None:
+            #integrate PSF directly
+            I, SN = pht.PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=verbosity-1)
+        else:
+            #perform aperture photometry
+            if aperture <= 0:
+                #use FWHM of catPSF to define Kron aperture
+                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=fitsky, verbosity=verbosity-1)
+            else:
+                #use aperture given directly
+                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=fitsky, verbosity=verbosity-1)
+        #check if reference stars are valid
+        if I == 0 or SN == 0 or skyN == 0:
+            raise PSFError('Unable to perform photometry on reference stars.')
+        #save intensity and SN ratio
+        catIs[i]=I
+        catSNs[i]=SN
+
+    if verbosity > 0:
+        print "Mean SN of reference stars:",np.mean(catSNs)
+        print ""
+
     if verbosity > 1:
         #diagnostic for SNR, N, I calculation routine
         #checks for wrong correlation between intensity and noise
         import matplotlib.pyplot as plt
         plt.title("SNR calculation for various reference stars")
-        plt.scatter(catMag, np.log(catSN), c='r')
-        plt.plot(catMag, max(np.log(catSN))-(catMag-min(catMag))/2)
+        plt.scatter(catMags, np.log(catSNs), c='r')
+        plt.plot(catMags, max(np.log(catSNs))-(catMags-min(catMags))/2)
         plt.ylabel("log SNR")
         plt.xlabel("Mag (~log I)")
-        plt.legend()
         plt.show()
         plt.title("Noise under various reference stars")
-        plt.scatter(catMag, np.log(catI/catSN), c='r')
-        plt.plot(catMag, max(np.log(catI/catSN))-(catMag-min(catMag))/2)
-        plt.plot(catMag, max(np.log(catI/catSN))-(catMag-min(catMag)))
+        plt.scatter(catMags, np.log(catIs/catSNs), c='r')
+        plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags))/2)
+        #plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags)))
         plt.ylabel("log Noise")
         plt.xlabel("Mag (~log I)")
-        plt.legend()
         plt.show()
         plt.title("Intensity of various reference stars")
-        plt.scatter(catMag, np.log(catI), c='r')
-        plt.plot(catMag, max(np.log(catI))-(catM-min(catM)))
+        plt.scatter(catMags, np.log(catIs), c='r')
+        plt.plot(catMags, max(np.log(catIs))-(catMags-min(catMags)))
         plt.ylabel("log I")
         plt.xlabel("Mag (catalog)")
-        plt.legend()
         plt.show()
-    """
-    
-        
-    #calculate average psf among reference stars
-    w = 1/np.square(catPSF)
-    catPSF = (catPSF*w).sum(0)/w.sum(0)
-    catPSFerr = np.sqrt(1/w.sum(0))
-    if verbosity > 0:
-        print "Average PSF [a,b] = "+str(catPSF)
-        print "Average FWHM = "+str(moff_toFWHM(*catPSF))
-        print "parameter errors = "+str(catPSFerr)
-        print "\nMean SN of reference stars:",np.mean(catSN)
-        print ""
 
     #calculate photometry for source object
     if verbosity > 0:
@@ -310,36 +332,36 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     #extract PSF to as great a degree as needed from source
     if psf == 1:
-        PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFscale(image, catPSF, catPSFerr, Xo, Yo, fitsky=fitsky, verbosity=verbosity)
+        PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo, Yo, fitsky=fitsky, verbosity=verbosity)
     elif psf == 2:
-        PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFfit(image, catPSF, catPSFerr, Xo, Yo, fitsky=fitsky, verbosity=verbosity)
+        PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo, Yo, fitsky=fitsky, verbosity=verbosity)
     elif psf == 3:
-        PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFextract(image, Xo, Yo, fwhm, fitsky=fitsky, verbosity=verbosity)
+        PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo, Yo, fwhm, fitsky=fitsky, verbosity=verbosity)
     else:
         #Invalid fit selected, don't fit source
         if verbosity > 0:
             print "No fit selected for source."
-        PSFpopt, PSFperr, X2dof, skypopto, skyNo = [0]*5, [0]*5, 0, [0]*3, skyN
+        PSFpopt, PSFperr, X2dof, skypopto, skyNo = [0]*7, [0]*7, 0, [0]*3, skyN
     #check preferred intensity calculation method
     if aperture is None:
         #integrate PSF directly
-        Io, SNo = PSF_photometry(image, Xo, Yo, PSFpopt, PSFperr, skypopto, skyNo, verbosity=verbosity)
+        Io, SNo = pht.PSF_photometry(image, Xo, Yo, PSFpopt, PSFperr, skypopto, skyNo, verbosity=verbosity)
     else:
         #perform aperture photometry
         if aperture <= 0:
             #use FWHM of catPSF to define Kron aperture
-            Io, SNo = Ap_photometry(image, Xo, Yo, skypopto, skyNo, PSF=catPSF, fitsky=fitsky, verbosity=verbosity)
+            Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, PSF=catPSF, fitsky=fitsky, verbosity=verbosity)
         else:
             #use aperture given directly
-            Io, SNo = Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
+            Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
         
     #check if source is valid
     if Io != 0 and SNo != 0 and skyNo != 0:
         #calculate relative flux of object wrt each reference star
-        Ir = fluxes[bands[band]]*np.power(10,-catMag/2.512)*Io/catI
+        Ir = fluxes[bands[band]]*np.power(10,-catMags/2.512)*Io/catIs
         Io_err = Io/SNo
-        catI_err = catI/catSN
-        Ir_err = Ir*np.sqrt(np.square(1/SNo)+np.square(1/catSN)+np.square(np.log(10)*catMagerr/2.512))
+        catI_err = catIs/catSNs
+        Ir_err = Ir*np.sqrt(np.square(1/SNo)+np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.512))
 
         #calculate weighted mean
         w = 1/np.square(Ir_err)
@@ -358,7 +380,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     #try to compute magnitude if source is present
     if I != float('NaN') and I > 0 and skyNo != 0:
         #convert position to world coordinates
-        Xp, Yp = PSFpopt[3], PSFpopt[4]
+        Xp, Yp = PSFpopt[5], PSFpopt[6]
         RAo, DECo = wcs.all_pix2world(Xp, Yp, 0)
         #calculate magnitude from flux
         mo = -2.512*np.log10(I/fluxes[bands[band]])
@@ -368,11 +390,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         mo, mo_err = float('NaN'), float('NaN')
         RAo, DECo = wcs.all_pix2world(Xo, Yo, 0)
 
-    if limsnr != 0 and skyNo != 0 and PSFverify(catPSF):
+    if limsnr != 0 and skyNo != 0:
         #sky noise properly estimated, calculate limiting magnitude
         ru = 10.0 #recursion seed
         rl = 0.1 #recursion seed
-        mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catPSF, catPSFerr, skyNo, catMag, catMagerr, catSN, catI, verbosity)
+        mlim, SNlim, expu, expd = limitingM(ru, rl, limsnr, catPSF, catPSFerr, skyNo, catMags, catMagerrs, catSNs, catIs, verbosity)
         #return calculated magnitude, magnitude errors, and limiting magnitude
         return RAo, DECo, I, SNo, mo, mo_err, mlim
     elif limsnr != 0:
@@ -413,16 +435,19 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
     #       mlim; float detection limit at source position.                  #
     ##########################################################################
     """
-
-    from Photometry import*
     
-    if len(PSF) == 2:
-        #PSF is moffat
-        a,b = PSF[0], PSF[1]
-        aerr, berr = PSFerr[0], PSFerr[1]
-        A = np.mean(catSN)*(b-1)/np.pi/np.square(a)
-        FWHM = moff_toFWHM(a,b)
-        #estimate upper bound for factor shift
+    import PSFlib as plib
+    
+    if len(PSF) == 4:
+        #extract values from PSF
+        ax, ay = abs(PSF[0]), abs(PSF[1])
+        b, theta = PSF[2], PSF[3]
+        axerr, ayerr = PSFerr[0], PSFerr[1]
+        thetaerr, berr = PSFerr[2], PSFerr[3]
+        FWHMx, FWHMy = plib.E2moff_toFWHM(ax,ay,b)
+        #estimate height of average catalog PSF
+        A = np.mean(catSN)*(b-1)/np.pi/ax/ay
+        #estimate upper bound for factor to apply to A to get to source height
         f = np.mean(catSN)/(limsnr)
         #calculate snr for many synthetic sources near limiting snr
         n = 10 #resolution of parameter space
@@ -432,14 +457,6 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
         SN_trials = np.zeros(len(A_trials))
         #compute optimal aperture radius (90% source light)
         frac = 0.9
-        """
-        I, sigma, opt_r = moff_integrate(A,a,b,a_err=aerr,b_err=berr,f=frac)
-        opt_r = opt_r/FWHM
-        #check if wings are too large to be sensical
-        opt_r = min(opt_r, 3.0)
-        #check if psf is too small
-        opt_r = max(opt_r, 1.0/FWHM)
-        """
         #do photometry over synthetic sources for each A
         if verbosity > 0:
             print "Computing "+str(n)+" synthetic sources to find mlim"
@@ -448,23 +465,19 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
         for j in range(len(A_trials)):
             if verbosity > 2:
                 print "Computing "+str(j+1)+"/"+str(n)
-            
             #integrate synthetic PSF
-            I, opt_r = moff_integrate(A_trials[j],a,b,f=frac)
-            popt_trial = [A_trials[j],a,b,0,0]
-            #get apertures around synthetic star
-            aperture = ap_synth(D2moff, popt_trial, opt_r)
-            #photometry over synthetic aperture
-            #I = np.sum(aperture)
-            #at SN <= 5, noise dominated, I/(skyN**2)*aperture.size < 0.1
-            sigma = np.sqrt(np.absolute(I) + aperture.size*skyN**2)
+            I = plib.E2moff_integrate(A_trials[j],ax,ay,b,frac)
+            #get aperture size around synthetic star
+            ap_size = plib.E2moff_apsize(ax,ay,b,frac)
+            #at SN <= 5, noise dominated, I/(skyN**2*aperture.size) < 0.1
+            sigma = np.sqrt(np.absolute(I) + ap_size*skyN**2)
             SN = I/sigma
             #append to trials
             I_trials[j] = I
             SN_trials[j] = SN
         #calculate I for source closest to limiting snr
-        Ilim = I_trials[np.argmin(np.square(SN_trials - limsnr))]
-        SNlim = SN_trials[np.argmin(np.square(SN_trials - limsnr))]
+        idx = np.argmin(np.square(SN_trials - limsnr))
+        Ilim, SNlim = I_trials[idx], SN_trials[idx]
         SNUbound = max(SN_trials)
         SNLbound = min(SN_trials)
         #calculate magnitude wrt each reference star
@@ -477,14 +490,14 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
             print "maximum SN="+str(SNUbound)
             print "minimum SN="+str(SNLbound)
             print "mlim calculated at SN="+str(SNlim)
-            print "mlim calculated at R="+str(opt_r)+"FWHM"
         #check convergence
         if abs(SNlim - limsnr) > 0.1:
-            #prevent stack overflow
+            #prevent stack overflow after 20 recursions
             if level+1 > 20:
                 if verbosity > 0:
                     print "Convergence terminated to prevent stack overflow."
                 return float('NaN'), float('NaN'), float('NaN'), float('NaN')
+            #not yet convergent, narrow down SN range
             if SNUbound > limsnr and SNLbound < limsnr:
                 #take closest points and converge more
                 if verbosity > 0:
