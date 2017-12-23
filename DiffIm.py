@@ -48,20 +48,20 @@ def run_wcsremap(ref_name, src_name, outdir):
     return outname
 
 #use hotpants to match images photometrically and subtract
-def run_hotpants(src_name, template_name, out_name):
+def run_hotpants(src_name, template_name, out_name, conv_name):
 
     import subprocess
 
     #call hotpants
     subprocess.call(['hotpants', '-inim', src_name, '-tmplim',
-                     template_name, '-outim', out_name,
-                     '-tl', '-100', '-il', '-100',
+                     template_name, '-outim', out_name, '-oci',
+                     conv_name, '-tl', '-100', '-il', '-100',
                      '-nrx', '2', '-nry', '2',
                      '-nsx', '15', '-nsy', '15',
                      '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0'])
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, delete_temp=True):
     try:
         
         import os
@@ -78,7 +78,7 @@ def make_diff_image(src_name, ref_name, out_name, delete_temp=True):
         remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
         
         #subtract remapped reference file from source file
-        run_hotpants(src_name, remaped_ref, out_name)
+        run_hotpants(src_name, remaped_ref, out_name, conv_name)
 
         print "SUBTRACTION COMPLETE"
         print "output:",out_name
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     parser.add_argument('src_name', type=str, help='input file name')
     parser.add_argument('ref_name', type=str, help='reference file name')
     parser.add_argument('out_name', type=str, help='output file name')
+    parser.add_argument('conv_name', type=str, help='convolved file name')
     parser.add_argument('--debug', dest='debug', action='store_const',
                         const=True, default=False,
                         help='give this flag to not delete temp files')
@@ -108,5 +109,5 @@ if __name__ == "__main__":
     delete_temp = not args.debug
 
     #create difference image
-    make_diff_image(args.src_name, args.ref_name, args.out_name,
+    make_diff_image(args.src_name, args.ref_name, args.out_name, args.conv_name,
                     delete_temp=delete_temp)
