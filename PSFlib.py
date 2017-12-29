@@ -158,10 +158,10 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
         #extract values from PSF
         ax = abs(PSFpopt[0])
         ay = abs(PSFpopt[1])
-        theta = PSFpopt[2]
-        b = PSFpopt[3]
+        b = PSFpopt[2]
+        theta = PSFpopt[3]
         FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
-        est_area = E2_moff_apsize(ax,ay,b,f=0.9)
+        est_area = E2moff_apsize(ax,ay,b,f=0.9)
         #check all manner of ridiculous scenarios
         if FWHMx > 20.0 or FWHMx < 1.0:
             #unphysical FWHM

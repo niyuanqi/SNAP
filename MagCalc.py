@@ -9,6 +9,7 @@
 #################################################################
 
 #run sample
+#python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky conv.fits N300_1_Q0_SN.csv -d diff.fits
 #python MagCalc.py -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv
 #python MagCalc.py -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv --fit_sky N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat
 #python MagCalc.py -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm 5 -n 3.0 -s 14.0 -vv --fit_sky N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat
@@ -193,7 +194,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     if verbosity > 3:
         #plot image of catalog positions
-        plt.imshow(catimage, cmap='Greys', vmax=0.0001*np.amax(catimage), vmin=0)
+        plt.imshow(catimage, cmap='Greys', vmax=0.001*np.amax(catimage), vmin=0)
         plt.scatter(catX, catY)
         plt.scatter(Xo,Yo,c='r')
         for i in range(len(catX)):
@@ -278,7 +279,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #position of star in catalog
         x0, y0 = catXs[i], catYs[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(image, catPSF, catPSFerr, x0, y0, fitsky=fitsky, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(catimage, catPSF, catPSFerr, x0, y0, fitsky=fitsky, verbosity=verbosity-1)
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
@@ -306,22 +307,16 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #diagnostic for SNR, N, I calculation routine
         #checks for wrong correlation between intensity and noise
         import matplotlib.pyplot as plt
-        plt.title("SNR calculation for various reference stars")
-        plt.scatter(catMags, np.log(catSNs), c='r')
-        plt.plot(catMags, max(np.log(catSNs))-(catMags-min(catMags))/2)
-        plt.ylabel("log SNR")
-        plt.xlabel("Mag (~log I)")
-        plt.show()
         plt.title("Noise under various reference stars")
         plt.scatter(catMags, np.log(catIs/catSNs), c='r')
-        plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags))/2)
+        plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags))/2+0.05)
         #plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags)))
         plt.ylabel("log Noise")
         plt.xlabel("Mag (~log I)")
         plt.show()
         plt.title("Intensity of various reference stars")
-        plt.scatter(catMags, np.log(catIs), c='r')
-        plt.plot(catMags, max(np.log(catIs))-(catMags-min(catMags)))
+        plt.scatter(catMags, 2.512*np.log10(catIs), c='r')
+        plt.plot(catMags, max(2.512*np.log10(catIs))-(catMags-min(catMags)))
         plt.ylabel("log I")
         plt.xlabel("Mag (catalog)")
         plt.show()
@@ -540,7 +535,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--noiseSNR", type=float, default=0.0, help="signal to noise at detection limit")
     parser.add_argument("-s", "--satMag", type=float, default=14.0, help="CCD saturation, reference star magnitude upper bound")
     parser.add_argument("-f", "--refMag", type=float, default=19.0, help="Reliable lower bound for reference star brightness")
-    parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs must match original image.")
+    parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs and psf must match original image. If not, matching is required in preprocessing.")
     parser.add_argument("--fit_sky", action='store_const', const=True, default=False, help="Give this flag if it is desirable to fit for and subtract planar sky around the source.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
