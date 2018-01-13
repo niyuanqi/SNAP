@@ -23,6 +23,8 @@ Automatically performs differential photometry on given fits image files. It use
 
 Basic usage in command line (some samples)
 
+*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky conv_image.fits catalog.csv -d diff_image.fits*
+
 *% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 0 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits catalog.csv*
 
 *% python -m SNAP.MagCalc -c aavso -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 10 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits -d example_diffIm.fits my_aavso_catalog_name.cat*
@@ -42,7 +44,7 @@ Basic usage in python routine (sample)
 
 *% from SNAP.MagCalc import magnitude*
 
-*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, wcs_fromfits, 'dprs', '../N2784-7.Q1.DPRS.cat', (140.92247,-21.969278), radius=1000.0, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=14.0, verbosity=0)*
+*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, wcs_fromfits, 'dprs', '../N2784-7.Q1.DPRS.cat', (140.92247,-21.969278), radius=1000.0, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=14.0, refMag=16.0, verbosity=0)*
 
 Try in python shell on any imported modules from SNAP
 
@@ -53,11 +55,11 @@ for explanation of functions and inputs
 
 **DiffIm.py :**
 
-Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction.
+Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements.
 
 Basic usage (sample)
 
-*% python -m SNAP.DiffIm srcfile_name reffile_name outfile_name*
+*% python -m SNAP.DiffIm srcfile_name reffile_name difffile_name convfile_name*
 
 Try in terminal
 
