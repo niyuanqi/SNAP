@@ -208,13 +208,14 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catPSFerrs = [] #fit errors
     catXs = []
     catYs = []
+    catX2dofs = []
     if verbosity > 0:
         print "Calculating intensity for "+str(N)+" catalog stars."
     
     #calculate PSF for each reference star
     for i in range(N):
         if verbosity > 0:
-            print "Computing PSF of "+str(i+1)+"/"+str(N)
+            print "\nComputing PSF of "+str(i+1)+"/"+str(N)
         #position of star in catalog
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio with reduced verbosity
@@ -222,7 +223,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
         #Take only reference stars whose fits are sane
         if plib.E2moff_verify(PSFpopt, x0, y0):
-            #break x,y degeneracy
+            #break x,y degeneracy in theta
             if PSF[0] > PSF[1]:
                 #switched up x,y axes
                 PSF[0], PSF[1] = PSF[1], PSF[0]
@@ -238,9 +239,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #save catalog star fit
             catPSFs.append(PSF)
             catPSFerrs.append(PSFerr)
-            #save ref star position8793.2500572905792, 3071.3548153570159
+            #save ref star position
             catXs.append(PSFpopt[5])
             catYs.append(PSFpopt[6])
+            #save fit X2/dof
+            catX2dofs.append(X2dof)
         else:
             if verbosity > 0:
                 #say something about fit being bad for this particular star
@@ -259,6 +262,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catPSFerrs = np.array(catPSFerrs)
     catXs = np.array(catXs)
     catYs = np.array(catYs)
+    catX2dofs = np.array(catX2dofs)
     
     #calculate average psf among reference stars
     w = 1/np.square(catPSFerrs)
@@ -307,18 +311,25 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #diagnostic for SNR, N, I calculation routine
         #checks for wrong correlation between intensity and noise
         import matplotlib.pyplot as plt
-        plt.title("Noise under various reference stars")
-        plt.scatter(catMags, np.log(catIs/catSNs), c='r')
-        plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags))/2+0.05)
+        catNs = catIs/catSNs
+        plt.title("Measured noise under reference stars")
+        plt.scatter(catMags, np.log(catNs), c='r')
+        plt.plot(catMags, max(np.log(catNs))-(catMags-min(catMags))/2-0.15)
         #plt.plot(catMags, max(np.log(catIs/catSNs))-(catMags-min(catMags)))
         plt.ylabel("log Noise")
         plt.xlabel("Mag (~log I)")
         plt.show()
-        plt.title("Intensity of various reference stars")
-        plt.scatter(catMags, 2.512*np.log10(catIs), c='r')
-        plt.plot(catMags, max(2.512*np.log10(catIs))-(catMags-min(catMags)))
+        plt.title("Measured intensity of reference stars")
+        plt.errorbar(catMags, 2.512*np.log10(catIs), xerr=catMagerrs, yerr=(2.512/np.log(10))*catNs/catIs, fmt='r+', zorder=1)
+        #plt.scatter(catMags, 2.512*np.log10(catIs), c='r')
+        plt.plot(catMags, max(2.512*np.log10(catIs))-(catMags-min(catMags))-0.34, zorder=2)
         plt.ylabel("log I")
         plt.xlabel("Mag (catalog)")
+        plt.show()
+        nums, bins, patches = plt.hist(catX2dofs, bins=30)
+        plt.xlabel("X2/dof")
+        plt.ylabel("Counts")
+        plt.title("Reference star fit qualities")
         plt.show()
 
     #calculate photometry for source object
@@ -356,7 +367,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         Ir = fluxes[bands[band]]*np.power(10,-catMags/2.512)*Io/catIs
         Io_err = Io/SNo
         catI_err = catIs/catSNs
-        Ir_err = Ir*np.sqrt(np.square(1/SNo)+np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.512))
+        Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.512))
 
         #calculate weighted mean
         w = 1/np.square(Ir_err)

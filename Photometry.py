@@ -19,7 +19,7 @@ def dist(x1, y1, x2, y2):
 
 #function: photmetric aperture at (x0,y0) from r1 to r2
 def ap_get(image, x0, y0, r1, r2):
-    xaxis = np.arange(max([0,x0-r2]), min(image.shape[0],x0+r2+1), dtype=int)
+    xaxis = np.arange(max([0,x0-r2]), min(image.shape[1],x0+r2+1), dtype=int)
     yaxis = np.arange(max([0,y0-r2]), min(image.shape[0],y0+r2+1), dtype=int)
     api = np.array([image[y][x] for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     apx = np.array([x for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
@@ -101,6 +101,12 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
     #get fit box to fit psf
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    #get an approximate fix on position
+    x0 = np.sum(intens*x)/intens.sum()
+    y0 = np.sum(intens*y)/intens.sum()
+    #get centered fit box
+    intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
@@ -110,7 +116,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
-        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]])
+        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
@@ -196,7 +202,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        bounds = ([-float("Inf"),0,0],[float("Inf"),image.shape[1],image.shape[0]])
+        bounds = ([-float("Inf"),0,0],[float("Inf"),image.shape[0],image.shape[1]])
         fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: E2moff((x, y),A,ax,ay,b,theta,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #parameters fitted to source
         A = fitpopt[0]
@@ -365,7 +371,7 @@ def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
         Ix_theo = 0
         Iy_theo = 0
         Ix_res = Ix_im
-        Iy_res = Ix_im
+        Iy_res = Iy_im
     
     if fitsky:
         Ix_theo = Ix_theo+D2plane((xt,np.array([int(y0)]*len(xt))),*skypopt)
@@ -531,11 +537,13 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         f, ax = plt.subplots(2, sharex=True)
         ax[0].set_title("Aperture Signal to Noise")
         ax[0].plot(ap_r,SNs,label='SNR')
+        ax[0].plot([radius, radius], [min(SNs), max(SNs)], 'g')
         ax[0].set_ylabel("SN")
         ax[0].legend()
         ax[1].errorbar(ap_r,Is,yerr=sigmas,fmt='r+',label='summed intens')
+        ax[1].plot([radius, radius], [min(Is), max(Is)], 'g')
         ax[1].set_ylabel("I")
-        ax[1].set_xlabel("Aperture R (FWHM)")
+        ax[1].set_xlabel("Aperture R (pix)")
         ax[1].legend()
         plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
         plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
