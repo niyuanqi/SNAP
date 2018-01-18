@@ -61,13 +61,12 @@ def run_hotpants(src_name, template_name, out_name, conv_name):
                      '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0'])
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
         
         #make temporary directory
-        tmpdir = 'DITemp'
         if not os.path.exists(tmpdir):
             os.makedirs(tmpdir)
             
