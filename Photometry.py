@@ -37,6 +37,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane
+    from MagCalc import PSFError
     
     #get background sky annulus
     inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
@@ -68,20 +69,16 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
                 skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
                 skyperr = np.sqrt(np.diag(skypcov))
             except:
-                #fit error really is uncalculable
-                skyperr = [0]*3
+                #fit error really is uncalculable, how???
+                raise PSFError('Unable to fit sky.')
         #calculate sky noise near source
         skyTheo = D2plane((skyx,skyy),*skypopt)
         skyN = np.std(skyi-skyTheo)
         #calculate goodness of fit
         skyX2dof = np.square((skyi-skyTheo)/skyN)/(len(skyi)-3)
     except:
-        #catastrophic failure of sky plane fitting
-        print "Sky fitting catastrophic failure"
-        skypopt = [0]*3
-        skyperr = [0]*3
-        skyX2dof = 0
-        skyN = 0
+        #catastrophic failure of sky plane fitting, How???
+        raise PSFError('Sky fitting catastrophic failure.')
     if verbosity > 0:
         print "sky plane fit parameters"
         print "[a, b, c] = "+str(skypopt)
