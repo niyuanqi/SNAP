@@ -22,23 +22,23 @@ from SNAP.Analysis.Cosmology import*
 plot = False #plot polynomial fits to light curves
 
 #Epoch
-t0 = -18.74
-t0err = 0.64 #in rest frame
+t0 = -19.09 #in observer frame
+t0err = 0.67 #in rest frame
 #t0 = t0 + t0err
 #redshift of N300-1.Q0.SN
-z = 0.057
-zerr = 0.003
+z = 0.063
+zerr = 0.005
 #Extinction coefficient (galactic) in each band S & F (2011)
-EBVgal = 0.107
+EBVgal = 0.0107
 Coefs = np.array([3.641, 2.682, 1.516])
 band = ['B','V','i']
 #max time
-Tmax = 281.982
+Tmax = 282.01
 #explosion parameters
-m_c = 0.900 #1.26/1.4 Mchandra
-e_51 = 0.92 #x10^51 ergs
-m_c_err = 0.086
-e_51_err = 0.19
+m_c = 0.97 #1.36/1.4 Mchandra
+e_51 = 0.99 #x10^51 ergs
+m_c_err = 0.12
+e_51_err = 0.20
 #bands
 band = ['B','V','i']
 Band = ['B','V','I']
@@ -315,7 +315,7 @@ for n in range(3):
 plt.show()
 """
 
-
+"""
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.concatenate([np.arange(0.001,0.2,0.001), np.arange(5.7,5.9,0.001)])#1RG, 6MS, 2MS
@@ -410,9 +410,9 @@ plt.xlabel("Separation Distance ($10^{13}$ cm)", fontsize=16)
 plt.tick_params(labelsize=14)
 plt.tight_layout()
 plt.show()
-
-
 """
+
+
 print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
@@ -435,11 +435,13 @@ def test_a13(a13, sig):
         Fk_err = np.zeros(len(t[i]))
         for r in range(len(t[i])):
             #get theoretical light curve at each time
+            #1000000,1000000,1000000,1000000
+            #200000,200000,200000,200000
             Fk[r], Fk_err[r] = MCerr(KasenFit, [t[i][r], a13, 1.0,
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [200000,200000,200000,200000])
+                                     [1000,1000,1000,1000])
             #print Fk[r], Fk_err[r]
         #if i == 0:
             #print a13, max(Fk), Fk_err[np.argmax(Fk)]
@@ -470,7 +472,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(8)
+    pool = Pool(40)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
@@ -491,7 +493,7 @@ out = np.concatenate(([a13s], outangles), axis=0)
     #print outangles[n]
 
 np.savetxt("kasen.txt", out.T)
-"""
+
     
 #plt.xlim(0,1.0)
 #plt.ylim(0,185)

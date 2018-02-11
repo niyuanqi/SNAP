@@ -23,23 +23,23 @@ from SNAP.Analysis.Cosmology import*
 plot = False #plot polynomial fits to light curves
 
 #Epoch
-t0 = -18.74
-t0err = 0.64 #in rest frame
+t0 = -19.09 #in observer frame
+t0err = 0.67 #in rest frame
 #t0 = t0 + t0err
 #redshift of N300-1.Q0.SN
-z = 0.057
-zerr = 0.003
+z = 0.063
+zerr = 0.005
 #Extinction coefficient (galactic) in each band S & F (2011)
-EBVgal = 0.107
+EBVgal = 0.0107
 Coefs = np.array([3.641, 2.682, 1.516])
 band = ['B','V','i']
 #max time
-Tmax = 281.982
+Tmax = 282.01
 #explosion parameters
-m_c = 0.900 #1.26/1.4 Mchandra
-e_51 = 0.92 #x10^51 ergs
-m_c_err = 0.086
-e_51_err = 0.19
+m_c = 0.97 #1.36/1.4 Mchandra
+e_51 = 0.99 #x10^51 ergs
+m_c_err = 0.12
+e_51_err = 0.20
 #bands
 band = ['B','V','i']
 Band = ['B','V','I']
@@ -61,6 +61,10 @@ print "Correcting for galactic reddening"
 tlim = []
 Flim = []
 for i in range(len(F)):
+    #correct fluxes for AB calibration
+    if i == 2:
+        F[i] = F[i]*1.42392
+        F_err[i] = F_err[i]*1.42392
     #correct fluxes for galactic reddening
     F[i] = deredFlux(F[i], EBVgal, Coefs[i])
     F_err[i] = deredFlux(F_err[i], EBVgal, Coefs[i])
@@ -76,7 +80,7 @@ for i in range(len(F)):
     #Flim[i] = Flim[i][SN[i]<2.0]
 
     #get useful times
-    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10,6, F[i], F_err[i], Flim[i])
+    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10, 6, F[i], F_err[i], Flim[i])
 
 
 outfile = open("log.txt", 'a')
@@ -106,11 +110,12 @@ def test_a13(a13, sig):
         Fk_err = np.zeros(len(t[i]))
         for r in range(len(t[i])):
             #get theoretical light curve at each time
+            #1000000,1000000,1000000,1000000
             Fk[r], Fk_err[r] = MCerr(KasenFit, [t[i][r], a13, 1.0,
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [1000000,1000000,1000000,10000000],
+                                     [1000,1000,1000,10000],
                                      nproc=45)
             #print Fk[r], Fk_err[r]
         #if i == 0:
