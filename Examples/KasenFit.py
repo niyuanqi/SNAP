@@ -95,7 +95,7 @@ for i in range(len(t)):
 plt.show()
 """
 
-print "Trial thetas:", np.linspace(0,180,10)
+#print "Trial thetas:", np.linspace(0,180,10)
 tk = np.arange(0.001, 10, 0.001)
 Fks = [[],[],[]]
 ###################################################################
@@ -470,8 +470,11 @@ def test_a13(gen, gen_err, sig):
     
     return outangles
 
+nproc = 32
+
 #generate synthetic light curves
-pool = Pool(32)
+genlcs = []
+pool = Pool(nproc)
 procs = []
 #for each sample model
 for j, a13 in enumerate(a13s):
@@ -487,7 +490,7 @@ for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
     sig = norm.ppf(conf/100.0)
     
-    pool = Pool(32)
+    pool = Pool(nproc)
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
