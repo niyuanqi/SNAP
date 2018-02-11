@@ -459,7 +459,7 @@ def MCerr(func, ins, params, errs, nums, nproc=1):
     #val_means = np.zeros(n)
     #for each parameter
     for i in range(n):
-        print "computing parameter "+str(i+1)+"/"+str(n)
+        #print "computing parameter "+str(i+1)+"/"+str(n)
         #perturb parameter N times by STD
         trials = np.random.normal(params[i], errs[i], nums[i])
 

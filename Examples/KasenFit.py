@@ -424,10 +424,8 @@ print a13s
 thetas = np.linspace(0,180,100)
 
 #function: test a given a13
-def test_a13(a13, sig):
+def gen_a13(a13):
     print a13
-    #boolean mask for whether angle is ruled out to given confidence
-    mask = np.array([True]*len(thetas))
     #for each band
     for i in range(len(t)):
         #print band[i]
@@ -449,13 +447,20 @@ def test_a13(a13, sig):
             #Ft = [KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tt]
             #print a13, tt[np.argmax(Ft)]
         #for each angle
+    return Fk, Fk_err
+
+def test_a13(gen, gen_err, sig):
+    #boolean mask for whether angle is ruled out to given confidence
+    mask = np.array([True]*len(thetas))
+    
+    for i in range(len(t)):
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
-            if ruleout(F[i], F_err[i], Fk, Fk_err, theta, sig):
+            if ruleout(F[i], F_err[i], gen, gen_err, theta, sig):
                 mask[k] = False
             #else:
                 #print "Consistent!", band[i], a13, norm.cdf(sig), theta
-                
+
     #At this confidence level, we rule out some percent of angles
     outangles = 180.0*float(len(thetas)-len(thetas[mask]))/len(thetas)
     
@@ -464,6 +469,16 @@ def test_a13(a13, sig):
     outfile.close()
     
     return outangles
+
+#generate synthetic light curves
+pool = Pool(32)
+procs = []
+#for each sample model
+for j, a13 in enumerate(a13s):
+    procs.append(pool.apply_async(gen_a13, [a13]))
+#array to hold percent of viewing angles ruled out at each conf
+genlcs.append([proc.get() for proc in procs])
+pool.terminate()
 
 style = ['k:', 'k--', 'k-']
 outangles = []
@@ -476,7 +491,9 @@ for n, conf in enumerate(confs):
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
-        procs.append(pool.apply_async(test_a13, [a13, sig]))
+        Fk = genlcs[j][0]
+        Fk_err = genlcs[j][1]
+        procs.append(pool.apply_async(test_a13, [Fk, Fk_err, sig]))
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
     pool.terminate()
