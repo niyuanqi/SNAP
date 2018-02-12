@@ -473,7 +473,7 @@ def MCerr(func, ins, params, errs, nums, conf, nproc=1):
             procs = []
             #vals = np.zeros(nums[i])
             #for each perturbation
-            for j in range(nums[i]):
+            for j in range(len(trials)):
                 #calculate value using perturbed perameter
                 trial_params = np.copy(params)
                 trial_params[i] = trials[j]
@@ -483,9 +483,9 @@ def MCerr(func, ins, params, errs, nums, conf, nproc=1):
             vals = np.array([proc.get(timeout=10) for proc in procs])
             pool.terminate()
         else:
-            vals = np.zeros(nums[i])
+            vals = np.zeros(len(trials))
             #for each perturbation
-            for j in range(nums[i]):
+            for j in range(len(trials)):
                 #calculate value using perturbed perameter
                 trial_params = np.copy(params)
                 trial_params[i] = trials[j]
