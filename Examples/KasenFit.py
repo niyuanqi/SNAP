@@ -439,7 +439,7 @@ def gen_a13(a13):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [10000,10000,10000,10000], confs[-1])
+                                     [5000,5000,5000,5000], confs[-1])
             #Assumptions here:
             #Independent parameters is a good assumption (MCerr uses this)
             #No covariance simulation needed.
@@ -488,6 +488,7 @@ for j, a13 in enumerate(a13s):
 #array to hold percent of viewing angles ruled out at each conf
 genlcs = [proc.get() for proc in procs]
 pool.terminate()
+print "Generated Light Curves"
 
 print "Checking Against Observations"
 style = ['k:', 'k--', 'k-']
@@ -507,6 +508,7 @@ for n, conf in enumerate(confs):
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
     pool.terminate()
+print "Checked Observations"
     
     #At this conf, we can plot ruled out angles vs a13
     #print conf, outangles
