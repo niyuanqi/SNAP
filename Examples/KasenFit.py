@@ -482,6 +482,9 @@ for j, a13 in enumerate(a13s):
 #array to hold percent of viewing angles ruled out at each conf
 genlcs.append([proc.get() for proc in procs])
 pool.terminate()
+print "!!!!!!!!!"
+print len(genlcs)
+print len(a13s)
 
 style = ['k:', 'k--', 'k-']
 outangles = []
