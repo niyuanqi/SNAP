@@ -439,7 +439,7 @@ def gen_a13(a13):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [5000,5000,5000,5000], confs[-1])
+                                     [10000,10000,10000,10000], confs[-1])
             #Assumptions here:
             #Independent parameters is a good assumption (MCerr uses this)
             #No covariance simulation needed.
