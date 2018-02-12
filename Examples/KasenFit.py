@@ -451,6 +451,7 @@ def gen_a13(a13):
 
 def test_a13(gen, gen_err, sig):
     #boolean mask for whether angle is ruled out to given confidence
+    print sig
     mask = np.array([True]*len(thetas))
     
     for i in range(len(t)):
@@ -472,20 +473,18 @@ def test_a13(gen, gen_err, sig):
 
 nproc = 32
 
+print "Generating Synthetic Light Curves"
 #generate synthetic light curves
-genlcs = []
 pool = Pool(nproc)
 procs = []
 #for each sample model
 for j, a13 in enumerate(a13s):
     procs.append(pool.apply_async(gen_a13, [a13]))
 #array to hold percent of viewing angles ruled out at each conf
-genlcs.append([proc.get() for proc in procs])
+genlcs = [proc.get() for proc in procs]
 pool.terminate()
-print "!!!!!!!!!"
-print len(genlcs)
-print len(a13s)
 
+print "Checking Against Observations"
 style = ['k:', 'k--', 'k-']
 outangles = []
 #for each confidence interval
