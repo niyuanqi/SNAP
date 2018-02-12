@@ -443,15 +443,15 @@ def ruleout(F, Ferr, Fk, Fkerr, theta, sig):
         return False
 
 #function: Monte Carlo Error Analysis (independent gaussian errors)
-def MCerr(func, ins, params, errs, nums, nproc=1):
+def MCerr(func, ins, params, errs, nums, conf, nproc=1):
     #func : function taking in parameters
     #ins : list of inputs to function
     #params : list of parameters to put into function
     #err : list of error associated with parameters
     #nums: list of number of trials to compute for each parameter
     #np.random.seed(0)
-    #function evaluated at central values
-    #val = val_means.mean()
+
+    from scipy.stats import norm
 
     #val = func(*(ins+params))
     n = len(params)
@@ -463,6 +463,9 @@ def MCerr(func, ins, params, errs, nums, nproc=1):
         #print "computing parameter "+str(i+1)+"/"+str(n)
         #perturb parameter N times by STD
         trials = np.random.normal(params[i], errs[i], nums[i])
+        #confidence interval
+        conf_int = norm.interval(conf/100.0, loc=params[i], scale=errs[i])
+        trials = trials[np.logical_and(trials>conf_int[0], trials<conf_int[1])]
 
         if nproc > 1:
             from multiprocessing import Pool
