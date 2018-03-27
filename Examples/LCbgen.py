@@ -152,7 +152,7 @@ for i in range(len(bands)):
         Mtest = True
         so = "_"
         try: #try to load image
-            image, to, wcs = loadFits(filename, verbosity=0)
+            image, to, wcs = loadFits(filename, year=2015, getwcs=True, verbosity=0)
             to = t_bin
         except FitsError:
             #image critically failed to load
