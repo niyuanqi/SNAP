@@ -14,10 +14,10 @@ import math
 import subprocess
 
 #essential files
-from Analysis.LCRoutines import *
-from MagCalc import*
-from Catalog import*
-from Photometry import*
+from SNAP.Analysis.LCRoutines import *
+from SNAP.MagCalc import*
+from SNAP.Catalog import*
+from SNAP.Photometry import*
 
 #N300-1.Q0.SN time series data files
 Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
