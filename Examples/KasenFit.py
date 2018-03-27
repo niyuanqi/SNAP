@@ -510,7 +510,11 @@ procs = []
 for j, a13 in enumerate(a13s):
     procs.append(pool.apply_async(gen_a13, [a13]))
 #array to hold percent of viewing angles ruled out at each conf
-genlcs = [proc.get() for proc in procs]
+genlcs = []
+print "Processes", len(procs)
+for proc in procs:
+    print "getting", proc
+    genlcs.append(proc.get())
 pool.terminate()
 print "Generated Light Curves"
 
