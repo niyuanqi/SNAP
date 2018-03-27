@@ -515,6 +515,7 @@ print "Processes", len(procs)
 for proc in procs:
     print "getting", proc
     genlcs.append(proc.get())
+    print "got", proc
 pool.terminate()
 print "Generated Light Curves"
 
