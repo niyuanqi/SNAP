@@ -45,20 +45,37 @@ Band = ['B','V','I']
 
 print "loading binned data"
 #N300-1.Q0.SN binned time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170804.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+binfiles = [Bfile, Vfile, Ifile] 
+#get N300-1.Q0.SN binned light curve
+t, M, M_err, F, SN, Mlim1 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+#N300-1.Q0.SN binned time series data files
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
+binfiles = [Bfile, Vfile, Ifile] 
+#get N300-1.Q0.SN binned light curve
+t, M, M_err, F, SN, Mlim2 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+#get noise in flux
+F_err = [F[i]/SN[i] for i in range(3)]
+#N300-1.Q0.SN binned time series data files
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
 binfiles = [Bfile, Vfile, Ifile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
-t, M, M_err, F, SN, Mlim = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim3 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(3)]
+#limiting magnitudes at different SNR
+limconf = [Mlim1, Mlim2, Mlim3]
 
 #deredden flux and get templates
 print "Correcting for galactic reddening"
-tlim = []
-Flim = []
+flimconf = limconf
 for i in range(len(F)):
     #correct fluxes for AB calibration
     if i == 2:
@@ -73,13 +90,14 @@ for i in range(len(F)):
     t[i] = t[i] - t0
 
     #get limiting magnitudes
-    Mlim[i] = deredMag(Mlim[i], EBVgal, Coefs[i])
-    Flim.append(Mag_toFlux(band[i], Mlim[i])*10**6)
-    #tlim.append(t[i][SN[i]<2.0])
-    #Flim[i] = Flim[i][SN[i]<2.0]
+    for n in range(len(limconf)):
+        limconf[n][i] = deredMag(limconf[n][i], EBVgal, Coefs[i])
+        flimconf[n][i] = Mag_toFlux(band[i], limconf[n][i])*10**6
+        #tlim.append(t[i][SN[i]<2.0])
+        #Flim[i] = Flim[i][SN[i]<2.0]
 
-    #get useful times
-    t[i], F[i], F_err[i], Flim[i] = LCcrop(t[i], -10, 10, F[i], F_err[i], Flim[i])
+        #get useful times
+        t[i], F[i], F_err[i], flimconf[n][i] = LCcrop(t[i], -10, 10, F[i], F_err[i], flimconf[n][i])
     
 """   
 print "plotting early data"
@@ -417,7 +435,8 @@ print "Computing viewing angles at each separation distance"
 #list of sample models
 #a13s = np.arange(6.01,10.01,0.1) #1RG, 6MS, 2MS
 a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.02), np.arange(0.2, 2.0, 0.05), np.arange(2.0,11.0,1.0)))
-confs = [98, 99, 99.5, 99.73]
+#SNR of 1, 2 3 respectively
+confs = [84.1345, 97.7250, 99.8650]
 print [norm.ppf(conf/100.0) for conf in confs]
 print a13s
 #list of viewing angles
@@ -427,6 +446,8 @@ thetas = np.linspace(0,180,100)
 def gen_a13(a13):
     print a13
     #for each band
+    Fks = []
+    Fk_errs = []
     for i in range(len(t)):
         #print band[i]
         Fk = np.zeros(len(t[i]))
@@ -452,9 +473,11 @@ def gen_a13(a13):
             #Ft = [KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in tt]
             #print a13, tt[np.argmax(Ft)]
         #for each angle
-    return Fk, Fk_err
+        Fks.append(Fk)
+        Fk_errs.append(Fk_err)
+    return Fks, Fk_errs
 
-def test_a13(gen, gen_err, sig):
+def test_a13(gen, gen_err, sig, flim):
     #boolean mask for whether angle is ruled out to given confidence
     print sig
     mask = np.array([True]*len(thetas))
@@ -462,7 +485,7 @@ def test_a13(gen, gen_err, sig):
     for i in range(len(t)):
         for k, theta in enumerate(thetas):
             #check if any points rule out angle with conf
-            if ruleout(F[i], F_err[i], gen, gen_err, theta, sig):
+            if ruleout(F[i], F_err[i], gen[i], gen_err[i], theta, sig, flim[i]):
                 mask[k] = False
             #else:
                 #print "Consistent!", band[i], a13, norm.cdf(sig), theta
@@ -502,9 +525,9 @@ for n, conf in enumerate(confs):
     procs = []
     #for each sample model
     for j, a13 in enumerate(a13s):
-        Fk = genlcs[j][0]
-        Fk_err = genlcs[j][1]
-        procs.append(pool.apply_async(test_a13, [Fk, Fk_err, sig]))
+        Fks = genlcs[j][0]
+        Fk_errs = genlcs[j][1]
+        procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
     pool.terminate()

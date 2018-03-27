@@ -430,14 +430,17 @@ def Kasen_isocorr(theta):
     return 0.982 * np.exp(-(theta/99.7)**2) + 0.018
 
 #function: rule out Kasen model to sig at angle theta
-def ruleout(F, Ferr, Fk, Fkerr, theta, sig):
+def ruleout(F, Ferr, Fk, Fkerr, theta, sig, lims):
     #angle corrected Kasen luminosity
     Fk_theta = Fk*Kasen_isocorr(theta)
     Fk_theta_err = Fkerr*Kasen_isocorr(theta)
     #total error
     Err = np.sqrt(np.square(Ferr)+np.square(Fk_theta_err))
+    #which is more constraining? datapoint or limit?
+    level = F + sig*Err
+    level[level < lims] = lims[level < lims]
     #check if any points rule out angle with conf
-    if any(Fk_theta > F + sig*Err):
+    if any(Fk_theta > level):
         return True
     else:
         return False
