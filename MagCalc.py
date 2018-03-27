@@ -374,6 +374,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         I = np.sum(Ir*w)/np.sum(w)
         I_rand = np.sqrt(1/np.sum(w))
         I_err = np.sqrt((I*Io_err/Io)**2 + I_rand**2)
+        JN = I/Io #jansky - data number conversion, uJy/#
 
         if verbosity > 0:
             print "Contribution of intrinsic error:", Io_err/Io

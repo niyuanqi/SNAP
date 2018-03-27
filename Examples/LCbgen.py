@@ -20,9 +20,9 @@ from Catalog import*
 from Photometry import*
 
 #N300-1.Q0.SN time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lc.CN_170505.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
+Vfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
+Ifile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
 files = [Bfile, Vfile, Ifile]
 
 #get N300-1.Q0.SN light curve
@@ -37,7 +37,7 @@ t_ints = [262.8, 263.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
 lim_lim = 19.0
 
 #file to contain bin files
-bindir = '../N300-1.Q0.SN.bin.new/'
+bindir = '../N300-1.Q0.SN.bin/'
 
 #object position
 RA = 14.263303
@@ -53,11 +53,11 @@ cattype = 'phot'
 #year observed
 year = 2015
 #current time
-t_now = "170523_1400"
+t_now = "180327_1100"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 2.0
+SNRnoise = 1.0
 #saturation level
 satlvl = 14.0
 #number of reference stars used in each band
@@ -69,9 +69,9 @@ bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 
 #N300-1.Q0.SN time series data files
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_170725.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_170725.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_170725.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
@@ -119,9 +119,9 @@ for i in range(len(bands)):
 
 #for each band
 
+bin_ts = []
 for i in range(len(bands)):
     #cycle through the intervals
-    bin_ts = []
     for j in range(len(t_ints)-1):
         #interval boundaries
         t1 = t_ints[j]
@@ -131,6 +131,7 @@ for i in range(len(bands)):
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
         #bin all that remains
         t_bin = t[i][mask].mean()
+        bin_ts.append(t[i][mask])
         bin_names = f[i][mask]
         print "Binning the following files:"
         print bin_names
@@ -140,9 +141,9 @@ for i in range(len(bands)):
         wt_name = out_base+'weight.fits'
         xml_name = out_base+'xml'
         #swarp files between t1 and t2
-        subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
-                         out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
-                         xml_name]+bin_files)
+        #subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
+        #                 out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
+        #                 xml_name]+bin_files)
 
         filename = out_name
         to = t_bin
@@ -216,3 +217,5 @@ for i in range(len(bands)):
         outs[i].write(out)
 for out in outs:
     out.close()
+
+print bins

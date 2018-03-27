@@ -442,6 +442,21 @@ def ruleout(F, Ferr, Fk, Fkerr, theta, sig):
     else:
         return False
 
+#function: rule out Kasen model to sig at angle theta (using both distributions)
+def sym_ruleout(F, Ferr, Fk, Fkerr, JN, theta, sig):
+    #noise in data number
+    N = np.sqrt(np.square(Ferr/JN) - np.absolute(F)/JN)
+    #angle corrected Kasen luminosity
+    Fk_theta = Fk*Kasen_isocorr(theta)
+    Fk_theta_err = Fkerr*Kasen_isocorr(theta)
+    #total error
+    FN_err = np.sqrt(np.square(Fk_theta_err/JN)+np.square(N)+Fk_theta)*JN
+    #check if any points rule out angle with conf
+    if any(Fk_theta - sig*FN_err > F + sig*Ferr):
+        return True
+    else:
+        return False
+
 #function: Monte Carlo Error Analysis (independent gaussian errors)
 def MCerr(func, ins, params, errs, nums, conf, nproc=1):
     #func : function taking in parameters
