@@ -475,6 +475,7 @@ def gen_a13(a13):
         #for each angle
         Fks.append(Fk)
         Fk_errs.append(Fk_err)
+    print "done", a13
     return Fks, Fk_errs
 
 def test_a13(gen, gen_err, sig, flim):
