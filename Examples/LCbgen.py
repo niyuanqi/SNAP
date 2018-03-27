@@ -57,7 +57,7 @@ t_now = "180327_1100"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 1.0
+SNRnoise = 2.0
 #saturation level
 satlvl = 14.0
 #number of reference stars used in each band
@@ -69,9 +69,9 @@ bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 
 #N300-1.Q0.SN time series data files
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S1.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S2.txt"
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
@@ -221,5 +221,5 @@ for out in outs:
     out.close()
 
 print bin_ts
-print [[np.mean(ts, axis=1) for ts in band] for band in bin_ts]
-print [[np.std(ts, axis=1) for ts in band] for band in bin_ts]
+print [[np.mean(ts) for ts in band] for band in bin_ts]
+print [[np.std(ts) for ts in band] for band in bin_ts]
