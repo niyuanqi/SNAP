@@ -119,9 +119,9 @@ for i in range(len(bands)):
 
 #for each band
 
-bins_ts = []
+bin_ts = []
 for i in range(len(bands)):
-    bins_ts.append([])
+    bin_ts.append([])
     #cycle through the intervals
     for j in range(len(t_ints)-1):
         #interval boundaries
