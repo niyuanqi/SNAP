@@ -27,7 +27,7 @@ files = [Bfile, Vfile, Ifile]
 
 #get N300-1.Q0.SN light curve
 t, M, M_err, F, SN, Mlim, f = LCload(files, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, fcols=1, scols=9, flags=['-99.99999'], mode='multi')
-
+print f
 #time intervals
 t_ints = [262.8, 263.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
           267.5, 268.64, 268.8, 270.167, 270.28, 270.4, 270.647, 270.8,
