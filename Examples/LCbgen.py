@@ -119,8 +119,9 @@ for i in range(len(bands)):
 
 #for each band
 
-bin_ts = []
+bins_ts = []
 for i in range(len(bands)):
+    bins_ts.append([])
     #cycle through the intervals
     for j in range(len(t_ints)-1):
         #interval boundaries
@@ -131,9 +132,10 @@ for i in range(len(bands)):
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
         #bin all that remains
         t_bin = t[i][mask].mean()
-        bin_ts.append(t[i][mask])
+        bin_ts[i].append(t[i][mask])
         bin_names = f[i][mask]
         print "Binning the following files:"
+        print i
         print bin_names
         bin_files = [glob(prefix+name+'*.fits')[0] for name in bin_names]
         out_base = bindir+prefix+bands[i]+'.'+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]+".coadd."
