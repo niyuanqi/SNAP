@@ -218,4 +218,4 @@ for i in range(len(bands)):
 for out in outs:
     out.close()
 
-print bins
+print bin_ts
