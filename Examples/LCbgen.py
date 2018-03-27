@@ -221,3 +221,5 @@ for out in outs:
     out.close()
 
 print bin_ts
+print [[np.mean(ts, axis=1) for ts in band] for band in bin_ts]
+print [[np.std(ts, axis=1) for ts in band] for band in bin_ts]
