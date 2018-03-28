@@ -13,6 +13,7 @@ from scipy.optimize import curve_fit
 from scipy.optimize import leastsq
 from scipy.stats import norm
 from multiprocessing import Pool
+import matplotlib.pyplot as plt
 
 #essential files
 from SNAP.Analysis.LCRoutines import*
@@ -534,6 +535,16 @@ for n, conf in enumerate(confs):
         Fks = genlcs[j][0]
         Fk_errs = genlcs[j][1]
         procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
+        if n = 2 and a13 > 0.555 and a13 < 0.639:
+            #plot section
+            f, ax = plt.subplots(len(t), sharex=True) 
+            for i in range(len(t)):
+                #ax[i].errorbar(t1[i], M1[i], yerr=M1_err[i], fmt='r+', label='SrcExt')
+                ax[i].errorbar(t[i], M[i], yerr=sig*M_err[i], fmt="k+")
+                ax[i].errorbar(t[i], Fks[i], yerr=sig*Fk_errs[i], fmt="g+")
+                ax[i].scatter(t[i], flimconf[n][i], color='r', marker='v')
+            plt.show()
+        
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
     pool.terminate()
