@@ -539,8 +539,7 @@ for n, conf in enumerate(confs):
             #plot section
             f, ax = plt.subplots(len(t), sharex=True) 
             for i in range(len(t)):
-                #ax[i].errorbar(t1[i], M1[i], yerr=M1_err[i], fmt='r+', label='SrcExt')
-                ax[i].errorbar(t[i], M[i], yerr=sig*M_err[i], fmt="k+")
+                ax[i].errorbar(t[i], F[i], yerr=sig*F_err[i], fmt="k+")
                 ax[i].errorbar(t[i], Fks[i], yerr=sig*Fk_errs[i], fmt="g+")
                 ax[i].scatter(t[i], flimconf[n][i], color='r', marker='v')
             plt.show()
