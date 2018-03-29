@@ -535,7 +535,7 @@ for n, conf in enumerate(confs):
         Fks = genlcs[j][0]
         Fk_errs = genlcs[j][1]
         procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
-        if n == 2 and a13 > 0.20 and a13 < 0.21:
+        if n == 2 and a13 > 0.198 and a13 < 0.202:
             #plot section
             f, ax = plt.subplots(len(t), sharex=True) 
             for i in range(len(t)):
