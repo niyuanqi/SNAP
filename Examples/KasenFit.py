@@ -544,7 +544,7 @@ for n, conf in enumerate(confs):
                 ax[i].errorbar(t[i], Fks[i], yerr=sig*Fk_errs[i], fmt="g+")
                 ax[i].scatter(t[i], flimconf[n][i], color='r', marker='v')
             plt.subplots_adjust(hspace=None)
-            plt.plot()
+            plt.show()
         
     #array to hold percent of viewing angles ruled out at each conf
     outangles.append([proc.get() for proc in procs])
