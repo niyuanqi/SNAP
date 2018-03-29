@@ -540,8 +540,9 @@ for n, conf in enumerate(confs):
             #plot section
             f, ax = plt.subplots(len(t), sharex=True) 
             for i in range(len(t)):
+                c = Kasen_isocorr(80)
                 ax[i].errorbar(t[i], F[i], yerr=sig*F_err[i], fmt="k+")
-                ax[i].errorbar(t[i], Fks[i], yerr=sig*Fk_errs[i], fmt="g+")
+                ax[i].errorbar(t[i], Fks[i]*c, yerr=sig*Fk_errs[i]*c, fmt="g+")
                 ax[i].scatter(t[i], flimconf[n][i], color='r', marker='v')
             plt.subplots_adjust(hspace=None)
             plt.show()
