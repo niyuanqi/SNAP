@@ -69,9 +69,9 @@ bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 
 #N300-1.Q0.SN time series data files
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S3.txt"
+outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
+outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
+outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
