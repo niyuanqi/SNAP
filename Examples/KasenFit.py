@@ -46,16 +46,16 @@ Band = ['B','V','I']
 
 print "loading binned data"
 #N300-1.Q0.SN binned time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S05.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S05.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S05.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S05.txt"
 binfiles = [Bfile, Vfile, Ifile] 
 #get N300-1.Q0.SN binned light curve
 t, M, M_err, F, SN, Mlim1 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
 #N300-1.Q0.SN binned time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S16.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S16.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180327.S16.txt"
+Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
+Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
+Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
 binfiles = [Bfile, Vfile, Ifile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
