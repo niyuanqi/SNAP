@@ -59,11 +59,11 @@ Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.t
 binfiles = [Bfile, Vfile, Ifile] 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
-t, M, M_err, F, SN, Mlim3 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim2 = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(3)]
 #limiting magnitudes at different SNR
-limconf = [Mlim1, Mlim2, Mlim3]
+limconf = [Mlim1, Mlim2]
 
 #deredden flux and get templates
 print "Correcting for galactic reddening"
@@ -512,7 +512,7 @@ pool.terminate()
 print "Generated Light Curves"
 
 print "Checking Against Observations"
-style = ['k:', 'k--', 'k-']
+#style = ['k:', 'k--', 'k-']
 outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
@@ -526,7 +526,7 @@ for n, conf in enumerate(confs):
         Fks = genlcs[j][0]
         Fk_errs = genlcs[j][1]
         procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
-        if n == 2 and a13 > 0.195 and a13 < 0.205:
+        if n == 2 and a13 > 0.195 and a13 < 0.205 and False:
             print "plotting section"
             #plot section
             f, ax = plt.subplots(len(t), sharex=True) 
