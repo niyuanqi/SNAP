@@ -57,7 +57,7 @@ t_now = "180327_1100"
 #user running this code
 user = "Chris Ni"
 #noise level
-SNRnoise = 3.0
+SNRnoise = 0.4676988
 #saturation level
 satlvl = 14.0
 #number of reference stars used in each band
@@ -221,5 +221,9 @@ for out in outs:
     out.close()
 
 print bin_ts
+print "means"
 print [[np.mean(ts) for ts in band] for band in bin_ts]
+print "stds"
 print [[np.std(ts) for ts in band] for band in bin_ts]
+print "Ns"
+print [[len(ts) for ts in band] for band in bin_ts]
