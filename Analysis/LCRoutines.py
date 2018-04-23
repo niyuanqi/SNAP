@@ -219,7 +219,7 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         #check for string comments
         if strs is not None:
             #str flag values
-            sflags = ['BAD_IMAGE', 'SATURATED', 'FALSE_DET']
+            sflags = ['BAD_IMAGE', 'SATURATED', 'FALSE_DET']+flags
             #remove elements with bad sflag value
             for sflag in sflags:
                 #apply filter based on strs

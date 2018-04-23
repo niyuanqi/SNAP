@@ -27,10 +27,27 @@ def ap_get(image, x0, y0, r1, r2):
     return api, apx, apy
 
 #function: clean out cosmic rays and junk from PSF
-def PSFclean(x,y,psf,ref,skyN,f=5):
+def PSFclean(x,y,psf,ref,skyN,sat=40000,f=5):
+    #remove saturated pixels
+    mask1 = psf<sat
     #remove pixels that are 5sigma below or above fit (dead? hot?)
-    mask = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+    mask2 = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+    #combine
+    mask = np.logical_and(mask1, mask2)
     return x[mask], y[mask], psf[mask]
+
+#function: measure saturation level of CCD
+def satpix(image):
+    #Make histogram of pixel values
+    ns, bins = np.histogram(image, bins=100)
+    bins = (bins[1:]-bins[:-1])/2.0 + bins[:-1]
+    #Half of max pixel value
+    half = bins[-1]/2.0
+    mask = bins > half
+    #Determine pixel full well capacity
+    full = bins[mask][np.argmax[ns[mask]]]
+    #Return saturation level
+    return full/2.0
 
 #function: fits background sky plane and noise
 def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
@@ -87,7 +104,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
     return skypopt, skyperr, skyX2dof, skyN
 
 #function: extracts PSF from source
-def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
+def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=0, verbosity=0):
     
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -109,6 +126,12 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
         sky = D2plane((x,y),*skypopt)
         #subtract sky background
         intens = intens - sky
+
+    if sat == 0:
+        #measure saturation level: works if there is saturated star 
+        sat = satpix(image)
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     
     try:
         #fit 2d psf to background subtracted source light
@@ -118,7 +141,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
 
         #calculate better PSF from cleaner data
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -171,7 +194,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
     
 #function: fits PSF to source
-def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
+def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -195,6 +218,12 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         sky = D2plane((x,y),*skypopt)
         #subtract sky background
         intens = intens - sky
+
+    if sat == 0:
+        #measure saturation level: works if there is saturated star
+        sat = satpix(image)
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -209,7 +238,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: E2moff((x, y),A,ax,ay,b,theta,X0,Y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -256,7 +285,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
 
 #function: scales PSF to source location
-def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
+def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
     
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -283,6 +312,12 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         sky = D2plane((x,y),*skypopt)
         #subtract sky background
         intens = intens - sky
+
+    if sat == 0:
+        #measure saturation level: works if there is saturated star
+        sat = satpix(image)
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -293,7 +328,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A: E2moff((x, y),A,ax,ay,b,theta,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, absolute_sigma=True, maxfev=maxfev)
