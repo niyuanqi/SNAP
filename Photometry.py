@@ -104,7 +104,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
     return skypopt, skyperr, skyX2dof, skyN
 
 #function: extracts PSF from source
-def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=0, verbosity=0):
+def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -127,9 +127,6 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=0, verbosity=0):
         #subtract sky background
         intens = intens - sky
 
-    if sat == 0:
-        #measure saturation level: works if there is saturated star 
-        sat = satpix(image)
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     
@@ -194,7 +191,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=0, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
     
 #function: fits PSF to source
-def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
+def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -219,9 +216,6 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
         #subtract sky background
         intens = intens - sky
 
-    if sat == 0:
-        #measure saturation level: works if there is saturated star
-        sat = satpix(image)
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     
@@ -285,7 +279,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
 
 #function: scales PSF to source location
-def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
+def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
@@ -313,9 +307,6 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=0, verbosity=0):
         #subtract sky background
         intens = intens - sky
 
-    if sat == 0:
-        #measure saturation level: works if there is saturated star
-        sat = satpix(image)
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     

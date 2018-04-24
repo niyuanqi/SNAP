@@ -192,6 +192,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             print ID[int(i)], catX[int(i)], catY[int(i)]
             print RA[int(i)], DEC[int(i)], catM[int(i)], catMerr[int(i)]
 
+    if satpix == 0:
+        #measure saturation level: works if there is saturated star 
+        sat = satpix(image)
     if verbosity > 3:
         #plot image of catalog positions
         plt.imshow(catimage, cmap='Greys', vmax=0.001*np.amax(catimage), vmin=0)
