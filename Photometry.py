@@ -50,7 +50,7 @@ def satpix(image):
     return full/2.0
 
 #function: fits background sky plane and noise
-def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
+def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane
@@ -72,7 +72,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, verbosity=0):
         skyTheo = D2plane((skyx,skyy),*skypopt)
         skyN = np.std(skyi-skyTheo)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,5)
+        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,5)
         
         #calculate better fit from cleaner data
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
@@ -110,7 +110,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
     
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity)
     
     #get fit box to fit psf
     fsize = 3
@@ -205,7 +205,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, sat, verbosity=0)
 
     #get fit box to fit psf
     fsize = 3
@@ -285,7 +285,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
     
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, sat, verbosity=0)
 
     #get given fit parameters
     ax, axerr = PSF[0], PSFerr[0]
