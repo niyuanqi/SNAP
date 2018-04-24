@@ -205,7 +205,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
 
     #get fit box to fit psf
     fsize = 3
@@ -283,9 +283,6 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
-    
-    #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, sat, verbosity=0)
 
     #get given fit parameters
     ax, axerr = PSF[0], PSFerr[0]
@@ -296,7 +293,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm=5.0, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
 
     #get fit box to fit psf
     fsize = 3
