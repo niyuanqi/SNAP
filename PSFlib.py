@@ -145,7 +145,7 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
         elif est_area > np.pi*np.square(3.0*max(FWHMx, FWHMy)):
             #area under PSF domain too large
             return False
-        elif dist(X0,Y0,x0,y0)>10:
+        elif dist(X0,Y0,x0,y0)>5:
             #not our source
             return False
         elif b <= 1.0:

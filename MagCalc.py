@@ -334,6 +334,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         plt.ylabel("Counts")
         plt.title("Reference star fit qualities")
         plt.show()
+        nums, bins, patches = plt.hist(catPSFs.T[3], bins=30)
+        plt.xlabel("X2/dof")
+        plt.ylabel("Counts")
+        plt.title("Reference Star Thetas")
+        plt.show()
 
     #calculate photometry for source object
     if verbosity > 0:
