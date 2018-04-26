@@ -78,6 +78,8 @@ else:
     outV = open(outVname, 'a')
     outI = open(outIname, 'a')
     outs = [outB, outV, outI]
+    #already processed files is empty
+    f_done = [[],[],[]]
     #write headers for BVI light curve output files
     for i in range(len(bands)):
         outs[i].write("; SOURCE_RA_DEC\t"+str(ra)+"\t"+str(dec))
