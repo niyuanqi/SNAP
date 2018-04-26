@@ -1,7 +1,7 @@
 #################################################################
 # Name:     LCbgen.py                                           #
 # Author:   Yuan Qi Ni                                          #
-# Date:     May 23, 2017                                        #
+# Date:     Apr. 26, 2018                                       #
 # Function: Program uses MagCalc routine and BinIm routine      #
 #           to add binned data to a light curve file.           #
 #################################################################
@@ -19,59 +19,35 @@ from SNAP.MagCalc import*
 from SNAP.Catalog import*
 from SNAP.Photometry import*
 
-#N300-1.Q0.SN time series data files
-Bfile = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
-Vfile = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
-Ifile = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcAp.CN_170727.txt"
-files = [Bfile, Vfile, Ifile]
+#essential data
+from ObjData import*
 
-#get N300-1.Q0.SN light curve
+#time series data files
+files = [outBname, outVname, outIname]
+
+#get light curve
 t, M, M_err, F, SN, Mlim, f = LCload(files, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, fcols=1, scols=9, flags=['-99.99999'], mode='multi')
-print f
+t1 = 85
+t2 = 94.5
+for i in range(len(M)):
+    t[i], M[i], M_err[i], Mlim[i], f[i] = LCcrop(t[i], t1, t2, M[i], M_err[i], Mlim[i], f[i])
+
 #time intervals
-t_ints = [262.8, 263.0, 264.5, 264.65, 265.0, 266.7, 266.975, 267.06,
-          267.5, 268.64, 268.8, 270.167, 270.28, 270.4, 270.647, 270.8,
-          272.4, 272.8, 274.22, 274.313, 274.4, 274.6, 274.8]
+t_ints = [85.4, 85.6, 86.0, 87.2, 87.6]
 
 #lowest limiting magnitude (worst image quality)
 lim_lim = 19.0
 
 #file to contain bin files
-bindir = '../N300-1.Q0.SN.bin/'
+bindir = '../bin/'
 
-#object position
-RA = 14.263303
-DEC = -37.039900
-#object name
-name = 'N300-1.Q0.SN'
-#file prefix
-prefix = 'N300-1.Q0.'
-#catalog to use
-catname = 'N300_1_Q0_SN.csv'
-#type of catalog
-cattype = 'phot'
-#year observed
-year = 2015
-#current time
-t_now = "180327_1100"
-#user running this code
-user = "Chris Ni"
-#noise level
-SNRnoise = 1.6448536
-#saturation level
-satlvl = 14.0
-#number of reference stars used in each band
-nrefs = [6,3,2]
-#photometric radius
-radphot = 1000.0
 #observation filters
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 
-#N300-1.Q0.SN time series data files
-outBname = "N300-1.Q0.B.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
-outVname = "N300-1.Q0.V.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
-outIname = "N300-1.Q0.I.005703D193-370223D6.150625-160111.var.lcbin.CN_180330.S16.txt"
+outBname = binBname
+outVname = binVname
+outIname = binIname
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
@@ -112,17 +88,15 @@ outI = open(outIname, 'a')
 outs = [outB, outV, outI]
 #write headers for BVI light curve output files
 for i in range(len(bands)):
-    outs[i].write("; SOURCE_RA_DEC\t"+str(RA)+"\t"+str(DEC))
+    outs[i].write("; SOURCE_RA_DEC\t"+str(ra)+"\t"+str(dec))
     outs[i].write("\n; NUMBER_OF_REFERENCES\t"+str(nrefs[bindex[bands[i]]]))
     outs[i].write("\n; "+str(user)+"\t"+str(t_now))
     outs[i].write(headGen())
 
 #for each band
-
-bin_ts = []
 for i in range(len(bands)):
-    bin_ts.append([])
     #cycle through the intervals
+    bin_ts = []
     for j in range(len(t_ints)-1):
         #interval boundaries
         t1 = t_ints[j]
@@ -132,20 +106,18 @@ for i in range(len(bands)):
         mask = np.logical_and(mask, Mlim[i]>lim_lim)
         #bin all that remains
         t_bin = t[i][mask].mean()
-        bin_ts[i].append(t[i][mask])
         bin_names = f[i][mask]
         print "Binning the following files:"
-        print i
-        print bin_names
-        bin_files = [glob(prefix+name+'*.fits')[0] for name in bin_names]
+        bin_files = [glob('../raw/'+prefix+name+'*.fits')[0] for name in bin_names]
+        print bin_files
         out_base = bindir+prefix+bands[i]+'.'+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]+".coadd."
         out_name = out_base+'fits'
         wt_name = out_base+'weight.fits'
         xml_name = out_base+'xml'
         #swarp files between t1 and t2
-        #subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
-        #                 out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
-        #                 xml_name]+bin_files)
+        subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
+                         out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
+                         xml_name]+bin_files)
 
         filename = out_name
         to = t_bin
@@ -154,7 +126,7 @@ for i in range(len(bands)):
         Mtest = True
         so = "_"
         try: #try to load image
-            image, to, wcs = loadFits(filename, year=2015, getwcs=True, verbosity=0)
+            image, to, wcs = loadFits(filename, year=year, getwcs=True, verbosity=0)
             to = t_bin
         except FitsError:
             #image critically failed to load
@@ -165,7 +137,7 @@ for i in range(len(bands)):
 
         if Mtest:
             try:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (RA,DEC), radius=radphot, aperture=0, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, verbosity=0)
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, aperture=0, psf=1, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=1000000000.0, verbosity=0)
                 
                 #check if MagCalc returns nonsense
                 if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
@@ -185,11 +157,11 @@ for i in range(len(bands)):
                         RAo, DECo = -99.9, -99.9
                         Mtest = False
                     else:
-                        RAo = RAo - RA
-                        DECo = DECo - DEC
+                        RAo = RAo - ra
+                        DECo = DECo - dec
                 else:
-                    RAo = RAo - RA
-                    DECo = DECo - DEC
+                    RAo = RAo - ra
+                    DECo = DECo - dec
             
             except PSFError: #if image PSF cant be extracted
                 RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
@@ -219,11 +191,3 @@ for i in range(len(bands)):
         outs[i].write(out)
 for out in outs:
     out.close()
-
-print bin_ts
-print "means"
-print [[np.mean(ts) for ts in band] for band in bin_ts]
-print "stds"
-print [[np.std(ts) for ts in band] for band in bin_ts]
-print "Ns"
-print [[len(ts) for ts in band] for band in bin_ts]
