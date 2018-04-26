@@ -1,9 +1,10 @@
 #################################################################
-# Name:     LCgen.py                                            #
+# Name:     LCdgen.py                                           #
 # Author:   Yuan Qi Ni                                          #
-# Date:     July 10, 2017                                       #
+# Date:     Apr. 26, 2018                                       #
 # Function: Program uses MagCalc routine to generate light      #
 #           curve file of magnitudes and limiting magnitudes.   #
+#           Apply to subtracted images and convolved images.    #
 #################################################################
 
 #essential modules

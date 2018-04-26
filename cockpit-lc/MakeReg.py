@@ -1,7 +1,7 @@
 #################################################################
 # Name:     MakeReg.py                                          #
 # Author:   Yuan Qi Ni                                          #
-# Date:     July 7, 2016                                        #
+# Date:     Apr. 26, 2018                                       #
 # Function: Program makes a reg file from coordinates.          #
 #################################################################
 
