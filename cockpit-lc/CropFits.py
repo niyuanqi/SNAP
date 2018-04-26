@@ -12,8 +12,8 @@ from glob import glob
 
 #essential imports
 from SNAP.CropIm import make_crop_image
-from ObjData import *
 from ContextManager import cd
+from ObjData import *
 
 #current working directory
 wd = os.getcwd()
@@ -38,4 +38,4 @@ for filename in filenames:
     if os.path.exists(outname):
         print outname+" already exists"
     else:
-        make_crop_image(filename, outname, size/2)
+        make_crop_image(filename, outname, ra, dec, size/2)

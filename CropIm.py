@@ -7,7 +7,7 @@
 #################################################################
 
 #function: crop image given
-def make_crop_image(filename, outname, radius):
+def make_crop_image(filename, outname, ra, dec, radius):
 
     from astropy.io import fits
     from astropy.wcs import WCS
