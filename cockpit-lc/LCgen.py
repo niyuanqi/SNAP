@@ -67,6 +67,10 @@ if os.path.exists(outBname) and os.path.exists(outVname) and os.path.exists(outI
     fV_done = np.loadtxt(outVname, dtype=str, comments=';', usecols=[1])
     fI_done = np.loadtxt(outIname, dtype=str, comments=';', usecols=[1])
     f_done = [fB_done, fV_done, fI_done]
+    outB = open(outBname, 'a')
+    outV = open(outVname, 'a')
+    outI = open(outIname, 'a')
+    outs = [outB, outV, outI]
 else:
     print "Starting "+outBname
     print "Starting "+outVname
