@@ -6,7 +6,7 @@ Implements python routines for performing photometry, astrometry, etc.
 
 The flagship program is MagCalc.py.
 
-LCgen.py is a sample script using which one may generate a MagCalc light curve.
+cockpit-lc contains a compact set of routines which one may use to generate light curves. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
