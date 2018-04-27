@@ -19,7 +19,7 @@ Wl = 0.73 #vacuum density parameter
 #Reiss  Cosmological parameters from SN1a
 
 #calibration information
-#band zero fluxes [Jy] from Bessel 1998
+#band zero fluxes [Jy] from Bessel 1998 (outdated)
 #flux_0 = [1790, 4063, 3636, 3064, 2416]
 #band zero fluxes [Jy] in UBVri with mix from AB system
 flux_0 = [1790, 4063, 3636, 3631, 3631]

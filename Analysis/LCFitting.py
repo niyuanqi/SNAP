@@ -274,6 +274,8 @@ def ArnettFit(t, M_N, MejE):
     #dt=(np.arange(103*4)/4.+0.25)*86400.
     #dt = np.arange(0.25,103.25,0.25)*86400.
     dt = t*86400.
+    dt = np.array([dt]) if (isinstance(dt, np.float64) or isinstance(dt, float)) else dt
+    n = len(dt)
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.1 #g/cm^2 optical opacity (this corresponds to electron scattering)
@@ -288,15 +290,15 @@ def ArnettFit(t, M_N, MejE):
     tau_m=((k_opt/(beta*c))**0.5)*((10./3.)**(0.25))*M_ejE_K
 
     #integrate up the A(z) factor where z goes from 0 to x
-    int_A=np.zeros(len(dt)) 
-    int_B=np.zeros(len(dt)) 
-    L_ph=np.zeros(len(dt))
+    int_A=np.zeros(n) 
+    int_B=np.zeros(n) 
+    L_ph=np.zeros(n)
 
     x=dt/tau_m
     y=tau_m/(2.*tau_Ni)
     s=tau_m*(tau_Co-tau_Ni)/(2.*tau_Co*tau_Ni)
 
-    for i in range(len(dt)):
+    for i in range(n):
 	z=np.arange(100)*x[i]/100.
 	Az=2.*z*np.exp(-2.*z*y+np.square(z))
 	Bz=2.*z*np.exp(-2.*z*y+2.*z*s+np.square(z))
@@ -307,18 +309,53 @@ def ArnettFit(t, M_N, MejE):
     #return results
     return L_ph
 
-#function: Arnett max light error for leastsq fitting
-def ArnettMaxErr(p, tmax, tmax_err, Lmax, Lmax_err):
-    t_arnett = np.arange(0.25,103.25,0.1)
-    L_arnett = ArnettFit(t_arnett, abs(p[0]), abs(p[1]))
-    La_max = max(L_arnett)
-    ta_max = t_arnett[np.argmax(L_arnett)]
-    LX2 = (La_max-Lmax)/Lmax_err
-    tX2 = (ta_max-tmax)/tmax_err
-    err = np.sqrt(np.square(LX2) + np.square(tX2))
-    #helping to choose step size in leastsq
-    #print p, np.sqrt(np.sum(np.square(err)))
-    return err
+#function: easily get nickel mass from arnett model using max
+def ArnettNi56(p, tmax, Lmax):
+    return Lmax/ArnettFit(tmax, 1.0, np.absolute(p))
+
+#function: get Ni26 mass from arnett model using max and errors
+def ArnettNi56MC(p, tmax, Lmax, Lmax_err, n=100):
+    #bootstrap sample intercept
+    y = np.random.normal(Lmax, Lmax_err, n)
+    Nis = np.absolute(ArnettNi56(p, tmax, y))
+    return np.mean(Nis), np.std(Nis)
+
+#function: Arnett error function for determining MejEk parameter
+def ArnettMaxErr1(p, tmax, tmax_err):
+
+    from scipy.optimize import fmin
+
+    #get maximum of 
+    ta_max = fmin(lambda t: -1*ArnettFit(t, 1.0, np.absolute(p)), 50, (), 0.01)[0]
+    tX2 = np.absolute(ta_max-tmax)/tmax_err
+    return tX2
+
+#function: fit 2 parameter function to a 2D intercept using Monte Carlo
+def ArnettIntercept(tmax, Lmax, tmax_err, Lmax_err, p0=1.2, n=100, nproc=4):
+
+    from scipy.optimize import fmin
+    from multiprocessing import Pool
+
+    #to pickle properly, you need dill.
+    from multi import apply_async
+
+    pool = Pool(nproc)
+    
+    #bootstrap sample in x-direction to determine MejEk
+    xs = np.random.normal(tmax, tmax_err, n)
+    #For each point, solve function
+    procs = []
+    for i, x in enumerate(xs):
+        print str(i+1)+'/'+str(n)
+        errfunc = lambda p: ArnettMaxErr1(p, x, tmax_err)
+        procs.append(apply_async(pool, fmin, [errfunc, p0, (), 0.001, 0.01]))
+    popt = [proc.get()[0] for proc in procs]
+    ME = np.mean(popt, axis=0)
+    MEerr = np.std(popt, axis=0)
+    #use vertical error to get Ni56
+    Ni56, Ni56err = ArnettNi56MC(ME, tmax, Lmax, Lmax_err, n=n)
+    #return parameters
+    return Ni56, ME, Ni56err, MEerr
 
 #function: break Arnett degeneracy
 def ArnettMejE(MejE, MejEerr, vej, vejerr):
@@ -569,3 +606,7 @@ def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True,
     pfit_bootstrap = popt
     perr_bootstrap = err_pfit
     return pfit_bootstrap, perr_bootstrap 
+
+    
+
+    

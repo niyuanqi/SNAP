@@ -11,13 +11,11 @@ Order of work for KSP-N3923-2_2018ku
 Note:
 To avoid confusion, don't forget to date each LC in ObjData using outXname.
 Binned early light curve doesn't need to be remade, *180426.txt should be good.
+We should these steps every few days.
 
 Data Info:
 verified that crop images at size 2000 have enough reference stars
 verified that images don't need subtraction
-
-Next Steps:
-need to update light curve with new data
 
 For testing images:
 python -m SNAP.MagCalc -c aavso -o N3923-2.Q1.SN -b 'B' -p 177.757506:-28.744022 -r 2000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 -psf 2 --fit_sky N3923-2.Q1.B.180414_2056.S.053762.115014N2836.0060.nh.fits ../cockpit/N3923-2.Q1.AAVSO.cat

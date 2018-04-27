@@ -1,0 +1,25 @@
+Order of work for KSP-N3923-2_2018ku
+
+1. Update light curves *.lc.*.txt in \cockpit-lc
+2. Make light curves into SNooPy compatible format
+   >python LCsnpy.py
+3. Recompute template parameters using SNooPy
+   >python SNphillips.py
+4. Refit early light curve (Tmax and maxes have changed)
+   >python EarlyFit.py
+5. Refit Arnett model (Tmax has changed)
+   >python ArnettFit.py
+6. Compare with Kasen models (Arnett parameters changed)
+   >python KasenCompare.py
+
+Note:
+Edit ObjData.py after each step, fill out the form using new outputs.
+(Otherwise, nothing will change).
+For part 2: make sure old sn_file is removed
+Parts 5, 6 outputs should not change much with new data.
+Part 3 may change a lot.
+We should update light curves, and then do these steps every few days.
+
+For convenience:
+I use LCfig.py to plot my light curves.
+I use LCplot.py to check light curve characteristics.
