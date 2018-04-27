@@ -6,15 +6,19 @@ Implements python routines for performing photometry, astrometry, etc.
 
 The flagship program is MagCalc.py.
 
-cockpit-lc contains a compact set of routines which one may use to generate light curves. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
+cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
 
 The subpackage Analysis contains tools for dealing with such light curves.
+
+cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. It can use SNooPy to fit for Phillips parameters, it can fit power law to early light curve, it can perform Arnett modelling, it can compare early light curve to Kasen interaction models.
 
 To use any of these modules, add SNAP to your PYTHONPATH
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
-Also requires latest astropy to function properly.
+Requires latest astropy to function properly.
+Requires dill to use certain monte carlo intensive routines.
+Requires SNooPy (Burns 2011) to analyse type 1a supernovae.
 
 
 **MagCalc.py :**
