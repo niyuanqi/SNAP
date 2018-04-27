@@ -2,7 +2,7 @@
 SuperNova Analysis Package
 
 Performs data analysis and processing on images containing transient sources.
-Implements python routines for performing photometry, astrometry, etc.
+Implements python routines for performing photometry, astrometry, etc. Also can analyse supernova type 1a light curves.
 
 The flagship program is MagCalc.py.
 
@@ -10,14 +10,16 @@ cockpit-lc contains a compact set of routines which one may use to generate ligh
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
-cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. It can use SNooPy to fit for Phillips parameters, it can fit power law to early light curve, it can perform Arnett modelling, it can compare early light curve to Kasen interaction models.
+cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models.
 
 To use any of these modules, add SNAP to your PYTHONPATH
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
 Requires latest astropy to function properly.
+
 Requires dill to use certain monte carlo intensive routines.
+
 Requires SNooPy (Burns 2011) to analyse type 1a supernovae.
 
 
