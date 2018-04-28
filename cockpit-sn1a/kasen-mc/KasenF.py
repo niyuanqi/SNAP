@@ -38,7 +38,7 @@ limconf = []
 #load each set of limiting magnitudes
 for i in range(len(limSNs)):
     tc, Mc, Mc_err, Fc, SNc, Mlimc = LCload(conffiles.T[i], tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
-    limconf.append(Mlim)
+    limconf.append(Mlimc)
 
 #deredden flux and shift light curve
 print "Correcting for galactic reddening"
