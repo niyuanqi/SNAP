@@ -1,0 +1,25 @@
+Order of work for kasen comparison of KSP-N3923-2_2018ku
+
+1. Update values in ObjData with latest results from Arnett fitting etc.
+2. Compare the full range of kasen models (a13, conf) naively
+   assuming flux measurement is the only error source. This is fast.
+   >python KasenF.py
+3. Compare again, but this time using Monte Carlo to account for full
+   range of errors. This is very time consuming.
+   >python KasenMC.py
+4. Check results of kasen monte carlo using
+   >python plotkasen.py
+
+Key Note:
+You should move this kasen-fit directory onto sn1987a,
+which has many more cores, and continue to run KasenMC on 32 cores.
+Your home computer may crash otherwise.
+
+Note:
+Whenever you suspect monte carlo behaves funny (non-smooth features),
+It may be because not enough trials to resolve smooth behaviour.
+When that happens, run step 3 twice, and plot both results on same graph.
+Check that the results don't change much between simulations.
+If it changes by a lot, then change nmc, make it bigger (slower also).
+I don't think we ever need to remake the early light curves.
+Arnett fitting may change a lot as new data comes in.

@@ -10,7 +10,7 @@ cockpit-lc contains a compact set of routines which one may use to generate ligh
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
-cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models.
+cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models. The subdirectory kasen-mc also contains routines for extensive early light curve analysis using Kasen models.
 
 To use any of these modules, add SNAP to your PYTHONPATH
 

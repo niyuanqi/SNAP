@@ -11,6 +11,7 @@ Order of work for KSP-N3923-2_2018ku
    >python ArnettFit.py
 6. Compare with Kasen models (Arnett parameters changed)
    >python KasenCompare.py
+7. Run more extensive Kasen modelling in /kasen-mc
 
 Note:
 Edit ObjData.py after each step, fill out the form using new outputs.

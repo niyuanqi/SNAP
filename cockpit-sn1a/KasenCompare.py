@@ -32,7 +32,7 @@ F_err = [F[i]/SN[i] for i in range(3)]
 for i in range(len(M)):
     t[i], M[i], M_err[i], F[i], SN[i], Mlim[i] = LCcrop(t[i], t1_early, t2_early, M[i], M_err[i], F[i], SN[i], Mlim[i])
 
-#deredden flux and get templates
+#deredden flux and shift light curves
 print "Correcting for galactic reddening"
 Flim = []
 for i in range(len(F)):
