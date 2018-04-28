@@ -82,7 +82,7 @@ outfile.write(" ; Sigs "+str(limSNs))
 outfile.close()
 
 #function: test a given a13
-def gen_a13(a13):
+def gen_a13(a13, conf):
     print "Generating model at a13:",a13
     #for each band
     Fks = []
@@ -97,11 +97,10 @@ def gen_a13(a13):
                                                 wave_0[bands[band[i]]]],
                                      [m_c, e_51, z, 0],
                                      [m_c_err, e_51_err, zerr, t0err],
-                                     [nmc,nmc,nmc,nmc], confs[-1])
+                                     [nmc,nmc,nmc,nmc], conf)
             #Assumptions here:
             #Independent parameters is a good assumption (MCerr uses this)
             #No covariance simulation needed.
-            #for max 3sig confidence, only ~1000 trials needed for MC.
         Fks.append(Fk)
         Fk_errs.append(Fk_err)
     print "done model at a13:", a13
@@ -131,21 +130,25 @@ nproc = 32
 
 print "Generating Synthetic Light Curves"
 #generate synthetic light curves
-pool = Pool(nproc)
-procs = []
-#for each model
-for j, a13 in enumerate(a13s):
-    #start process to generate model
-    procs.append(pool.apply_async(gen_a13, [a13]))
-#array to hold generated light curves
-genlcs = []
-#get processes
-print "Processes", len(procs)
-for n, proc in enumerate(procs):
-    print "getting proc",n
-    genlcs.append(proc.get())
-    print "got proc",n
-pool.terminate()
+#array to hold generated lcs at each conf
+genlcs_conf = []
+for n, conf in enumerate(confs):
+    pool = Pool(nproc)
+    procs = []
+    #for each model
+    for j, a13 in enumerate(a13s):
+        #start process to generate model
+        procs.append(pool.apply_async(gen_a13, [a13, conf]))
+    #array to hold generated light curves
+    genlcs = []
+    #get processes
+    print "Processes", len(procs)
+    for n, proc in enumerate(procs):
+        print "getting proc",n
+        genlcs.append(proc.get())
+        print "got proc",n
+    genlcs_conf.append(genlcs)
+    pool.terminate()
 print "Generated Light Curves"
 
 print "Checking Against Observations"
@@ -159,8 +162,8 @@ for n, conf in enumerate(confs):
     procs = []
     #for each generated model
     for j, a13 in enumerate(a13s):
-        Fks = genlcs[j][0]
-        Fk_errs = genlcs[j][1]
+        Fks = genlcs_conf[n][j][0]
+        Fk_errs = genlcs_conf[n][j][1]
         #start process to test model against data
         procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
         """

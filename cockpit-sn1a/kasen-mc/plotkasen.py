@@ -7,17 +7,20 @@
 
 #essential modules
 import numpy as np
+from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 #essential files
 from ObjData import *
 
-a13s, out1, out2, out2, out3, out4, out5 = np.loadtxt(kasfile, unpack=True)
-outangles = [out1, out2, out3, out4, out5]
-style = ['k-', 'k--']
-for n, conf in enumerate(confs):
-    #Plot angles ruled out for each a13 at this conf
-    plt.plot(a13s, outangles[n], style[n])
+outs = np.loadtxt(kasfile, unpack=True)
+a13s = outs[0]
+outangles = outs[1:]
+for n, sn in enumerate(limSNs):
+    if sn in plot:
+        print "Sig and conf:", sn, norm.cdf(sn)
+        #Plot angles ruled out for each a13 at this conf
+        plt.plot(a13s, outangles[n], style[plot[sn]])
 
 plt.xlim(0,10.0)
 plt.ylim(0,185)

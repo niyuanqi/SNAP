@@ -124,7 +124,8 @@ for n, conf in enumerate(confs):
     #At this conf, we can plot ruled out angles vs a13
     print "Confidence level:",conf
     print "Angles ruled out at each a13:",outangles
-    plt.plot(a13s, outangles, style[n])
+    if limSNs[n] in plot:
+        plt.plot(a13s, outangles, style[plot[limSNs[n]]])
 plt.xlim(0,10.0)
 plt.ylim(0,185)
 #plot positions of 1RG, 6MS, 2MS

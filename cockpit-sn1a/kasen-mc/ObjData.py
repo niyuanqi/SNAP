@@ -24,9 +24,9 @@ logfile = "log.CN_180427.txt"
 kasfile = "kasen.CN_180427.txt"
 
 #early binned light curves for kasen monte carlo comparison
-Bfile = "KSP-N3923-2-2018ku.B.lcbin.CN_180426.S2.txt"
-Vfile = "KSP-N3923-2-2018ku.V.lcbin.CN_180426.S2.txt"
-Ifile = "KSP-N3923-2-2018ku.I.lcbin.CN_180426.S2.txt"
+Bfile = "KSP-N3923-2-2018ku.B.lcbin.CN_180426.txt"
+Vfile = "KSP-N3923-2-2018ku.V.lcbin.CN_180426.txt"
+Ifile = "KSP-N3923-2-2018ku.I.lcbin.CN_180426.txt"
 files = [Bfile, Vfile, Ifile]
 #observed bands
 band = ['B','V','i']
@@ -49,7 +49,11 @@ Iconffiles = ['KSP-N3923-2-2018ku.I.lcbin.CN_180426.S1.txt',
          'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S3.txt',
          'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S4.txt',
          'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S5.txt']
-conffiles = np.array([Bfiles, Vfiles, Ifiles])
+conffiles = np.array([Bconffiles, Vconffiles, Iconffiles])
+#which sigs to plot
+plot = { 1.0 : 0, 2.0 : 1, 3.0 : 2}
+#style for each
+style = ['k-', 'k--', 'k-.']
 #monte carlo trials to use for each confidence level
 #for max 3sig confidence, only ~1000 trials needed for MC.
 nmc = 10000
