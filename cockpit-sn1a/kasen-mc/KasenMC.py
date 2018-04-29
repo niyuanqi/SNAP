@@ -69,7 +69,6 @@ a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.02), np
 thetas = np.linspace(0,180,100)
 #SNR of 1, 2, 3, 4, 5
 confs = [norm.cdf(sn) for sn in limSNs]
-#[0.84134474606854293, 0.97724986805182079, 0.9986501019683699, 0.99996832875816688, 0.99999971334842808]
 print "Confidence levels:",confs
 print "Sigma levels:",limSNs
 print "Trial a13s:", a13s
@@ -135,7 +134,7 @@ procs = []
 #for each model
 for j, a13 in enumerate(a13s):
     #start process to generate model, taking highest confidence interval
-    procs.append(pool.apply_async(gen_a13, [a13, conf[-1]]))
+    procs.append(pool.apply_async(gen_a13, [a13, confs[-1]]))
 #array to hold generated light curves
 genlcs = []
 #get processes
