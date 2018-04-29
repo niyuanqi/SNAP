@@ -519,7 +519,7 @@ def MCerr(func, ins, params, errs, nums, conf, nproc=1):
         #perturb parameter N times by STD
         trials = np.random.normal(params[i], errs[i], nums[i])
         #confidence interval
-        conf_int = norm.interval(conf/100.0, loc=params[i], scale=errs[i])
+        conf_int = norm.interval(conf, loc=params[i], scale=errs[i])
         trials = trials[np.logical_and(trials>conf_int[0], trials<conf_int[1])]
 
         if nproc > 1:

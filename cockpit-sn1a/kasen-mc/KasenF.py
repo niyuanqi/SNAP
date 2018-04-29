@@ -66,7 +66,6 @@ a13s = np.concatenate((np.arange(0.001,0.05,0.001), np.arange(0.05,0.2,0.01), np
 thetas = np.linspace(0,180,100)
 #SNR of 1, 2, 3, 4, 5
 confs = [norm.cdf(sn) for sn in limSNs]
-#[0.84134474606854293, 0.97724986805182079, 0.9986501019683699, 0.99996832875816688, 0.99999971334842808]
 print "Confidence levels:",confs
 print "Sigma levels:",limSNs
 print "Trial a13s:", a13s
@@ -77,7 +76,7 @@ for n, conf in enumerate(confs):
     #array to hold percent of viewing angles ruled out for each a13 at this conf
     outangles = np.zeros(len(a13s))
     #sigma needed to establish confidence below LC
-    sig = norm.ppf(conf/100.0)
+    sig = norm.ppf(conf)
     #for each a13 model
     for j, a13 in enumerate(a13s):
         print "Testing model at a13:",a13
@@ -102,16 +101,19 @@ for n, conf in enumerate(confs):
                 else:
                     #not ruled out
                     print "Consistent!", a13, conf, theta
-
+        
         """
         #Diagnostic
-        if n == 0 and a13 == 0.05 and False:
+        if abs(a13 - 5.4)<0.00001:
+        #if abs(a13 - 5.0)<0.00001:
             print "plotting section"
+            print "Sig level:", sig
             #plot section
             f, ax = plt.subplots(len(t), sharex=True) 
             for i in range(len(t)):
                 Lk = np.array([KasenFit(ti, a13, 1.0, wave_0[bands[band[i]]], m_c, e_51, z, 0) for ti in t[i]])
-                Fk = Lk*Kasen_isocorr(0)
+                Fk = Lk*Kasen_isocorr(153)
+                #Fk = Lk*Kasen_isocorr(180)
                 ax[i].errorbar(t[i], F[i], yerr=sig*F_err[i], fmt="k+")
                 ax[i].scatter(t[i], Fk)
                 ax[i].scatter(t[i], flimconf[n][i], color='r', marker='v')

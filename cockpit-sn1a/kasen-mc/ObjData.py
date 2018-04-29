@@ -34,6 +34,7 @@ band = ['B','V','i']
 Band = ['B','V','I']
 #light curve files with limiting magnitudes at SN=1.0, 2.0, 3.0, 4.0, 5.0
 limSNs = [1.0, 2.0, 3.0, 4.0, 5.0]
+#[0.84134474606854293, 0.97724986805182079, 0.9986501019683699, 0.99996832875816688, 0.99999971334842808]
 Bconffiles = ['KSP-N3923-2-2018ku.B.lcbin.CN_180426.S1.txt',
          'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S2.txt',
          'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S3.txt',

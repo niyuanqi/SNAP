@@ -156,7 +156,7 @@ outangles = []
 #for each confidence interval
 for n, conf in enumerate(confs):
     #sigma needed to establish confidence below LC
-    sig = norm.ppf(conf/100.0)
+    sig = norm.ppf(conf)
     
     pool = Pool(nproc)
     procs = []
