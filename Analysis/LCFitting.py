@@ -349,7 +349,10 @@ def ArnettIntercept(tmax, Lmax, tmax_err, Lmax_err, p0=1.2, n=100, nproc=4):
         print str(i+1)+'/'+str(n)
         errfunc = lambda p: ArnettMaxErr1(p, x, tmax_err)
         procs.append(apply_async(pool, fmin, [errfunc, p0, (), 0.001, 0.01]))
+    #retrieve processes
     popt = [proc.get()[0] for proc in procs]
+    pool.terminate()
+    #interpret results
     ME = np.mean(popt, axis=0)
     MEerr = np.std(popt, axis=0)
     #use vertical error to get Ni56

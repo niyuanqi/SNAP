@@ -130,25 +130,21 @@ nproc = 32
 
 print "Generating Synthetic Light Curves"
 #generate synthetic light curves
-#array to hold generated lcs at each conf
-genlcs_conf = []
-for n, conf in enumerate(confs):
-    pool = Pool(nproc)
-    procs = []
-    #for each model
-    for j, a13 in enumerate(a13s):
-        #start process to generate model
-        procs.append(pool.apply_async(gen_a13, [a13, conf]))
-    #array to hold generated light curves
-    genlcs = []
-    #get processes
-    print "Processes", len(procs)
-    for n, proc in enumerate(procs):
-        print "getting proc",n
-        genlcs.append(proc.get())
-        print "got proc",n
-    genlcs_conf.append(genlcs)
-    pool.terminate()
+pool = Pool(nproc)
+procs = []
+#for each model
+for j, a13 in enumerate(a13s):
+    #start process to generate model, taking highest confidence interval
+    procs.append(pool.apply_async(gen_a13, [a13, conf[-1]]))
+#array to hold generated light curves
+genlcs = []
+#get processes
+print "Processes", len(procs)
+for n, proc in enumerate(procs):
+    print "getting proc",n
+    genlcs.append(proc.get())
+    print "got proc",n
+pool.terminate()
 print "Generated Light Curves"
 
 print "Checking Against Observations"
@@ -162,8 +158,8 @@ for n, conf in enumerate(confs):
     procs = []
     #for each generated model
     for j, a13 in enumerate(a13s):
-        Fks = genlcs_conf[n][j][0]
-        Fk_errs = genlcs_conf[n][j][1]
+        Fks = genlcs[j][0]
+        Fk_errs = genlcs[j][1]
         #start process to test model against data
         procs.append(pool.apply_async(test_a13, [Fks, Fk_errs, sig, flimconf[n]]))
         """

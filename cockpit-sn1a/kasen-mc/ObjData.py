@@ -33,25 +33,19 @@ band = ['B','V','i']
 #band labels
 Band = ['B','V','I']
 #light curve files with limiting magnitudes at SN=1.0, 2.0, 3.0, 4.0, 5.0
-limSNs = [1.0, 2.0, 3.0, 4.0, 5.0]
-#[0.84134474606854293, 0.97724986805182079, 0.9986501019683699, 0.99996832875816688, 0.99999971334842808]
+limSNs = [1.0, 2.0, 3.0]
+#[0.84134474606854293, 0.97724986805182079, 0.9986501019683699]
 Bconffiles = ['KSP-N3923-2-2018ku.B.lcbin.CN_180426.S1.txt',
          'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S2.txt',
-         'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S3.txt',
-         'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S4.txt',
-         'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S5.txt']
+         'KSP-N3923-2-2018ku.B.lcbin.CN_180426.S3.txt',]
 Vconffiles = ['KSP-N3923-2-2018ku.V.lcbin.CN_180426.S1.txt',
          'KSP-N3923-2-2018ku.V.lcbin.CN_180426.S2.txt',
-         'KSP-N3923-2-2018ku.V.lcbin.CN_180426.S3.txt',
-         'KSP-N3923-2-2018ku.V.lcbin.CN_180426.S4.txt',
-         'KSP-N3923-2-2018ku.V.lcbin.CN_180426.S5.txt']
+         'KSP-N3923-2-2018ku.V.lcbin.CN_180426.S3.txt',]
 Iconffiles = ['KSP-N3923-2-2018ku.I.lcbin.CN_180426.S1.txt',
          'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S2.txt',
-         'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S3.txt',
-         'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S4.txt',
-         'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S5.txt']
+         'KSP-N3923-2-2018ku.I.lcbin.CN_180426.S3.txt',]
 conffiles = np.array([Bconffiles, Vconffiles, Iconffiles])
-#which sigs to plot
+#which subset of all sigs to plot
 plot = { 1.0 : 0, 2.0 : 1, 3.0 : 2}
 #style for each
 style = ['k-', 'k--', 'k-.']
