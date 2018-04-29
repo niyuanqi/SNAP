@@ -6,11 +6,7 @@ Implements python routines for performing photometry, astrometry, etc. Also can 
 
 The flagship program is MagCalc.py.
 
-cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
-
 The subpackage Analysis contains tools for dealing with such light curves.
-
-cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models. The subdirectory kasen-mc also contains routines for extensive early light curve analysis using Kasen models.
 
 To use any of these modules, add SNAP to your PYTHONPATH
 
@@ -158,4 +154,12 @@ Contains python functions for reading and writing light curve files.
 
 ## Examples
 
-Contains programs that use various SNAP routines to do things such as generate light curves from raw images, generate binned light curves, plot SN1a light curve, calibrate SN1a using light curve, etc.
+Examples directory contains miscellaneous programs that use various SNAP routines to do things such as generate light curves from raw images, generate binned light curves, plot SN1a light curve, calibrate SN1a using light curve, etc.
+
+## cockpit-lc
+
+cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
+
+## cockpit-sn1a
+
+cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models. The subdirectory kasen-mc also contains routines for extensive early light curve analysis using Kasen models.
