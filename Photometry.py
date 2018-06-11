@@ -439,7 +439,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
             #given contains [ax,ay,b,theta], free has [A, x0, y0]
             given.append(PSF)
         if psftype[i] == 1:
-            given.append([x0[i], y0[i]])
+            given.append([PSF[0],PSF[1],PSF[2],PSF[3],x0[i],y0[i]])
     given = np.array(given)
     #estimate free parameters for fitting
     est = []
@@ -467,8 +467,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
             lbounds = np.concatenate((lbounds,[-float("Inf")]))
             ubounds = np.concatenate((ubounds,[float("Inf")]))
     bounds = (lbounds,ubounds)
-
-    fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+    
     try:
         #fit 2d fixed psf to background subtracted source light
         fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
