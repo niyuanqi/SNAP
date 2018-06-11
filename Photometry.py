@@ -655,7 +655,8 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
         SNo = Io/sigmao
     else:
-        print "Divergent integral, PSF not viable for PSF photometry"
+        if verbosity > 0:
+            print "Divergent integral, PSF not viable for PSF photometry"
         Io = 0
         SNo = 0
         SNr = 0
