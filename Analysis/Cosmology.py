@@ -22,7 +22,7 @@ Wl = 0.73 #vacuum density parameter
 #band zero fluxes [Jy] from Bessel 1998 (outdated)
 #flux_0 = [1790, 4063, 3636, 3064, 2416]
 #band zero fluxes [Jy] in UBVri with mix from AB system
-flux_0 = [1790, 4063, 3636, 3631, 3631]
+flux_0 = [3631, 4063, 3636, 3631, 3631]
 
 #telescope information
 #band isophotal wavelengths [Angstrom] from Bessel 2005

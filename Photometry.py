@@ -17,7 +17,7 @@ def dist(x1, y1, x2, y2):
     #Euclidean distance
     return np.sqrt(np.square(x1-x2)+np.square(y1-y2))
 
-#function: photmetric aperture at (x0,y0) from r1 to r2
+#function: photometric aperture at (x0,y0) from r1 to r2
 def ap_get(image, x0, y0, r1, r2):
     xaxis = np.arange(max([0,x0-r2]), min(image.shape[1],x0+r2+1), dtype=int)
     yaxis = np.arange(max([0,y0-r2]), min(image.shape[0],y0+r2+1), dtype=int)
@@ -26,6 +26,39 @@ def ap_get(image, x0, y0, r1, r2):
     apy = np.array([y for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     return api, apx, apy
 
+#function: photometric aperture around multiple sources from r1 to r2
+def ap_multi(image, x0, y0, r1, r2):
+    Nobj = len(x0)
+    #Extract zone around all objects
+    xaxis = np.arange(0,image.shape[1], dtype=int)
+    yaxis = np.arange(0,image.shape[0], dtype=int)
+    xmask = np.zeros(image.shape[1])
+    ymask = np.zeros(image.shape[0])
+    for i in range(Nobj):
+        xap_single = np.absolute(xaxis-x0[i]) <= r2
+        xmask = np.logical_or(xmask, xap_single)
+        yap_single = np.absolute(yaxis-y0[i]) <= r2
+        ymask = np.logical_or(ymask, yap_single)
+    xaxis = xaxis[xmask]
+    yaxis = yaxis[ymask]
+    #find union of all apertures in zone
+    apx, apy, api = [], [], []
+    for x in xaxis:
+        for y in yaxis:
+            #is this pixel in an aperture?
+            inap = False
+            for i in range(Nobj):
+                if dist(x0[i],y0[i],x,y)<=r2:
+                    inap = True
+            for i in range(Nobj):
+                if dist(x0[i],y0[i],x,y)<r1:
+                    inap = False
+            if inap:
+                apx.append(x)
+                apy.append(y)
+                api.append(image[y][x])
+    return np.array(api), np.array(apx), np.array(apy)
+    
 #function: clean out cosmic rays and junk from PSF
 def PSFclean(x,y,psf,ref,skyN,sat=40000,f=5):
     #remove saturated pixels
@@ -51,14 +84,17 @@ def satpix(image):
 
 #function: fits background sky plane and noise
 def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
-
+    #update 180610: x0, y0 need to be lists (even if length is 1)
+    
     from scipy.optimize import curve_fit
     from PSFlib import D2plane
     from MagCalc import PSFError
     
     #get background sky annulus
-    inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
-    outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
+    #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
+    #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
+    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 4*fwhm, 5*fwhm)
+    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 6*fwhm, 7*fwhm)
     #get first estimate mean background value
     innerB = np.mean(inner_annulus)
     outerB = np.mean(outer_annulus)
@@ -110,7 +146,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
     
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
     
     #get fit box to fit psf
     fsize = 3
@@ -205,7 +241,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity=0)
 
     #get fit box to fit psf
     fsize = 3
@@ -293,7 +329,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity=0)
 
     #get fit box to fit psf
     fsize = 3
@@ -358,6 +394,170 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
         return [0]*7, [0]*7, 0, [0]*3, skyN
+
+#function: fit multiple PSFs
+def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
+
+    from scipy.optimize import curve_fit
+    from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM, E2moff_verify
+
+    maxfev = 100000
+
+    #get given fit parameters
+    ax, axerr = PSF[0], PSFerr[0]
+    ay, ayerr = PSF[1], PSFerr[1]
+    b, berr = PSF[2], PSFerr[2]
+    theta, thetaerr = PSF[3], PSFerr[3]
+    FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
+    fwhm = max(FWHMx, FWHMy)
+
+    #number of objects
+    Nobj = len(psftype)
+
+    #fit sky background in an annulus
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
+    
+    #get fit box (around all sources) to multi-fit psf
+    fsize = 3
+    intens, x, y = ap_multi(image, x0, y0, 0, fsize*fwhm)
+    if fitsky:
+        #get sky background
+        sky = D2plane((x,y),*skypopt)
+        #subtract sky background
+        intens = intens - sky
+
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+
+    #given parameters for fitting
+    given = []
+    for i in range(Nobj):
+        if psftype[i] == 3:
+            #given is empty, general psf params are all in free
+            given.append([])
+        if psftype[i] == 2:
+            #given contains [ax,ay,b,theta], free has [A, x0, y0]
+            given.append(PSF)
+        if psftype[i] == 1:
+            given.append([x0[i], y0[i]])
+    given = np.array(given)
+    #estimate free parameters for fitting
+    est = []
+    for i in range(Nobj):
+        if psftype[i] == 3:
+            #given is empty, general psf params are all in free
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm/4.0,fwhm,3.0,0.0,x0[i],y0[i]]))
+        if psftype[i] == 2:
+            #given contains [ax,ay,b,theta], free has [A, x0, y0]
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],x0[i],y0[i]]))
+        if psftype[i] == 1:
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])]]))
+    #estimate bounds on free parameters
+    lbounds, ubounds = [], []
+    for i in range(Nobj):
+        if psftype[i] == 3:
+            #given is empty, general psf params are all in free
+            lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0]))
+            ubounds = np.concatenate((ubounds,[float("Inf"),4*fwhm,4*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]]))
+        if psftype[i] == 2:
+            #given contains [ax,ay,b,theta], free has [A, x0, y0]
+            lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
+            ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[0],image.shape[1]]))
+        if psftype[i] == 1:
+            lbounds = np.concatenate((lbounds,[-float("Inf")]))
+            ubounds = np.concatenate((ubounds,[float("Inf")]))
+    bounds = (lbounds,ubounds)
+    
+    try:
+        #fit 2d fixed psf to background subtracted source light
+        fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+        #Fit function
+        I_theo = E2moff_multi((x, y),psftype, given, fitpopt)
+        #filter out noisy pixels at 5sigma level (cos rays/hot pix)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
+
+        #calculate better PSF from cleaner data
+        fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+        try:
+            #try to calculate fit error
+            fitperr = np.sqrt(np.diag(fitpcov))
+        except:
+            try:
+                #take closer initial conditions
+                fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+                fitperr = np.sqrt(np.diag(fitpcov))
+            except:
+                fitperr = [0]*len(est)
+        #parameters fitted to source
+        PSFpopt, PSFperr = [], []
+        count = 0
+        for i in range(Nobj):
+            if psftype[i] == 3:
+                #given is empty, general psf params are all in free
+                PSFpopt.append(fitpopt[count:count+7])
+                PSFperr.append(fitperr[count:count+7])
+                count = count+7
+            if psftype[i] == 2:
+                #given contains [ax,ay,b,theta], free has [A, x0, y0]
+                PSFpopt.append([fitpopt[count],given[i][0],given[i][1],given[i][2],given[i][3],fitpopt[count+1],fitpopt[count+2]])
+                PSFperr.append([fitperr[count],axerr,ayerr,berr,thetaerr,fitperr[count+1],fitperr[count+2]])
+                count = count+3
+            if psftype[i] == 1:
+                #given contains [ax,ay,b,theta,x0,y0], free has [A]
+                PSFpopt.append([fitpopt[count],given[i][0],given[i][1],given[i][2],given[i][3],given[i][4],given[i][5]])
+                PSFperr.append([fitperr[count],axerr,ayerr,berr,thetaerr,0,0])
+                count = count+1
+        #calculate goodness of fit
+        I_theo = E2moff_multi((x, y),psftype, given, fitpopt)
+        X2dof = np.sum(np.square((intens-I_theo)/np.sqrt(np.absolute(intens)+skyN**2)))/(len(intens)-len(fitpopt))
+        
+        #Graph residual if verbosity is high enough
+        if verbosity > 1:
+            import matplotlib.pyplot as plt
+            I_t = np.copy(image)
+            x1, x2 = int(min(x0)-3*fwhm),int(max(x0)+3*fwhm)
+            y1, y2 = int(min(y0)-3*fwhm),int(max(y0)+3*fwhm)
+            for i in np.arange(x1, x2):
+                for j in np.arange(y1, y2):
+                    I_t[j][i] = E2moff_multi((i, j),psftype, given, fitpopt)
+            sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
+            plt.title("Multi-object fit residual")
+            plt.imshow(sb, cmap='Greys',vmax=0.05*np.amax(sb),vmin=0.05*np.amin(sb))
+            plt.colorbar()
+            plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            plt.show()
+    except:
+        #catastrophic failure of PSF fitting
+        print "PSF fitting catastrophic failure"
+        PSFpopt = [[0]*7]*Nobj
+        PSFperr = [[0]*7]*Nobj
+        X2dof = 0
+    if verbosity > 0:
+        print "PSF moffat fit parameters"
+        for i in range(Nobj):
+            print "Object "+str(i+1)+":"
+            print "[A,ax,ay,b,theta,X0,Y0] = "+str(PSFpopt[i])
+            print "parameter errors = "+str(PSFperr[i])
+            print "Chi2 = "+str(X2dof)
+            FWHMx, FWHMy = E2moff_toFWHM(PSFpopt[i][1], PSFpopt[i][2], PSFpopt[i][3])
+            print "[FWHMx', FWHMy]' = "+str([FWHMx, FWHMy])
+
+    #graph fits if verbosity is high enough
+    if verbosity > 1:
+        for i in range(Nobj):
+            PSF_plot(image, x0[i], y0[i], PSFpopt[i], X2dof, skypopt, skyN, fitsky, fsize*fwhm)
+    #check if fit is ridiculous, give back no fit
+    ridic = False
+    checks = []
+    for i in range(Nobj):
+        if psftype[i] != 3:
+            if not E2moff_verify(PSFpopt[i], x0[i], y0[i]):
+                ridic = True 
+    if not ridic:
+        #None of the fits were ridiculous
+        return PSFpopt, PSFperr, X2dof, skypopt, skyN
+    else:
+        return [[]*7 for i in range(Nobj)], [[]*7 for i in range(Nobj)], 0, [0]*3, skyN
 
 #function: plot PSF fitting
 def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
@@ -444,7 +644,7 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
     
     #fraction of light to include (Kron)
     frac = 0.9
-    if E2moff_verify(PSFpopt, x0, y0):
+    if b > 1:
         #integrate source PSF
         Io = E2moff_integrate(A,ax,ay,b,frac)
         #compute optimal aperture size (90% source light)
@@ -452,14 +652,14 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
         SNo = Io/sigmao
     else:
-        print "Unable to integrate, PSF not viable for PSF photometry"
+        print "Divergent integral, PSF not viable for PSF photometry"
         Io = 0
         SNo = 0
         SNr = 0
         opt_r = 0
     #output information
     if verbosity > 0:
-        print "\noutput values"
+        print "\n"
         print "signal to noise: "+str(SNo)
         print "\n"
     
@@ -501,7 +701,7 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         SNo = 0
     
     if verbosity > 0:
-        print "\noutput values"
+        print "\n"
         print "Signal to noise: "+str(SNo)
         print "Pixel aperture radius: "+str(radius)
         print "\n"

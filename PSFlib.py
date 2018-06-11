@@ -182,3 +182,22 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
             #seems legit
             return True
 
+#function: Composite moffat psf for multiple objects
+def E2moff_multi((x,y), psftype, given, free):
+    out = 0
+    count = 0
+    for i, psf in enumerate(psftype):
+        #add moffat to output for each moffat
+        if psf == 3:
+            #given is empty, general psf params are all in free
+            out+= E2moff((x, y),*free[count:count+7])
+            count = count+7
+        if psf == 2:
+            #given contains [ax,ay,b,theta], free has [A, x0, y0]
+            out+= E2moff((x,y),free[count],given[i][0],given[i][1],given[i][2],given[i][3],free[count+1],free[count+2])
+            count = count+3
+        if psf == 1:
+            #given contains [ax,ay,b,theta,x0,y0], free has [A]
+            out+= E2moff((x, y),free[count],*given[i])
+            count = count+1
+    return out

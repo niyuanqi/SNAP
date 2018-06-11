@@ -556,3 +556,51 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         retlist += [fs]
     #return arrays of data
     return retlist
+
+#function: load light curve from dlt file
+def DLT_load(filename, tcol, magcol, errcol):
+    
+    from SNAP.Astrometry import isot_day
+
+    #load time column, convert to day of year
+    t = np.loadtxt(filename,usecols=(tcol,),comments='#',unpack=True, dtype=str)
+    year = t[0][:4]
+    t = np.array([isot_day(time, year) for time in t])
+    #load magnitudes, filter out nans
+    mag = np.loadtxt(filename,usecols=(magcol,),comments='#',unpack=True)
+    err = np.loadtxt(filename,usecols=(errcol,),comments='#',unpack=True)
+    mask = np.logical_and(np.invert(np.isnan(mag)), np.invert(np.isnan(err)))
+    t, mag, err = t[mask], mag[mask], err[mask]
+    #find lims vs detections
+    limmask = err < -900
+    detmask = np.invert(limmask)
+    tlim, lim = t[limmask], mag[limmask]
+    t, mag, err = t[detmask], mag[detmask], err[detmask]
+    #return detections and limits
+    return t, mag, err, tlim, lim
+
+#function: load light curve from swift file
+def Swift_load(filename, bcol, tcol, magcol, errcol, limcol=None, bands=['UVW2','UVM2','UVW1','U','B','V']):
+
+    from astropy.time import Time
+
+    #load band column
+    b = np.loadtxt(filename,usecols=(bcol,),comments='#',unpack=True,dtype='str')
+    #load time column, convert to day of year
+    t = np.loadtxt(filename,usecols=(tcol,),comments='#',unpack=True)
+    year = Time(t[0], format='mjd').isot[:4]
+    year_isot = year + '-01-01T00:00:00.000'
+    year = Time(year_isot, format='isot', scale='utc').mjd
+    t = t - year
+    #load magnitudes, divide into bands
+    mag = np.loadtxt(filename,usecols=(magcol,),comments='#',unpack=True)
+    err = np.loadtxt(filename,usecols=(errcol,),comments='#',unpack=True)
+    lim = np.loadtxt(filename,usecols=(limcol,),comments='#',unpack=True)
+    ts, mags, errs, lims = [], [], [], []
+    for band in bands:
+        mask = b == band
+        ts.append(t[mask])
+        mags.append(mag[mask])
+        errs.append(err[mask])
+        lims.append(lim[mask])
+    return ts, mags, errs, lims
