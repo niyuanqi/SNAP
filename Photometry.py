@@ -560,7 +560,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
         #None of the fits were ridiculous
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
-        return [[]*7 for i in range(Nobj)], [[]*7 for i in range(Nobj)], 0, [0]*3, skyN
+        return [[0]*7 for i in range(Nobj)], [[0]*7 for i in range(Nobj)], 0, [0]*3, skyN
 
 #function: plot PSF fitting
 def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
