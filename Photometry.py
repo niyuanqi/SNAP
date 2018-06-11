@@ -555,6 +555,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
                 ridic = True
                 if verbosity > 0:
                     print "Bad PSF: Object "+str(i+1)
+                    print dist(PSFpopt[i][5],PSFpopt[i][6],x0[i],y0[i])
     if not ridic:
         #None of the fits were ridiculous
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
