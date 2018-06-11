@@ -554,7 +554,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
             if not E2moff_verify(PSFpopt[i], x0[i], y0[i]):
                 ridic = True
                 if verbosity > 0:
-                    print "Bad PSF: "+str(PSFpopt[i])
+                    print "Bad PSF: Object "+str(i+1)
     if not ridic:
         #None of the fits were ridiculous
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
