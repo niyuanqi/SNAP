@@ -522,7 +522,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
                     I_t[j][i] = E2moff_multi((i, j),psftype, given, fitpopt)
             sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
             plt.title("Multi-object fit residual")
-            plt.imshow(sb, cmap='Greys',vmax=0.05*np.amax(sb),vmin=0.05*np.amin(sb))
+            plt.imshow(sb, cmap='Greys',vmax=0.1*np.amax(sb),vmin=0.1*np.amin(sb))
             plt.colorbar()
             plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
             plt.show()

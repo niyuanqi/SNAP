@@ -363,21 +363,22 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     if Nobj == 1:
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
-        if psf == 1:
+        if psf[0] == 1:
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky, sat=satpix, verbosity=verbosity)
-        elif psf == 2:
+        elif psf[0] == 2:
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky, sat=satpix, verbosity=verbosity)
-        elif psf == 3:
+        elif psf[0] == 3:
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky, sat=satpix, verbosity=verbosity)
         else:
             #Invalid fit selected, don't fit source
             if verbosity > 0:
                 print "No fit selected for source."
                 PSFpopt, PSFperr, X2dof, skypopto, skyNo = [0]*7, [0]*7, 0, [0]*3, 0
+        PSFpopt, PSFperr = [PSFpopt], [PSFperr]
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
-            Io, SNo = pht.PSF_photometry(image, Xo, Yo, PSFpopt, PSFperr, skypopto, skyNo, verbosity=verbosity)
+            Io, SNo = pht.PSF_photometry(image, Xo, Yo, PSFpopt[0], PSFperr[0], skypopto, skyNo, verbosity=verbosity)
         else:
             #perform aperture photometry
             if aperture <= 0:
