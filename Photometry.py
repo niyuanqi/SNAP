@@ -545,8 +545,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
     #graph fits if verbosity is high enough
     if verbosity > 1:
         PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15)
-        for i in range(Nobj):
-            PSF_plot(image, x0[i], y0[i], PSFpopt[i], X2dof, skypopt, skyN, fitsky, fsize*fwhm)
+        
     #check if fit is ridiculous, give back no fit
     ridic = False
     checks = []
