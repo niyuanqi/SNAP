@@ -631,7 +631,7 @@ def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
     plt.suptitle("PSF Moffat Fit")
     plt.show()
 
-#function: plot PSF fitting
+#function: plot multi-object PSF fitting
 def PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
 
     import matplotlib.pyplot as plt
