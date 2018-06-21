@@ -20,6 +20,8 @@ from SNAP.Catalog import*
 from SNAP.Photometry import*
 from SNAP.Astrometry import*
 from SNAP.PSFlib import*
+#essential imports
+from ContextManager import cd
 #essential data
 from ObjData import *
 

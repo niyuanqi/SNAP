@@ -14,6 +14,7 @@ from multiprocessing import Pool
 
 #essential imports
 from SNAP.DiffIm import make_diff_image
+from ContextManager import cd
 from ObjData import *
 
 #number of processors to use
