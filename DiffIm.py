@@ -70,8 +70,8 @@ def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692
         flags += ['-imi', src_mask]
     flags += ['-mins', '2']
     #negative and saturation limits
-    flags += ['-tl', tmp_neg, '-il', src_neg]
-    flags += ['-tu', tmp_sat, '-iu', src_sat]
+    flags += ['-tl', str(tmp_neg), '-il', str(src_neg)]
+    flags += ['-tu', str(tmp_sat), '-iu', str(src_sat)]
     #seeing based convolution kernels
     if fwhm is not None:
         flags += ['-r', str(2.5*fwhm/2.0)]
