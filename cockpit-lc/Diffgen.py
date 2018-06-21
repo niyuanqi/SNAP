@@ -38,8 +38,11 @@ with cd(wd+"/../"):
 #for each band
 for i in range(len(bands)):
     #get all band files
-    files = sorted(glob('../raw/'+prefix+band[i]+'*.fits'))
+    files = sorted(glob('../raw/'+prefix+bands[i]+'*.fits'))
+    N = len(files)
     for n, filename in enumerate(files):
+        print "Performing image subtraction on file "+str(n+1)+"/"+str(N)
+        print filename
         #output filename
         diffname = '.'.join(filename.split('.')[:-1])+".diff.fits"
         diffname = '../diff/'+'/'.join(diffname.split('/')[2:])
