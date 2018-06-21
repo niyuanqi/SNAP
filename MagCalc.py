@@ -99,11 +99,11 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
             if verbosity > 0:
                 print "loading world coordinate system"
             wcs = WCS(filename)
+            retlist += [wcs]
         except:
             raise FitsError('Unable to load wcs data.')
-        retlist += wcs
     if gethdr:
-        retlist += header
+        retlist += [header]
     return retlist
 
 def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf=1, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
