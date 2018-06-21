@@ -74,6 +74,7 @@ for i in range(len(bands)):
                 print "Critical error loading image!"
             if Mtest:
             try:
+                print "extracting psf"
                 PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0, diagnosis=True)
                 #image fwhm
                 fwhm = np.mean(E2moff_toFWHM(*PSF[:-1]))
