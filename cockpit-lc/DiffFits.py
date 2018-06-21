@@ -24,6 +24,8 @@ nproc = 7
 band = ['B','V','I']
 refs = ['../ref/'+Brefname, '../ref/'+Vrefname, '../ref/'+Irefname] 
 
+#current working directory
+wd = os.getcwd()
 #make directory for diff images
 with cd(wd+"/../"):
     if not os.path.isdir("diff"): os.mkdir('diff')

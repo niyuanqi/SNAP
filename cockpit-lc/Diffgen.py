@@ -31,6 +31,8 @@ bindex = {'B':0, 'V':1, 'I':2}
 refs = ['../ref/'+Brefname, '../ref/'+Vrefname, '../ref/'+Irefname]
 refmasks = ['.'.join(ref.split('.')[:-1])+".diff.fits" for ref in refs]
 
+#current working directory
+wd = os.getcwd()
 #make directory for diff images
 with cd(wd+"/../"):
     if not os.path.isdir("diff"): os.mkdir('diff')
