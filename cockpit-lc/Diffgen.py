@@ -24,6 +24,8 @@ from SNAP.PSFlib import*
 from ObjData import *
 
 #reference files
+bands = ['B','V','I']
+bindex = {'B':0, 'V':1, 'I':2}
 refs = ['../ref/'+Brefname, '../ref/'+Vrefname, '../ref/'+Irefname]
 refmasks = ['.'.join(ref.split('.')[:-1])+".diff.fits" for ref in refs]
 
@@ -33,7 +35,7 @@ with cd(wd+"/../"):
     if not os.path.isdir("conv"): os.mkdir('conv')
 
 #for each band
-for i in range(len(band)):
+for i in range(len(bands)):
     #get all band files
     files = sorted(glob('../raw/'+prefix+band[i]+'*.fits'))
     for n, filename in enumerate(files):
