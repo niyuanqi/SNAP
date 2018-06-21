@@ -48,20 +48,48 @@ def run_wcsremap(ref_name, src_name, outdir):
     return outname
 
 #use hotpants to match images photometrically and subtract
-def run_hotpants(src_name, template_name, out_name, conv_name):
+def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None):
 
+    import numpy as np
     import subprocess
 
+    #default_flags = ['hotpants', '-inim', src_name, '-tmplim',
+    #                 tmp_name, '-outim', out_name, '-oci',
+    #                 conv_name, '-tl', '-100', '-il', '-100',
+    #                 '-nrx', '2', '-nry', '2',
+    #                 '-nsx', '15', '-nsy', '15',
+    #                 '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
+
+    #filenames, normalize to src and force convolution on tmp
+    flags = ['hotpants', '-inim', src_name, '-tmplim', tmp_name, '-outim',
+             out_name, '-oci', conv_name, '-n', 'i', '-c', 't', '-ko', '2']
+    #artifact mask files
+    if tmp_mask is not None:
+        flags += ['-tmi', tmp_mask]
+    if src_mask is not None:
+        flags += ['-imi', src_mask]
+    flags += ['-mins', '2']
+    #negative and saturation limits
+    flags += ['-tl', tmp_neg, '-il', src_neg]
+    flags += ['-tu', tmp_sat, '-iu', src_sat]
+    #seeing based convolution kernels
+    if fwhm is not None:
+        flags += ['-r', str(2.5*fwhm/2.0)]
+        flags += ['-rss', str(3.0*fwhm)]
+    #make sure each stamp is ~2.5', imsize given in arcsec
+    flags += ['-nsx', str(np.floor(imsize/(2.5*60)))]
+    flags += ['-nsy', str(np.floor(imsize/(2.5*60)))]
+    #gaussians with which to compose kernel
+    if fwhm is not None:
+        flags += ['-ng','3','6',str(fwhm/2.0),'4',str(fwhm),'2',str(2*fwhm)]
+    else:
+        flags += ['-ng','3','6','3.00','4','6.00','2','12.0']
+        
     #call hotpants
-    subprocess.call(['hotpants', '-inim', src_name, '-tmplim',
-                     template_name, '-outim', out_name, '-oci',
-                     conv_name, '-tl', '-100', '-il', '-100',
-                     '-nrx', '2', '-nry', '2',
-                     '-nsx', '15', '-nsy', '15',
-                     '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0'])
+    subprocess.call(['hotpants'] + flags)
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imsize=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
@@ -75,9 +103,19 @@ def make_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", de
         
         #remap reference file to source file coordinates
         remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
-        
+
+        #hotpants arguments
+        args = [src_name, remaped_ref, out_name, conv_name]
+        if fwhm is not None:
+            args += [fwhm]
+        args += [imsize, tmp_sat, src_sat, tmp_neg, src_neg]
+        if tmp_mask is not None:
+            args += [tmp_mask]
+        if src_mask is not None:
+            args += [src_mask]
+            
         #subtract remapped reference file from source file
-        run_hotpants(src_name, remaped_ref, out_name, conv_name)
+        run_hotpants(*args)
 
         print "SUBTRACTION COMPLETE"
         print "output:",out_name

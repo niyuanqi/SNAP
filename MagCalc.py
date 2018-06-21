@@ -102,7 +102,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     else:
         return image, time
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf=1, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf=1, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -224,6 +224,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catMagerrs = []
     catPSFs = [] #PSF fits to catalog stars
     catPSFerrs = [] #fit errors
+    catSkyMs = [] #background average count
+    catSkyNs = [] #background noise
     catXs = []
     catYs = []
     catX2dofs = []
@@ -261,6 +263,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #save catalog star fit
             catPSFs.append(PSF)
             catPSFerrs.append(PSFerr)
+            #save sky details
+            catSkyMs.append(plib.D2plane((PSFpopt[5],PSFpopt[6]),*skypopt))
+            catSkyNs.append(skyN)
             #save ref star position
             catXs.append(PSFpopt[5])
             catYs.append(PSFpopt[6])
@@ -282,6 +287,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catMagerrs = np.array(catMagerrs)
     catPSFs = np.array(catPSFs)
     catPSFerrs = np.array(catPSFerrs)
+    catSkyMs = np.array(catSkyMs)
+    catSkyNs = np.array(catSkyNs)
     catXs = np.array(catXs)
     catYs = np.array(catYs)
     catX2dofs = np.array(catX2dofs)
@@ -290,11 +297,21 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     w = 1/np.square(catPSFerrs)
     catPSF = (catPSFs*w).sum(0)/w.sum(0)
     catPSFerr = np.sqrt(1/w.sum(0))
+    #calculate average sky parameters
+    skyval = catSkyMs.mean() #mean constant background
+    noise = catSkyNs.mean() #mean std from background
     if verbosity > 0:
         print "Average PSF [ax, ay, b, theta] =",str(catPSF)
         print "Average FWHMx,FWHMy =",str(plib.E2moff_toFWHM(*catPSF[:-1]))
         print "parameter errors =",str(catPSFerr)
+        print "Average background sky count =",str(skyval)
+        print "Average noise in background =",str(noise)
         print ""
+
+    if diagnosis:
+        if verbosity > 0:
+            print "Returning PSF for diagnosis"
+        return catPSF, catPSFerr, skyval, noise
 
     #Integration using common PSF
     catIs = np.zeros(ncat)
