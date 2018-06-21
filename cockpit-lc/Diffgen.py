@@ -33,6 +33,7 @@ refmasks = ['.'.join(ref.split('.')[:-1])+".diff.fits" for ref in refs]
 with cd(wd+"/../"):
     if not os.path.isdir("diff"): os.mkdir('diff')
     if not os.path.isdir("conv"): os.mkdir('conv')
+    if not os.path.isdir("mask"): os.mkdir('mask')
 
 #for each band
 for i in range(len(bands)):
@@ -47,8 +48,8 @@ for i in range(len(bands)):
         #mask image
         maskname='.'.join(filename.split('.')[:-1])+".mask.fits"
         maskname='../mask/'+'/'.join(maskname.split('/')[2:])
-        cleanname='.'.join(filename.split('.')[:-1])+".clean.fits"
-        cleanname='../clean/'+'/'.join(maskname.split('/')[2:])
+        #cleanname='.'.join(filename.split('.')[:-1])+".clean.fits"
+        #cleanname='../clean/'+'/'.join(maskname.split('/')[2:])
         #other parameters
         fo = '.'.join(filename.split('.')[2:5])
         band = fo[0]
@@ -88,9 +89,9 @@ for i in range(len(bands)):
                     hdu = fits.PrimaryHDU(crmask.astype(int))
                     hdu.header = hdr
                     hdu.writeto(maskname)
-                    hdu = fits.PrimaryHDU(cleanarr)
-                    hdu.header = hdr
-                    hdu.writeto(cleanname)
+                    #hdu = fits.PrimaryHDU(cleanarr)
+                    #hdu.header = hdr
+                    #hdu.writeto(cleanname)
                 #subtract reference image
                 make_diff_image(filename, refs[i], diffname, convname,
                                 fwhm=fwhm, imsize=imsize,
