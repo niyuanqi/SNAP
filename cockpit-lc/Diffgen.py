@@ -102,7 +102,7 @@ for i in range(len(bands)):
                                     tmp_sat=reflims[i][0], src_sat=satpix,
                                     tmp_neg=reflims[i][1], src_neg=ilim,
                                     tmp_mask=refmasks[i], src_mask=maskname,
-                                    "DITemp"+str(n))
+                                    tmpdir="DITemp"+str(n))
                 except PSFError:
                     Mtest = False
                     print "PSF can't be extracted!"
