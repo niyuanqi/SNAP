@@ -62,7 +62,7 @@ for i in range(len(bands)):
             #retrieve parameters from image
             Mtest = True
             try: #try to load image
-                image, to, wcs = loadFits("../crop/"+filename, year=year, getwcs=True, verbosity=0)
+                image, to, wcs = loadFits("../raw/"+filename, year=year, getwcs=True, verbosity=0)
             except FitsError:
                 #image critically failed to load
                 Mtest = False
