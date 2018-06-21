@@ -314,7 +314,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     if diagnosis:
         if verbosity > 0:
-            print "Returning PSF for diagnosis"
+            print "Returning image data for diagnosis"
         return catPSF, catPSFerr, skyval, noise
 
     #Integration using common PSF
