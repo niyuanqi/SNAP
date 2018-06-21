@@ -40,7 +40,7 @@ class FitsError(Exception):
         #set error message as value
         return repr(self.value)
 
-def loadFits(filename, year=2016, getwcs=False, verbosity=0):
+def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
     """
     #################################################################
     # Desc: Load fits file for MagCalc.                             #
@@ -52,6 +52,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     #  filename: str fits filename to be opened                     #
     # verbosity; int counts verbosity level                         #
     #    getwcs; boolean whether to return wcs                      #
+    #    gethdr; boolean whether to return header                   #
     #      year; int year to measure time to                        #
     # ------------------------------------------------------------- #
     # Output                                                        #
@@ -59,6 +60,7 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     # image: numpy array containing image data                      #
     #  time: float time in days since start of year YYYY            #
     #   wcs: astropy wcs object, world coordinate system on image   #
+    #   hdr: astropy header object                                  #
     #################################################################
     """
 
@@ -90,6 +92,8 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
     except KeyError:
         time = 0
 
+    retlist = [image, time]
+
     if getwcs:
         try: #try to load WCS
             if verbosity > 0:
@@ -97,10 +101,10 @@ def loadFits(filename, year=2016, getwcs=False, verbosity=0):
             wcs = WCS(filename)
         except:
             raise FitsError('Unable to load wcs data.')
-
-        return image, time, wcs
-    else:
-        return image, time
+        retlist += wcs
+    if gethdr:
+        retlist += header
+    return retlist
 
 def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf=1, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
     """
