@@ -73,43 +73,43 @@ for i in range(len(bands)):
                 to = 0
                 print "Critical error loading image!"
             if Mtest:
-            try:
-                print "extracting psf"
-                PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0, diagnosis=True)
-                #image fwhm
-                fwhm = np.mean(E2moff_toFWHM(*PSF[:-1]))
-                if fwhm == 0:
-                    raise PSFError('Unable to perform photometry on reference stars.')
-                #image size
-                imsize = np.mean(image.shape)
-                #image negative limit
-                ilim = Med - 10*Noise
-                #check if mask already created
-                if os.path.exists(maskname):
-                    print "Already created mask for: "+filename
-                else:
-                    print "Creating mask for: "+filename
-                    crmask, cleanarr = detect_cosmics(image, sigclip=4.0, readnoise=Noise, satlevel=satpix, psffwhm=fwhm, psfsize=2.5*fwhm)
-                    hdu = fits.PrimaryHDU(crmask.astype(int))
-                    hdu.header = hdr
-                    hdu.writeto(maskname)
-                    #hdu = fits.PrimaryHDU(cleanarr)
-                    #hdu.header = hdr
-                    #hdu.writeto(cleanname)
-                #subtract reference image
-                make_diff_image(filename, refs[i], diffname, convname,
-                                fwhm=fwhm, imsize=imsize,
-                                tmp_sat=reflims[i][0], src_sat=satpix,
-                                tmp_neg=reflims[i][1], src_neg=ilim,
-                                tmp_mask=refmasks[i], src_mask=maskname,
-                                "DITemp"+str(n))
-            except PSFError:
-                Mtest = False
-                print "PSF can't be extracted!"
-                print "Not performing subtraction."
-            except: #General catastrophic failure
-                Mtest = False
-                print "Unknown catastrophic failure!"
-                print "Not performing subtraction."
+                try:
+                    print "extracting psf"
+                    PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0, diagnosis=True)
+                    #image fwhm
+                    fwhm = np.mean(E2moff_toFWHM(*PSF[:-1]))
+                    if fwhm == 0:
+                        raise PSFError('Unable to perform photometry on reference stars.')
+                    #image size
+                    imsize = np.mean(image.shape)
+                    #image negative limit
+                    ilim = Med - 10*Noise
+                    #check if mask already created
+                    if os.path.exists(maskname):
+                        print "Already created mask for: "+filename
+                    else:
+                        print "Creating mask for: "+filename
+                        crmask, cleanarr = detect_cosmics(image, sigclip=4.0, readnoise=Noise, satlevel=satpix, psffwhm=fwhm, psfsize=2.5*fwhm)
+                        hdu = fits.PrimaryHDU(crmask.astype(int))
+                        hdu.header = hdr
+                        hdu.writeto(maskname)
+                        #hdu = fits.PrimaryHDU(cleanarr)
+                        #hdu.header = hdr
+                        #hdu.writeto(cleanname)
+                    #subtract reference image
+                    make_diff_image(filename, refs[i], diffname, convname,
+                                    fwhm=fwhm, imsize=imsize,
+                                    tmp_sat=reflims[i][0], src_sat=satpix,
+                                    tmp_neg=reflims[i][1], src_neg=ilim,
+                                    tmp_mask=refmasks[i], src_mask=maskname,
+                                    "DITemp"+str(n))
+                except PSFError:
+                    Mtest = False
+                    print "PSF can't be extracted!"
+                    print "Not performing subtraction."
+                except: #General catastrophic failure
+                    Mtest = False
+                    print "Unknown catastrophic failure!"
+                    print "Not performing subtraction."
 
 
