@@ -61,14 +61,14 @@ def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692
     #                 '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
 
     #filenames, normalize to src and force convolution on tmp
-    flags = ['-inim', src_name, '-tmplim', tmp_name, '-outim',
-             out_name, '-oci', conv_name, '-n', 'i', '-c', 't', '-ko', '2']
+    flags = ['-n', 'i', '-inim', src_name, '-tmplim', tmp_name, '-outim',
+             out_name, '-oci', conv_name, '-c', 't', '-ko', '2']
     #artifact mask files
     if tmp_mask is not None:
         flags += ['-tmi', tmp_mask]
     if src_mask is not None:
         flags += ['-imi', src_mask]
-    flags += ['-mins', '2']
+    flags += ['-mins', '1']
     #negative and saturation limits
     flags += ['-tl', str(tmp_neg), '-il', str(src_neg)]
     flags += ['-tu', str(tmp_sat), '-iu', str(src_sat)]

@@ -11,6 +11,8 @@ import numpy as np
 import os
 from glob import glob
 import math
+from astropy.io import fits
+from astroscrappy import detect_cosmics
 
 #essential files from SNAP
 from SNAP.DiffIm import make_diff_image
@@ -29,7 +31,7 @@ from ObjData import *
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 refs = ['../ref/'+Brefname, '../ref/'+Vrefname, '../ref/'+Irefname]
-refmasks = ['.'.join(ref.split('.')[:-1])+".diff.fits" for ref in refs]
+refmasks = ['.'.join(ref.split('.')[:-1])+".mask.fits" for ref in refs]
 
 #current working directory
 wd = os.getcwd()
@@ -58,18 +60,20 @@ for i in range(len(bands)):
         #cleanname='.'.join(filename.split('.')[:-1])+".clean.fits"
         #cleanname='../clean/'+'/'.join(maskname.split('/')[2:])
         #other parameters
-        fo = '.'.join(filename.split('.')[2:5])
+        fo = filename.split('/')[2]
+        fo = '.'.join(fo.split('.')[2:5])
         band = fo[0]
 
         #subtract if not already subtracted
         if os.path.exists(diffname) and os.path.exists(convname):
             print "Already subtracted "+filename
         else:
-            print "subtracting "+filename
+            print "Subtracting "+filename
             #retrieve parameters from image
             Mtest = True
             try: #try to load image
-                image, to, wcs = loadFits("../raw/"+filename, year=year, getwcs=True, verbosity=0)
+                image, to, wcs, hdr = loadFits(filename, year=year, getwcs=True, gethdr=True, verbosity=0)
+                
             except FitsError:
                 #image critically failed to load
                 Mtest = False
@@ -78,12 +82,13 @@ for i in range(len(bands)):
                 print "Critical error loading image!"
             if Mtest:
                 try:
-                    print "extracting psf"
+                    print "Extracting psf"
                     PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0, diagnosis=True)
                     #image fwhm
                     fwhm = np.mean(E2moff_toFWHM(*PSF[:-1]))
                     if fwhm == 0:
                         raise PSFError('Unable to perform photometry on reference stars.')
+                    print ""
                     #image size
                     imsize = np.mean(image.shape)
                     #image negative limit
@@ -101,12 +106,16 @@ for i in range(len(bands)):
                         #hdu.header = hdr
                         #hdu.writeto(cleanname)
                     #subtract reference image
+                    print ""
+                    print "Performing subtraction, generating files"
+                    print diffname, convname
                     make_diff_image(filename, refs[i], diffname, convname,
                                     fwhm=fwhm, imsize=imsize,
                                     tmp_sat=reflims[i][0], src_sat=satpix,
                                     tmp_neg=reflims[i][1], src_neg=ilim,
                                     tmp_mask=refmasks[i], src_mask=maskname,
                                     tmpdir="DITemp"+str(n))
+                
                 except PSFError:
                     Mtest = False
                     print "PSF can't be extracted!"
@@ -115,5 +124,5 @@ for i in range(len(bands)):
                     Mtest = False
                     print "Unknown catastrophic failure!"
                     print "Not performing subtraction."
-
+                
 
