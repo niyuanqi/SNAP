@@ -1,8 +1,10 @@
 #################################################################
-# Name:     DiffFits.py                                         #
+# Name:     Diffgen.py                                          #
 # Author:   Yuan Qi Ni                                          #
-# Date:     July 14, 2017                                       #
-# Function: Program uses DiffIm routine to subtract images.     #
+# Date:     June 21, 2018                                       #
+# Function: Program uses DiffIm routine to subtract images      #
+#           after using MagCalc to measure important data       #
+#           and after creating masks using Astroscrappy.        #
 #           Update /raw files and ObjData.py before running.    #
 #################################################################
 
@@ -99,8 +101,8 @@ for i in range(len(bands)):
                     else:
                         print "Creating mask for: "+filename
                         crmask, cleanarr = detect_cosmics(image, sigclip=4.0, readnoise=Noise, satlevel=satpix, psffwhm=fwhm, psfsize=2.5*fwhm)
-                        hdu = fits.PrimaryHDU(crmask.astype(int))
-                        hdu.header = hdr
+                        maskim = crmask.astype('uint8')
+                        hdu = fits.PrimaryHDU(data=maskim, header=hdr)
                         hdu.writeto(maskname)
                         #hdu = fits.PrimaryHDU(cleanarr)
                         #hdu.header = hdr
