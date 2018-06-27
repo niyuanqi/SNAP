@@ -522,10 +522,10 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
             y1, y2 = int(min(y0)-3*fwhm),int(max(y0)+3*fwhm)
             for i in np.arange(x1, x2):
                 for j in np.arange(y1, y2):
-                    I_t[j][i] = E2moff_multi((i, j),psftype, given, fitpopt)
+                    I_t[j][i] = E2moff_multi((i, j),psftype, given, fitpopt) + D2plane((i, j),*skypopt)
             sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
-            sbmax = D2plane((PSFpopt[0][5],PSFpopt[0][6]),*skypopt)+5*skyN
-            sbmin = D2plane((PSFpopt[0][5],PSFpopt[0][6]),*skypopt)-5*skyN
+            sbmax = 5*skyN
+            sbmin = -5*skyN
             plt.title("Multi-object fit residual")
             plt.imshow(sb, cmap='Greys',vmax=sbmax,vmin=sbmin)
             plt.colorbar()
