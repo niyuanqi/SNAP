@@ -60,7 +60,7 @@ def ap_multi(image, x0, y0, r1, r2):
     return np.array(api), np.array(apx), np.array(apy)
     
 #function: clean out cosmic rays and junk from PSF
-def PSFclean(x,y,psf,ref,skyN,sat=40000,f=10):
+def PSFclean(x,y,psf,ref,skyN,sat=40000,f=5):
     #remove saturated pixels
     mask1 = psf<sat
     #remove pixels that are 10sigma below or above fit (dead? hot?)
