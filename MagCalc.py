@@ -381,7 +381,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source
-    if Nobj == 1:
+    if Nobj == 1 and aperture is not None:
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
         if psf[0] == 1:
@@ -410,7 +410,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                 Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
         Io, SNo = [Io], [SNo]
     #deal with mult-object photometry
-    elif Nobj > 1:
+    else:
         PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
 
         #check preferred intensity calculation method
