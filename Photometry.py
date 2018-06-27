@@ -97,7 +97,11 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
     inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 4*fwhm, 5*fwhm)
+    mask = np.absolute(inner_annulus) > 2e-30 #remove masked pixels
+    inner_annulus, inner_x, inner_y = inner_annulus[mask], inner_x[mask], inner_y[mask] 
     outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 6*fwhm, 7*fwhm)
+    mask = np.absolute(outer_annulus) > 2e-30 #remove masked pixels
+    outer_annulus, outer_x, outer_y = outer_annulus[mask], outer_x[mask], outer_y[mask]
     #get first estimate mean background value
     innerB = np.mean(inner_annulus)
     outerB = np.mean(outer_annulus)
