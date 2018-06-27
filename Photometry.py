@@ -60,13 +60,16 @@ def ap_multi(image, x0, y0, r1, r2):
     return np.array(api), np.array(apx), np.array(apy)
     
 #function: clean out cosmic rays and junk from PSF
-def PSFclean(x,y,psf,ref,skyN,sat=40000,f=5):
+def PSFclean(x,y,psf,ref,skyN,sat=40000,f=10):
     #remove saturated pixels
     mask1 = psf<sat
-    #remove pixels that are 5sigma below or above fit (dead? hot?)
+    #remove pixels that are 10sigma below or above fit (dead? hot?)
     mask2 = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+    #remove pixels that are a result of masking
+    mask3 = np.absolute(psf) > 2e-30
     #combine
     mask = np.logical_and(mask1, mask2)
+    mask = np.logical_and(mask, mask3)
     return x[mask], y[mask], psf[mask]
 
 #function: measure saturation level of CCD

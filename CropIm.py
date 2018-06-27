@@ -16,7 +16,7 @@ def make_crop_image(filename, outname, ra, dec, radius):
 
     #load HDU image
     print "loading hdu"
-    hdulist = fits.open("../raw/"+filename)
+    hdulist = fits.open(filename)
     info = hdulist.info()
     image = hdulist[0].data
     header = hdulist[0].header
@@ -48,8 +48,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='make diff images.')
     parser.add_argument('src_name', type=str, help='input file name')
     parser.add_argument('out_name', type=str, help='output file name')
+    parser.add_argument("-p", "--position", type=str, help="RA:DEC as deg:deg")
     parser.add_argument('-r', '--radius', type=float, help='output file size')
     args = parser.parse_args()
 
+    #extract RA, DEC from position argument
+    RA, DEC = [float(coord) for coord in args.position.split(':')]
+
     #create crop image
-    make_crop_image(args.src_name, args.out_name, args.radius)
+    make_crop_image(args.src_name, args.out_name, RA, DEC, args.radius)

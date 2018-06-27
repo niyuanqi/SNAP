@@ -139,7 +139,7 @@ def LCsplit(valerrs):
     return mags, errs
 
 #function: filter bad data from light curve
-def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, flags=['_'], aflag='sn'):
+def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, ras=None, decs=None, flags=['_'], aflag='sn'):
     '''
     #######################################################################
     # Input                                                               #
@@ -171,7 +171,12 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
     #         evaluated at each sample of its corresponding light curve.  #
     #         If given, routine would purge all corresponding light curve #
     #         values to magnitudes measured below detection threshold.    #
-    #         Applied only if nthres not applied.
+    #         Applied only if nthres not applied.                         #
+    #                                                                     #
+    #     fs; list of string names for each datapoint                     #
+    #                                                                     #
+    #    ras; list of float ra locations                                  #
+    #   decs; list of float dec locations                                 #
     #                                                                     #
     #  flags; list of str flags defining what values in strs would cause  #
     #         all corresponding light curve values to be purged.          #
@@ -199,7 +204,14 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
     #         defined by flags, snrs, and lims were purged.               #
     #                                                                     #
     #   lims; list of float limiting magnitude arrays (if given) where    #
+    #         bad elements defined by flags, snrs, and lims were purged.  #
+    #                                                                     #
+    #     fs; list of string names for each datapoint where bad elements  #
     #         defined by flags, snrs, and lims were purged.               #
+    #                                                                     #
+    #    ras; list of float ra locations                                  #
+    #   decs; list of float dec locations                                 #
+    #         bad elements defined by flags, snrs, and lims were purged.  #
     #######################################################################
     '''
     #for each band
@@ -240,25 +252,27 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         mags[i] = mags[i][index]
         errs[i] = errs[i][index]
         ts[i] = ts[i][index]
+        retlist = [ts, mags, errs]
         if fluxes is not None:
             fluxes[i] = fluxes[i][index]
+            retlist += [fluxes]
         if snrs is not None:
             snrs[i] = snrs[i][index]
+            retlist += [snrs]
         if strs is not None:
             strs[i] = strs[i][index]
         if lims is not None:
             lims[i] = lims[i][index]
+            retlist += [lims]
         if fs is not None:
             fs[i] = fs[i][index]
-    retlist = [ts, mags, errs]
-    if fluxes is not None:
-        retlist += [fluxes]
-    if snrs is not None:
-        retlist += [snrs]
-    if lims is not None:
-        retlist += [lims]
-    if fs is not None:
-        retlist += [fs]
+            retlist += [fs]
+        if ras is not None:
+            ras[i] = ras[i][index]
+            retlist += [ras]
+        if decs is not None:
+            decs[i] = decs[i][index]
+            retlist += [decs]
     return retlist
 
 #function: crop time segment from dataset
@@ -335,7 +349,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: load light curve from text file
-def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
+def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
     '''
     #######################################################################
     # Input                                                               #
@@ -371,6 +385,9 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #     fcols; int location of filename indicator column (multi) or     #
     #            location of filename columns (single).                   #
     #                                                                     #
+    #    racols; list of RA (if given)                                    #
+    #   deccols; list of DEc (if given)                                   #
+    #                                                                     #
     #     scols; int location of comments column (multi) or location of   #
     #            comments columns (single).                               #
     #                                                                     #
@@ -404,6 +421,8 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #                                                                     #
     #     fs; list of filename arrays (if given) where bad elements       #
     #         defined by flags, snrs, and lims were purged.               #
+    #     ra; list of RA (if given)                                       #
+    #    dec; list of DEc (if given)                                      #
     #######################################################################
     '''
     #check load mode, multifile or singlefile
@@ -442,16 +461,28 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         #check if comment strings are given
         if scols is not None:
             #extract comments from files
-            strs = np.loadtxt(filenames,usecols=scols,comments=';',unpack=True)
+            strs = np.loadtxt(filenames,dtype=str,usecols=scols,comments=';',unpack=True)
         else: #no strings given
             strs = [np.array(['_']*len(t)) for t in ts]
 
         #check if filename strings are given
         if fcols is not None:
             #extract comments from files
-            fs = np.loadtxt(filenames,usecols=fcols,comments=';',unpack=True)
+            fs = np.loadtxt(filenames,dtype=str,usecols=fcols,comments=';',unpack=True)
         else: #no strings given
             fs = [np.array(['_']*len(t)) for t in ts]
+
+        #check if locations are given
+        if racols is not None:
+            #extract comments from files
+            ras = np.loadtxt(filenames,usecols=racols,comments=';',unpack=True)
+        else: #no strings given
+            ras = [np.array([0]*len(t)) for t in ts]
+        if deccols is not None:
+            #extract comments from files
+            decs = np.loadtxt(filenames,usecols=deccols,comments=';',unpack=True)
+        else: #no strings given
+            decs = [np.array([0]*len(t)) for t in ts]
             
     elif mode == 'multi':
         #load from each file
@@ -523,19 +554,39 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         else: #no strings given
             fs = [np.array(['_']*len(t)) for t in ts]
 
+        #check if locations are given
+        if racols is not None:
+            #extract comments from files
+            ras = []
+            for filename in filenames:
+                #load comment column
+                ra = np.loadtxt(filename,usecols=(racols,),comments=';',unpack=True)
+                ras.append(ra)
+        else: #no strings given
+            ras = [np.array([0]*len(t)) for t in ts]
+        if deccols is not None:
+            #extract comments from files
+            decs = []
+            for filename in filenames:
+                #load comment column
+                dec = np.loadtxt(filename,usecols=(deccols,),comments=';',unpack=True)
+                decs.append(dec)
+        else: #no strings given
+            decs = [np.array([0]*len(t)) for t in ts]
+
     #check if SN filter is applied
     if SNthres is not None:
         #filter out bad data with all information
-        ts, mags, errs, fluxes, snrs, lims, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, fs=fs, flags=flags, aflag=aflag)
+        ts, mags, errs, fluxes, snrs, lims, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
     #check if SNR are given
     else:
         #check if limiting magnitudes are given
         if limcols is not None:
             #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs, lims, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, lims, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
         else:
             #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs, fs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
             
     #convert mags to float
     mags = [mag.astype(float) for mag in mags]
@@ -554,6 +605,10 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         retlist += [lims]
     if fcols is not None:
         retlist += [fs]
+    if racols is not None:
+        retlist += [ras]
+    if deccols is not None:
+        retlist += [decs]
     #return arrays of data
     return retlist
 
