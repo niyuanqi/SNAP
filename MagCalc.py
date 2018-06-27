@@ -410,7 +410,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                 Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
         Io, SNo = [Io], [SNo]
     #deal with mult-object photometry
-    else:
+    elif Nobj > 0:
         PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
 
         #check preferred intensity calculation method
