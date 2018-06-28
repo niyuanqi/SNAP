@@ -10,7 +10,7 @@
 import numpy as np
 
 #maximum fev for curve_fit
-maxfev = 10000
+maxfev = 2000
 
 #function: distance metric on images
 def dist(x1, y1, x2, y2):
