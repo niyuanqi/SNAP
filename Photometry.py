@@ -10,7 +10,7 @@
 import numpy as np
 
 #maximum fev for curve_fit
-maxfev = 2000
+maxfev = 1000
 
 #function: distance metric on images
 def dist(x1, y1, x2, y2):
@@ -592,11 +592,13 @@ def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
     Y0 = PSFpopt[6]
     FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
     
-    x = np.arange(x0-window,x0+window+1,dtype=int)
-    xt = np.arange(x0-window,x0+window+1,0.1)
+    xw_min, xw_max = max(x0-window, 0), min(x0+window+1, image.shape[1]-1)
+    yw_min, yw_max = max(y0-window, 0), min(y0+window+1, image.shape[0]-1)
+    x = np.arange(xw_min,xw_max,dtype=int)
+    xt = np.arange(xw_min,xw_max,0.1)
     Ix_im = np.array([image[int(y0)][i] for i in x])
-    y = np.arange(y0-window,y0+window+1,dtype=int)
-    yt = np.arange(y0-window,y0+window+1,0.1)
+    y = np.arange(yw_min,yw_max,dtype=int)
+    yt = np.arange(yw_min,yw_max,0.1)
     Iy_im = np.array([image[i][int(x0)] for i in y])
     if FWHMx*FWHMy != 0:
         #compute PSF fit
