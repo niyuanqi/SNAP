@@ -60,16 +60,16 @@ def ap_multi(image, x0, y0, r1, r2):
     return np.array(api), np.array(apx), np.array(apy)
     
 #function: clean out cosmic rays and junk from PSF
-def PSFclean(x,y,psf,ref,skyN,sat=40000,f=10):
+def PSFclean(x,y,psf,ref,skyN=None,sat=40000,f=10):
     #remove saturated pixels
-    mask1 = psf<sat
-    #remove pixels that are 10sigma below or above fit (dead? hot?)
-    mask2 = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+    mask = psf<sat
+    if skyN is not None:
+        #remove pixels that are 10sigma below or above fit (dead? hot?)
+        mask1 = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+        mask = np.logical_and(mask, mask1)
     #remove pixels that are a result of masking
-    mask3 = np.absolute(psf) > 2e-30
-    #combine
-    mask = np.logical_and(mask1, mask2)
-    mask = np.logical_and(mask, mask3)
+    mask1 = np.absolute(psf) > 2e-30
+    mask = np.logical_and(mask, mask1)
     return x[mask], y[mask], psf[mask]
 
 #function: measure saturation level of CCD
@@ -97,11 +97,9 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
     inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 4*fwhm, 5*fwhm)
-    mask = np.absolute(inner_annulus) > 2e-30 #remove masked pixels
-    inner_annulus, inner_x, inner_y = inner_annulus[mask], inner_x[mask], inner_y[mask] 
+    inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
     outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 6*fwhm, 7*fwhm)
-    mask = np.absolute(outer_annulus) > 2e-30 #remove masked pixels
-    outer_annulus, outer_x, outer_y = outer_annulus[mask], outer_x[mask], outer_y[mask]
+    outer_x, outer_y, outer_annulus = PSFclean(outer_x,outer_y,outer_annulus,outer_annulus,sat=sat)
     #get first estimate mean background value
     innerB = np.mean(inner_annulus)
     outerB = np.mean(outer_annulus)
@@ -158,6 +156,8 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     #get fit box to fit psf
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
@@ -253,6 +253,14 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     #get fit box to fit psf
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    #filter out saturated pixels
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    #get an approximate fix on position
+    x0 = np.sum(intens*x)/intens.sum()
+    y0 = np.sum(intens*y)/intens.sum()
+    #get centered fit box
+    intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
