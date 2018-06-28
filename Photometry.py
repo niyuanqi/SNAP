@@ -10,7 +10,7 @@
 import numpy as np
 
 #maximum fev for curve_fit
-maxfev = 1000
+maxfev = 10000
 
 #function: distance metric on images
 def dist(x1, y1, x2, y2):
@@ -170,6 +170,11 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
 
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
+
+    #fit 2d psf to background subtracted source light
+        est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
+        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]])
+        PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
     
     try:
         #fit 2d psf to background subtracted source light
@@ -251,8 +256,6 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     #get fit box to fit psf
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
-    #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
