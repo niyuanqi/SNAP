@@ -156,14 +156,12 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     #get fit box to fit psf
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
-    #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
     #get centered fit box
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
-    
+
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)
