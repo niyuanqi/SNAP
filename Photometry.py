@@ -177,12 +177,12 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
         bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #Fit function
-        I_theo = E2moff((x,y),*PSFpopt)
+        #I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
+        #x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
 
         #calculate better PSF from cleaner data
-        PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+        #PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         try:
             #try to calculate fit error
             PSFperr = np.sqrt(np.diag(PSFpcov))
