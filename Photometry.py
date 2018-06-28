@@ -176,6 +176,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
         est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
         bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+        #DONT FLAG COSMICS IN PSFEXTRACT, will break moffat function.
         #Fit function
         #I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
