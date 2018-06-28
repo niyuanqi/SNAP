@@ -113,7 +113,7 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
         skyTheo = D2plane((skyx,skyy),*skypopt)
         skyN = np.std(skyi-skyTheo)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,5)
+        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,10)
         
         #calculate better fit from cleaner data
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
@@ -157,7 +157,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
@@ -171,7 +171,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     
     try:
         #fit 2d psf to background subtracted source light
@@ -181,7 +181,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
 
         #calculate better PSF from cleaner data
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2) , p0=PSFpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -254,7 +254,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
@@ -268,7 +268,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -283,7 +283,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: E2moff((x, y),A,ax,ay,b,theta,X0,Y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -356,7 +356,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -367,7 +367,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A: E2moff((x, y),A,ax,ay,b,theta,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, absolute_sigma=True, maxfev=maxfev)
@@ -442,7 +442,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,5)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
 
     #given parameters for fitting
     given = []
@@ -489,7 +489,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
         #Fit function
         I_theo = E2moff_multi((x, y),psftype, given, fitpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,5)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
