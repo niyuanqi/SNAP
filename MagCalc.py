@@ -181,7 +181,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         ID, RA, DEC, catM, catMerr = ctlg.catDiff(catname,band=band)
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
-        ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo,DECo,fovam,band,out=catname)
+        ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
 
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
