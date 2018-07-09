@@ -60,12 +60,14 @@ def ap_multi(image, x0, y0, r1, r2):
     return np.array(api), np.array(apx), np.array(apy)
     
 #function: clean out cosmic rays and junk from PSF
-def PSFclean(x,y,psf,ref,skyN=None,sat=40000,f=10):
+def PSFclean(x,y,psf,ref,skyN=None,sat=40000,fu=10,fl=10):
     #remove saturated pixels
     mask = psf<sat
     if skyN is not None:
         #remove pixels that are 10sigma below or above fit (dead? hot?)
-        mask1 = np.absolute(psf-ref)<f*np.sqrt(np.absolute(ref)+skyN**2)
+        mask1 = psf-ref<fu*np.sqrt(np.absolute(ref)+skyN**2)
+        mask = np.logical_and(mask, mask1)
+        mask1 = ref-psf<fl*np.sqrt(np.absolute(ref)+skyN**2)
         mask = np.logical_and(mask, mask1)
     #remove pixels that are a result of masking
     mask1 = np.absolute(psf) > 2e-30
@@ -96,15 +98,16 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
     #get background sky annulus
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
-    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 4*fwhm, 5*fwhm)
+    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 7*fwhm, 10*fwhm)
     inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
-    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 6*fwhm, 7*fwhm)
+    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 10*fwhm, 12*fwhm)
     outer_x, outer_y, outer_annulus = PSFclean(outer_x,outer_y,outer_annulus,outer_annulus,sat=sat)
     #get first estimate mean background value
     innerB = np.mean(inner_annulus)
     outerB = np.mean(outer_annulus)
     #take outer annulus if inner annulus probably contains a star
     skyB = outerB if outerB<innerB else innerB
+    color = 'g' if outerB<innerB else 'b'
     skyi, skyx, skyy = (outer_annulus, outer_x, outer_y) if outerB<innerB else (inner_annulus, inner_x, inner_y)
     #fit sky background
     try:
@@ -112,8 +115,16 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
         #Fit function
         skyTheo = D2plane((skyx,skyy),*skypopt)
         skyN = np.std(skyi-skyTheo)
-        #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,10)
+        #filter out noisy pixels at 5sigma level (star)
+        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,fu=2, fl=1000)
+
+        #calculate better fit from cleaner data
+        skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
+        #Fit function
+        skyTheo = D2plane((skyx,skyy),*skypopt)
+        skyN = np.std(skyi-skyTheo)
+        #filter out noisy pixels at 5sigma level (cosmic rays/hot pix)
+        skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,fu=2, fl=2)
         
         #calculate better fit from cleaner data
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
@@ -134,6 +145,27 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
         skyN = np.std(skyi-skyTheo)
         #calculate goodness of fit
         skyX2dof = np.square((skyi-skyTheo)/skyN)/(len(skyi)-3)
+
+        if verbosity > 1:
+            import matplotlib.pyplot as plt
+            I_t = np.copy(image)
+            x1, x2 = min(skyx),max(skyx)+1
+            y1, y2 = min(skyy),max(skyy)+1
+            for i in np.arange(x1, x2):
+                for j in np.arange(y1, y2):
+                    I_t[j][i] = D2plane((i, j),*skypopt)
+            print "Plotting sky planar fit residual"
+            print "Plotting image at x:", x1, x2
+            print "Plotting image at y:", y1, y2
+            sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
+            sbmax = 5*skyN
+            sbmin = -5*skyN
+            plt.title("Sky planar fit residual")
+            plt.imshow(sb, cmap='Greys',vmax=sbmax,vmin=sbmin)
+            plt.colorbar()
+            plt.scatter(skyx-x1, skyy-y1, c=color, marker='.')
+            plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            plt.show()
     except:
         #catastrophic failure of sky plane fitting, How???
         raise PSFError('Sky fitting catastrophic failure.')
@@ -175,7 +207,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
     
     try:
         #fit 2d psf to background subtracted source light
@@ -253,7 +285,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
 
     #get fit box to fit psf
     fsize = 3
@@ -271,7 +303,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -286,7 +318,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: E2moff((x, y),A,ax,ay,b,theta,X0,Y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -347,7 +379,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
 
     #get fit box to fit psf
     fsize = 3
@@ -359,7 +391,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
     
     try:
         #fit 2d fixed psf to background subtracted source light
@@ -370,7 +402,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         #Fit function
         I_theo = E2moff((x,y),*PSFpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),A: E2moff((x, y),A,ax,ay,b,theta,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, absolute_sigma=True, maxfev=maxfev)
@@ -433,7 +465,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
     Nobj = len(psftype)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity=0)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity)
     
     #get fit box (around all sources) to multi-fit psf
     fsize = 3
@@ -445,7 +477,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
         intens = intens - sky
 
     #filter out saturated pixels
-    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10)
+    x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
 
     #given parameters for fitting
     given = []
@@ -492,7 +524,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
         #Fit function
         I_theo = E2moff_multi((x, y),psftype, given, fitpopt)
         #filter out noisy pixels at 5sigma level (cos rays/hot pix)
-        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10)
+        x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10,10)
 
         #calculate better PSF from cleaner data
         fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, given, free), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
@@ -538,6 +570,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
             for i in np.arange(x1, x2):
                 for j in np.arange(y1, y2):
                     I_t[j][i] = E2moff_multi((i, j),psftype, given, fitpopt) + D2plane((i, j),*skypopt)
+            print "Plotting image at x:", x1, x2
+            print "Plotting image at y:", y1, y2
             sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
             sbmax = 5*skyN
             sbmin = -5*skyN
