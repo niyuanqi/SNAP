@@ -27,18 +27,19 @@ def ap_get(image, x0, y0, r1, r2):
     return api, apx, apy
 
 #function: photometric aperture around multiple sources from r1 to r2
-def ap_multi(image, x0, y0, r1, r2):
+def ap_multi(image, x0, y0, fitsky, r1, r2):
     Nobj = len(x0)
-    #Extract zone around all objects
+    #Extract zone around all objects for which fitsky=1
     xaxis = np.arange(0,image.shape[1], dtype=int)
     yaxis = np.arange(0,image.shape[0], dtype=int)
     xmask = np.zeros(image.shape[1])
     ymask = np.zeros(image.shape[0])
     for i in range(Nobj):
-        xap_single = np.absolute(xaxis-x0[i]) <= r2
-        xmask = np.logical_or(xmask, xap_single)
-        yap_single = np.absolute(yaxis-y0[i]) <= r2
-        ymask = np.logical_or(ymask, yap_single)
+        if fitsky[i]:
+            xap_single = np.absolute(xaxis-x0[i]) <= r2
+            xmask = np.logical_or(xmask, xap_single)
+            yap_single = np.absolute(yaxis-y0[i]) <= r2
+            ymask = np.logical_or(ymask, yap_single)
     xaxis = xaxis[xmask]
     yaxis = yaxis[ymask]
     #find union of all apertures in zone
@@ -48,8 +49,9 @@ def ap_multi(image, x0, y0, r1, r2):
             #is this pixel in an aperture?
             inap = False
             for i in range(Nobj):
-                if dist(x0[i],y0[i],x,y)<=r2:
+                if dist(x0[i],y0[i],x,y)<=r2 and fitsky[i]:
                     inap = True
+            #exclude pixels too close to any objects
             for i in range(Nobj):
                 if dist(x0[i],y0[i],x,y)<r1:
                     inap = False
@@ -88,7 +90,7 @@ def satpix(image):
     return full/2.0
 
 #function: fits background sky plane and noise
-def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
+def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     #update 180610: x0, y0 need to be lists (even if length is 1)
     
     from scipy.optimize import curve_fit
@@ -98,9 +100,9 @@ def SkyFit(image, x0, y0, fwhm=5.0, sat=40000.0, verbosity=0):
     #get background sky annulus
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
-    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, 7*fwhm, 10*fwhm)
+    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, fitsky, 7*fwhm, 10*fwhm)
     inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
-    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, 10*fwhm, 12*fwhm)
+    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, fitsky, 10*fwhm, 12*fwhm)
     outer_x, outer_y, outer_annulus = PSFclean(outer_x,outer_y,outer_annulus,outer_annulus,sat=sat)
     #get first estimate mean background value
     innerB = np.mean(inner_annulus)
@@ -183,7 +185,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     from PSFlib import D2plane, E2moff, E2moff_toFWHM, E2moff_verify
     
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], [fitsky], fwhm, sat, verbosity)
     
     #get fit box to fit psf
     fsize = 1
@@ -285,7 +287,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], [fitsky], fwhm, sat, verbosity)
 
     #get fit box to fit psf
     fsize = 3
@@ -379,7 +381,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     fwhm = max(FWHMx, FWHMy)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], fwhm, sat, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, [x0], [y0], [fitsky], fwhm, sat, verbosity)
 
     #get fit box to fit psf
     fsize = 3
@@ -446,7 +448,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
 
 #function: fit multiple PSFs
-def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
+def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM, E2moff_verify
@@ -465,11 +467,11 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky=True, sat=40000.0, verb
     Nobj = len(psftype)
 
     #fit sky background in an annulus
-    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fwhm, sat, verbosity)
+    skypopt, skyperr, skyX2dof, skyN = SkyFit(image, x0, y0, fitsky, fwhm, sat, verbosity)
     
     #get fit box (around all sources) to multi-fit psf
     fsize = 3
-    intens, x, y = ap_multi(image, x0, y0, 0, fsize*fwhm)
+    intens, x, y = ap_multi(image, x0, y0, [1]*Nobj, 0, fsize*fwhm)
     if fitsky:
         #get sky background
         sky = D2plane((x,y),*skypopt)

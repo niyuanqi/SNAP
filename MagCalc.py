@@ -159,6 +159,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         RAo = [RAo]
         DECo = [DECo]
         psf = [psf]
+        fitsky = [fitsky]
     #number of sources to perform photometry on
     Nobj = len(name)
     
@@ -245,7 +246,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #calculate intensity and SN ratio
         #verbosity is reduced for catalog stars
         try:
-            PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky, sat=satpix, verbosity=verbosity-1)
+            PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=True, sat=satpix, verbosity=verbosity-1)
             PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
         except:
             PSFpopt = [0]*7
@@ -327,7 +328,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #position of star in catalog
         x0, y0 = catXs[i], catYs[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(catimage, catPSF, catPSFerr, x0, y0, fitsky=fitsky, sat=satpix, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFfit(catimage, catPSF, catPSFerr, x0, y0, fitsky=True, sat=satpix, verbosity=verbosity-1)
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
@@ -336,10 +337,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #perform aperture photometry
             if aperture <= 0:
                 #use FWHM of catPSF to define Kron aperture
-                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=fitsky, verbosity=verbosity-1)
+                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=True, verbosity=verbosity-1)
             else:
                 #use aperture given directly
-                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=fitsky, verbosity=verbosity-1)
+                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=True, verbosity=verbosity-1)
         #check if reference stars are valid
         if I == 0 or SN == 0 or skyN == 0:
             raise PSFError('Unable to perform photometry on reference stars.')
@@ -385,11 +386,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
         if psf[0] == 1:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == 2:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == 3:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         else:
             #Invalid fit selected, don't fit source
             if verbosity > 0:
@@ -404,10 +405,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #perform aperture photometry
             if aperture <= 0:
                 #use FWHM of catPSF to define Kron aperture
-                Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, PSF=catPSF, fitsky=fitsky, verbosity=verbosity)
+                Io, SNo = pht.Ap_photometry(image, Xo[0], Yo[0], skypopto, skyNo, PSF=catPSF, fitsky=fitsky[0], verbosity=verbosity)
             else:
                 #use aperture given directly
-                Io, SNo = pht.Ap_photometry(image, Xo, Yo, skypopto, skyNo, radius=aperture, fitsky=fitsky, verbosity=verbosity)
+                Io, SNo = pht.Ap_photometry(image, Xo[0], Yo[0], skypopto, skyNo, radius=aperture, fitsky=fitsky[0], verbosity=verbosity)
         Io, SNo = [Io], [SNo]
     #deal with mult-object photometry
     elif Nobj > 0:
