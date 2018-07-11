@@ -160,7 +160,7 @@ Contains python functions for reading and writing light curve files.
 
 ## Examples
 
-Examples directory contains miscellaneous programs that use various SNAP routines to do things such as generate light curves from raw images, generate binned light curves, plot SN1a light curve, calibrate SN1a using light curve, etc.
+Examples directory contains miscellaneous programs that do various useful things such as make image histogram (for finding saturation limit), making image mask using Astroscrappy, testing multi-object photometry on single files, etc.
 
 ## cockpit-lc
 
