@@ -59,7 +59,6 @@ As of July 2018, MagCalc is able to perform multi-object PSF photometry.
 The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
 To use the new multi-object photometry, one need only replace the input parameters source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
 Each item in the list corresponds to each object's name, ra, dec, and psf to be used for source. Each object's fitsky parameter (boolean) indicates whether its annulus with participate in sky background fitting. Example: to have an annulus taken around every source, simply give a list of ones.
-As an example, in /cockpit-lc/ suite, simply replace the corresponding parameters in ObjData.py with lists, and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object inputs, hence it is supposed to be a replacement for LCgen.py.
 At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including plot of annulus used). This is in addition to the old plots of fit cross-section (for each object).
 
 **DiffIm.py :**
@@ -75,8 +74,6 @@ Try in terminal
 *% python -m SNAP.DiffIm -h*
 
 for explanation of flags and inputs
-
-As of July 2018, advanced image subtraction is possible in /cockpit-lc/ suite using Diffgen.py. It uses MagCalc to retrieve PSF from image for calibration, uses Astroscrappy package (Implementation of Laplacian cosmic ray detection) to create artifact masks, and then uses DiffIm.py to subtract reference image from image. Note, this is quite slow, and you can speed this up substatially by cropping both the science image and the reference image using CropIm.py to the same subsection of sky.
 
 **BinIm.py :**
 
@@ -167,7 +164,7 @@ Examples directory contains miscellaneous programs that use various SNAP routine
 
 ## cockpit-lc
 
-cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available).
+cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available). Copy the whole thing into an empty directory, and everything should work. As of July 2018, you can also perform multi-object psf photometry in cockpit-lc. Simply replace the corresponding parameters in ObjData.py with lists, and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object inputs, hence it is supposed to be a replacement for LCgen.py. Advanced image subtraction is also possible in cockpit-lc using Diffgen.py. It uses MagCalc to retrieve PSF from image for calibration, uses Astroscrappy package (Implementation of Laplacian cosmic ray detection) to create artifact masks, and then uses DiffIm.py to subtract reference image from image. Note, this is quite slow, and you can speed this up substatially by cropping both the science image and the reference image using CropIm.py to the same subsection of sky.
 
 ## cockpit-sn1a
 
