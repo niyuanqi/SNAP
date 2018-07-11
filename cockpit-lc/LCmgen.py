@@ -89,10 +89,7 @@ for i in range(Nobj):
         f_done.append([fB_done, fV_done, fI_done])
         print "Already done list:"
         print f_done
-        outB = open(outBname[i], 'a')
-        outV = open(outVname[i], 'a')
-        outI = open(outIname[i], 'a')
-        outs.append([outBname, outVname, outIname])
+        outs.append([outBname[i], outVname[i], outIname[i]])
     else:
         print "Starting "+outBname[i]
         print "Starting "+outVname[i]
@@ -114,8 +111,7 @@ for i in range(Nobj):
             outfiles[j].write("\n; "+str(user)+"\t"+str(t_now))
             outfiles[j].write(headGen())
             outfiles[j].close()
-        outs.append([outBname, outVname, outIname])
-        
+        outs.append([outBname[i], outVname[i], outIname[i]])
 
 #search for fits files with which to construct light curve
 files = sorted(glob('../crop/'+prefix+'*.fits'))
@@ -159,10 +155,12 @@ for i in range(len(files)):
 
         if Mtest:
             try:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
                 
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
+                    
                 """
-                #Set this block for more stable measurements, when psftype[0]=2
+                #Replace with this block for more stable measurements
+                #when psftype[0]=2
                 print "Let's try photometry with fixed centroid. psf=1"
                 psfmod = list(psftype)
                 psfmod[0] = 1
