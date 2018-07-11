@@ -57,6 +57,11 @@ def headGen():
     out = "\n; "+sto+sfo+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlimo+ss
     return out
 
+#generate names using suffix
+outBname = name+'.B.'+suffix
+outVname = name+'.V.'+suffix
+outIname = name+'.I.'+suffix
+
 #generate output files if they don't already exist
 if os.path.exists(outBname) and os.path.exists(outVname) and os.path.exists(outIname):
     print "Continuing "+outBname
@@ -67,10 +72,7 @@ if os.path.exists(outBname) and os.path.exists(outVname) and os.path.exists(outI
     fV_done = np.loadtxt(outVname, dtype=str, comments=';', usecols=[1])
     fI_done = np.loadtxt(outIname, dtype=str, comments=';', usecols=[1])
     f_done = [fB_done, fV_done, fI_done]
-    outB = open(outBname, 'a')
-    outV = open(outVname, 'a')
-    outI = open(outIname, 'a')
-    outs = [outB, outV, outI]
+    outs = [outBname, outVname, outIname]
 else:
     print "Starting "+outBname
     print "Starting "+outVname
@@ -90,6 +92,8 @@ else:
         outs[i].write("\n; NUMBER_OF_REFERENCES\t"+str(nrefs[bindex[bands[i]]]))
         outs[i].write("\n; "+str(user)+"\t"+str(t_now))
         outs[i].write(headGen())
+        outs[i].close()
+    outs = [outBname, outVname, outIname]
 
 #search for fits files with which to construct light curve
 files = sorted(glob('../crop/'+prefix+'*.fits'))
@@ -133,11 +137,12 @@ for i in range(len(files)):
 
         if Mtest:
             try:
-            
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=2, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0)
 
-                if any([math.isnan(SNo), math.isinf(SNo)]):
-                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0)
+                print "Try photometry with fixed centroid."
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
+                if SNo>SNRnoise:
+                    print "Source is bright, get a better fix on centroid."
+                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
             
                 #check if MagCalc returns nonsense
                 if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
@@ -190,6 +195,6 @@ for i in range(len(files)):
         print out+'\n'
 
         if band in bands:
-            outs[bindex[band]].write(out)
-for out in outs:
-    out.close()
+            outfile = open(outs[bindex[band]], 'a')
+            outfile.write(out)
+            outfile.close()

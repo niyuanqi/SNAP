@@ -22,6 +22,10 @@ from SNAP.Photometry import*
 #essential data
 from ObjData import*
 
+#generate names using suffix
+outBname = name+'.B.'+suffix
+outVname = name+'.V.'+suffix
+outIname = name+'.I.'+suffix
 #time series data files
 files = [outBname, outVname, outIname]
 
@@ -45,9 +49,10 @@ bindir = '../bin/'
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 
-outBname = binBname
-outVname = binVname
-outIname = binIname
+#generate names using suffix
+outBname = name+'.B.'+binsuffix
+outVname = name+'.V.'+binsuffix
+outIname = name+'.I.'+binsuffix
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlim,so):
@@ -78,20 +83,38 @@ def headGen():
     out = "\n; "+sto+sfo+sRAo+sDECo+sIo+sSNo+sMo+sMo_err+sMlim+ss
     return out
 
-#generate output files
-os.system('touch '+outBname)
-os.system('touch '+outVname)
-os.system('touch '+outIname)
-outB = open(outBname, 'a')
-outV = open(outVname, 'a')
-outI = open(outIname, 'a')
-outs = [outB, outV, outI]
-#write headers for BVI light curve output files
-for i in range(len(bands)):
-    outs[i].write("; SOURCE_RA_DEC\t"+str(ra)+"\t"+str(dec))
-    outs[i].write("\n; NUMBER_OF_REFERENCES\t"+str(nrefs[bindex[bands[i]]]))
-    outs[i].write("\n; "+str(user)+"\t"+str(t_now))
-    outs[i].write(headGen())
+#generate output files if they don't already exist
+if os.path.exists(outBname) and os.path.exists(outVname) and os.path.exists(outIname):
+    print "Continuing "+outBname
+    print "Continuing "+outVname
+    print "Continuing "+outIname
+    #load list of already processed files
+    fB_done = np.loadtxt(outBname, dtype=str, comments=';', usecols=[1])
+    fV_done = np.loadtxt(outVname, dtype=str, comments=';', usecols=[1])
+    fI_done = np.loadtxt(outIname, dtype=str, comments=';', usecols=[1])
+    f_done = [fB_done, fV_done, fI_done]
+    outs = [outBname, outVname, outIname]
+else:
+    print "Starting "+outBname
+    print "Starting "+outVname
+    print "Starting "+outIname
+    os.system('touch '+outBname)
+    os.system('touch '+outVname)
+    os.system('touch '+outIname)
+    outB = open(outBname, 'a')
+    outV = open(outVname, 'a')
+    outI = open(outIname, 'a')
+    outs = [outB, outV, outI]
+    #already processed files is empty
+    f_done = [[],[],[]]
+    #write headers for BVI light curve output files
+    for i in range(len(bands)):
+        outs[i].write("; SOURCE_RA_DEC\t"+str(ra)+"\t"+str(dec))
+        outs[i].write("\n; NUMBER_OF_REFERENCES\t"+str(nrefs[bindex[bands[i]]]))
+        outs[i].write("\n; "+str(user)+"\t"+str(t_now))
+        outs[i].write(headGen())
+        outs[i].close()
+    outs = [outBname, outVname, outIname]
 
 #for each band
 for i in range(len(bands)):
@@ -114,80 +137,87 @@ for i in range(len(bands)):
         out_name = out_base+'fits'
         wt_name = out_base+'weight.fits'
         xml_name = out_base+'xml'
-        #swarp files between t1 and t2
-        subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
-                         out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
-                         xml_name]+bin_files)
 
+        #file information
         filename = out_name
         to = t_bin
-        fo = bands[i]+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]
-        #compute magnitude at 
-        Mtest = True
-        so = "_"
-        try: #try to load image
-            image, to, wcs = loadFits(filename, year=year, getwcs=True, verbosity=0)
-            to = t_bin
-        except FitsError:
-            #image critically failed to load
-            Mtest = False
-            so = "FITS_ERROR"
-            to = 0
-            print "Critical error loading image!"
+        fo = bands[i]+'.'+bin_names[0][2:-2]+'-'+bin_names[-1][2:-2]
 
-        if Mtest:
-            try:
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, aperture=0, psf=1, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=1000000000.0, verbosity=0)
+        if fo in f_done[bindex[band]]:
+            print "Already processed "+fo
+        else:
+            print "Processing "+fo
+            #swarp files between t1 and t2
+            subprocess.call(['swarp','-COMBINE_TYPE','SUM','-IMAGEOUT_NAME',
+                             out_name,'-WEIGHTOUT_NAME',wt_name,'-XML_NAME',
+                             xml_name]+bin_files)
+            #compute magnitude at 
+            Mtest = True
+            so = "_"
+            try: #try to load image
+                image, to, wcs = loadFits(filename, year=year, getwcs=True, verbosity=0)
+                to = t_bin
+            except FitsError:
+                #image critically failed to load
+                Mtest = False
+                so = "FITS_ERROR"
+                to = 0
+                print "Critical error loading image!"
+
+            if Mtest:
+                try:
+                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, aperture=0, psf=1, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=1000000000.0, verbosity=0)
                 
-                #check if MagCalc returns nonsense
-                if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
-                    Mo, Mo_err = -99.999, -99.999
+                    #check if MagCalc returns nonsense
+                    if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
+                        Mo, Mo_err = -99.999, -99.999
                     
-                if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
-                    Io, SNo = -99.99999, -99.99
-                    if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
-                        Mlimo = -99.999
-                        RAo, DECo = -99.9, -99.9
-                        Mtest = False
-            
-                if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
-                    Mlim = -99.999
                     if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
                         Io, SNo = -99.99999, -99.99
-                        RAo, DECo = -99.9, -99.9
-                        Mtest = False
+                        if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
+                            Mlimo = -99.999
+                            RAo, DECo = -99.9, -99.9
+                            Mtest = False
+            
+                    if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
+                        Mlim = -99.999
+                        if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
+                            Io, SNo = -99.99999, -99.99
+                            RAo, DECo = -99.9, -99.9
+                            Mtest = False
+                        else:
+                            RAo = RAo - ra
+                            DECo = DECo - dec
                     else:
                         RAo = RAo - ra
                         DECo = DECo - dec
-                else:
-                    RAo = RAo - ra
-                    DECo = DECo - dec
             
-            except PSFError: #if image PSF cant be extracted
+                except PSFError: #if image PSF cant be extracted
+                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                    so = "PSF_ERROR"
+                    Mtest = False
+                    print "PSF can't be extracted!"
+                except: #General catastrophic failure
+                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                    Mtest = False
+                    print "Unknown catastrophic failure!"
+            else:
                 RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
-                so = "PSF_ERROR"
-                Mtest = False
-                print "PSF can't be extracted!"
-            except: #General catastrophic failure
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
-                Mtest = False
-                print "Unknown catastrophic failure!"
-        else:
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
 
-        #check for total failure
-        if not Mtest:
-            so = so + "_BAD_IMAGE"
-        else:
-            if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
-                RAo, DECo = 0.0, 0.0
-            if Mlimo < 0:
-                so = "INCONV"
+            #check for total failure
+            if not Mtest:
+                so = so + "_BAD_IMAGE"
+            else:
+                if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
+                    RAo, DECo = 0.0, 0.0
+                if Mlimo < 0:
+                    so = "INCONV"
 
-        #format output
-        out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so)
-        print out+'\n'
+            #format output
+            out = rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so)
+            print out+'\n'
 
-        outs[i].write(out)
-for out in outs:
-    out.close()
+            if band in bands:
+                outfile = open(outs[bindex[band]], 'a')
+                outfile.write(out)
+                outfile.close()

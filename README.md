@@ -37,6 +37,14 @@ Basic usage in command line (some samples)
 
 *% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm -psf 2 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
+As of July 2018, MagCalc is able to perform multi-object PSF photometry.
+The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
+To use the new multi-object photometry, one need only replace source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
+Each item in the list corresponds to each object's name, ra, dec, and psf to be used. Each object's fitsky parameter (boolean) indicates whether it's annulus with participate in sky fitting. To have an annulus taken around every source, give a list of ones.
+As an example, for /cockpit-lc/, simply replace the corresponding parameters in
+ObjData.py with lists and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object.
+At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including annulus used). This is in addition to the old plot of fit cross-section (for each object).
+
 Try in terminal
 
 *% python -m SNAP.MagCalc -h*
@@ -57,7 +65,7 @@ for explanation of functions and inputs
 
 **DiffIm.py :**
 
-Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements.
+Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements. 
 
 Basic usage (sample)
 
@@ -68,6 +76,8 @@ Try in terminal
 *% python -m SNAP.DiffIm -h*
 
 for explanation of flags and inputs
+
+As of July 2018, advanced image subtraction is possible in /cockpit-lc/ suite using Diffgen.py. It uses MagCalc to retrieve PSF from image for calibration, uses Astroscrappy package (Implementation of Laplacian cosmic ray detection) to create artifact masks, and then uses DiffIm.py to subtract reference image from image. Note, this is quite slow, and you can speed this up substatially by cropping both the science image and the reference image using CropIm.py to the same subsection of sky.
 
 **BinIm.py :**
 
