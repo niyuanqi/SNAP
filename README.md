@@ -37,14 +37,6 @@ Basic usage in command line (some samples)
 
 *% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm -psf 2 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
-As of July 2018, MagCalc is able to perform multi-object PSF photometry.
-The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
-To use the new multi-object photometry, one need only replace source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
-Each item in the list corresponds to each object's name, ra, dec, and psf to be used. Each object's fitsky parameter (boolean) indicates whether it's annulus with participate in sky fitting. To have an annulus taken around every source, give a list of ones.
-As an example, for /cockpit-lc/, simply replace the corresponding parameters in
-ObjData.py with lists and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object.
-At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including annulus used). This is in addition to the old plot of fit cross-section (for each object).
-
 Try in terminal
 
 *% python -m SNAP.MagCalc -h*
@@ -62,6 +54,13 @@ Try in python shell on any imported modules from SNAP
 
 *% help(\<module\>)*
 for explanation of functions and inputs
+
+As of July 2018, MagCalc is able to perform multi-object PSF photometry.
+The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
+To use the new multi-object photometry, one need only replace the input parameters source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
+Each item in the list corresponds to each object's name, ra, dec, and psf to be used for source. Each object's fitsky parameter (boolean) indicates whether its annulus with participate in sky background fitting. Example: to have an annulus taken around every source, simply give a list of ones.
+As an example, in /cockpit-lc/ suite, simply replace the corresponding parameters in ObjData.py with lists, and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object inputs, hence it is supposed to be a replacement for LCgen.py.
+At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including plot of annulus used). This is in addition to the old plots of fit cross-section (for each object).
 
 **DiffIm.py :**
 
