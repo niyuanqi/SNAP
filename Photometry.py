@@ -214,7 +214,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
-        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]])
+        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #DONT FLAG COSMICS IN PSFEXTRACT, will break moffat function.
         #Fit function
@@ -310,7 +310,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
-        bounds = ([-float("Inf"),0,0],[float("Inf"),image.shape[0],image.shape[1]])
+        bounds = ([-float("Inf"),0,0],[float("Inf"),image.shape[1],image.shape[0]])
         fitpopt, fitpcov = curve_fit(lambda (x, y),A,x0,y0: E2moff((x, y),A,ax,ay,b,theta,x0,y0), (x,y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #parameters fitted to source
         A = fitpopt[0]
@@ -510,11 +510,11 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
         if psftype[i] == 3:
             #given is empty, general psf params are all in free
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0]))
-            ubounds = np.concatenate((ubounds,[float("Inf"),4*fwhm,4*fwhm,float("Inf"),179.99,image.shape[0],image.shape[1]]))
+            ubounds = np.concatenate((ubounds,[float("Inf"),4*fwhm,4*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]]))
         if psftype[i] == 2:
             #given contains [ax,ay,b,theta], free has [A, x0, y0]
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
-            ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[0],image.shape[1]]))
+            ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[1],image.shape[0]]))
         if psftype[i] == 1:
             lbounds = np.concatenate((lbounds,[-float("Inf")]))
             ubounds = np.concatenate((ubounds,[float("Inf")]))
