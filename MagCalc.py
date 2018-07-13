@@ -328,7 +328,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #position of star in catalog
         x0, y0 = catXs[i], catYs[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFfit(catimage, catPSF, catPSFerr, x0, y0, fitsky=True, sat=satpix, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(catimage, catPSF, catPSFerr, x0, y0, fitsky=True, sat=satpix, verbosity=verbosity-1)
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
