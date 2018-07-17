@@ -33,10 +33,7 @@ def ap_get(image, x0, y0, r1, r2):
     api = np.array([image[y][x] for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     apx = np.array([x for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     apy = np.array([y for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
-    if min(apx)<x0 and max(apx)>x0 and min(apy)<y0 and max(apy)>y0:
-        return api, apx, apy
-    else:
-        return None
+    return api, apx, apy
 
 #function: photometric aperture around multiple sources from r1 to r2
 def ap_multi(image, x0, y0, fitsky, r1, r2):
@@ -201,10 +198,8 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     
     #get fit box to fit psf
     fsize = 1
-    box = ap_get(image, x0, y0, 0, fsize*fwhm)
-    if box is not None:
-        intens, x, y = box
-    else:
+    intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    if len(intens) == 0:
         raise MissingError('Ref star at ('+str(x0)+','+str(y0)+') not in image')
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
