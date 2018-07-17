@@ -12,6 +12,15 @@ import numpy as np
 #maximum fev for curve_fit
 maxfev = 1000
 
+#class: exception to clarify cause of crash as missing object in image
+class MissingError(Exception):
+    def __init__(self, value):
+        #value is error message
+        self.value = value
+    def __str__(self):
+        #set error message as value
+        return repr(self.value)
+
 #function: distance metric on images
 def dist(x1, y1, x2, y2):
     #Euclidean distance
@@ -24,7 +33,10 @@ def ap_get(image, x0, y0, r1, r2):
     api = np.array([image[y][x] for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     apx = np.array([x for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
     apy = np.array([y for x in xaxis for y in yaxis if (dist(x0,y0,x,y)<=r2 and dist(x0,y0,x,y)>=r1)])
-    return api, apx, apy
+    if min(apx)<x0 and max(apx)>x0 and min(apy)<y0 and max(apy)>y0:
+        return api, apx, apy
+    else:
+        return None
 
 #function: photometric aperture around multiple sources from r1 to r2
 def ap_multi(image, x0, y0, fitsky, r1, r2):
@@ -189,7 +201,11 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     
     #get fit box to fit psf
     fsize = 1
-    intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
+    box = ap_get(image, x0, y0, 0, fsize*fwhm)
+    if box is not None:
+        intens, x, y = box
+    else:
+        raise MissingError('Ref star at ('+str(x0)+','+str(y0)+') not in image')
     #get an approximate fix on position
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
