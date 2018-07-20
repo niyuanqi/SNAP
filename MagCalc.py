@@ -153,7 +153,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     import Photometry as pht
 
     #Single object? Generalize to multiple object. (Compatibility)
-    if not isinstance(name, list):
+    if not hasattr(name, '__iter__'):
         #Make all listable objects into list
         name = [name]
         RAo = [RAo]

@@ -37,7 +37,7 @@ def ap_get(image, x0, y0, r1, r2):
 
 #function: photometric aperture around multiple sources from r1 to r2
 def ap_multi(image, x0, y0, fitsky, r1, r2):
-    if isinstance(x0, list):
+    if hasattr(x0, '__iter__') :
         Nobj = len(x0)
     else:
         Nobj = 1
