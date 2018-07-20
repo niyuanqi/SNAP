@@ -116,7 +116,6 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     #get background sky annulus
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
-    if x0 is 
     inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, fitsky, 7*fwhm, 10*fwhm)
     inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
     outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, fitsky, 10*fwhm, 12*fwhm)
