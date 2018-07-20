@@ -37,7 +37,14 @@ def ap_get(image, x0, y0, r1, r2):
 
 #function: photometric aperture around multiple sources from r1 to r2
 def ap_multi(image, x0, y0, fitsky, r1, r2):
-    Nobj = len(x0)
+    if isinstance(x0, list):
+        Nobj = len(x0)
+    else:
+        Nobj = 1
+        x0 = [x0]
+        y0 = [y0]
+        fitsky = [fitsky]
+        
     #Extract zone around all objects for which fitsky=1
     xaxis = np.arange(0,image.shape[1], dtype=int)
     yaxis = np.arange(0,image.shape[0], dtype=int)
@@ -109,6 +116,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     #get background sky annulus
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
+    if x0 is 
     inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, fitsky, 7*fwhm, 10*fwhm)
     inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
     outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, fitsky, 10*fwhm, 12*fwhm)
