@@ -80,7 +80,7 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
             t_max = ta[np.argmin(Ma)]
             M_max = min(Ma)
             #get deltaM15
-            dM15 = np.polyval(popt, t_max+15.0) - min(Ma)
+            dM15 = np.polyval(popt, t_max+15.0) - M_max
             #append values to lists
             fits[j] = popt
             t_maxes[j] = t_max
@@ -91,15 +91,17 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
         fit_err = np.std(fits,0)/np.sqrt(N)
         fit = np.mean(fits,0)
         t_max_err = np.std(t_maxes)/np.sqrt(N)
-        t_max = np.mean(t_maxes)
         M_max_err = np.std(M_maxes)/np.sqrt(N)
-        M_max = np.mean(M_maxes)
         dM15_err = np.std(dM15s)/np.sqrt(N)
-        dM15 = np.mean(dM15s)
+        #generate analytic curve
+        ta = np.linspace(min(t),max(t),5000)
+        Ma = np.polyval(fit, ta)
+        #M_max = np.mean(M_maxes)
+        t_max = ta[np.argmin(Ma)]
+        M_max = min(Ma)
+        #dM15 = np.mean(dM15s)
+        dM15 = np.polyval(fit, t_max+15.0) - M_max
         if plot:
-            #generate analytic curve
-            ta = np.linspace(min(t),max(t),1000)
-            Ma = np.polyval(fit, ta)
             #plot fit
             plt.errorbar(t, M, yerr=M_err, fmt='r+')
             plt.plot(ta, Ma)
