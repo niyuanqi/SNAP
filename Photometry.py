@@ -206,7 +206,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     #get fit box to fit psf
     fsize = 1
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
-    print intens
+    print intens.sum()
     if len(intens) == 0 or intens.sum() == 0:
         raise MissingError('Ref star at ('+str(x0)+','+str(y0)+') not in image')
     #get an approximate fix on position
