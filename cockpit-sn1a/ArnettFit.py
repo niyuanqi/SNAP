@@ -21,7 +21,7 @@ from SNAP.Analysis.Cosmology import*
 from SNAP.Analysis.LCFitting import*
 from ObjData import *
 
-plot = False #plot polynomial fits to light curves
+plot = True #plot polynomial fits to light curves
 print "Loading SN File"
 s = get_sn(sn_file)
 #don't plot fit
@@ -55,7 +55,7 @@ sBs = np.array(sBs)
 sB = sBs.mean(axis=0)
 sBerr = sBs.std(axis=0)
 
-tB, sB, sBerr = LCcrop(tB, -15, 30, sB, M_err=sBerr)
+tB, sB, sBerr = LCcrop(tB, -20, 50, sB, M_err=sBerr)
 #window in which to perform Arnett fit
 tph1 = -10 #from -10 days to 15 days, this is the "photospheric phase"
 tph2 = 15
@@ -64,6 +64,8 @@ tfit, sfit, sfiterr = LCcrop(tB, tph1, tph2, sB, M_err=sBerr)
 #perform fit to find peak of function
 fit, fit_err, params, params_err = LCpolyFit(tfit, -sfit, sfiterr, order=4, N=1000, plot=plot)
 print params, params_err
+tmax = -t0+params[0]
+tmax_err = np.sqrt(np.square(t0err)+np.square(params_err[0]))
 
 #Use monte carlo to find optimal parameters of MNi and MejEk
 n=5000
@@ -71,7 +73,7 @@ p0 = 1.2 #initial guess for ejecta MejEk parameter
 print ""
 print "Performing Monte Carlo to find optimal MNi, and MejEk"
 print "This takes a while, go for a walk."
-MNi, MejEk, MNi_err, MejEk_err  = ArnettIntercept(-t0, -params[1], t0err, params_err[1], p0, n=n, nproc=4)
+MNi, MejEk, MNi_err, MejEk_err  = ArnettIntercept(tmax, -params[1], tmax_err, params_err[1], p0, n=n, nproc=4)
 print "DONE!"
 
 vej, vej_err = 11.0, 1.0

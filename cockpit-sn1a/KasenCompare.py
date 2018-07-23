@@ -18,13 +18,13 @@ from SNAP.Analysis.Cosmology import*
 from ObjData import *
 
 #Ejecta mass in chandrasekhar masses
-m_c = m_ni/1.4
-m_c_err = m_ni_err/1.4
+m_c = m_ej/1.4
+m_c_err = m_ej_err/1.4
 plot = False #plot polynomial fits to light curves
 
 print "Loading binned early light curve."
 #get binned light curve
-t, M, M_err, F, SN, Mlim = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim = LCload(binfiles, tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(3)]
 
@@ -146,8 +146,8 @@ for i in range(len(t)):
     ax[i].errorbar(tp,M, yerr=2*M_err,fmt='k+')
     ax[i].scatter(tn, Mlimn, marker='v', c='k')
     ax[i].set_ylabel(Band[i], fontsize=16, fontstyle='italic', fontweight='bold')
-    ax[i].set_ylim(23,13)
-    ax[i].yaxis.set_ticks([22,18,14])
+    ax[i].set_ylim(25.0,19.0)
+    ax[i].yaxis.set_ticks([24,22,20])
     ax[i].tick_params(labelsize=14)
     ax[i].set_xlim(t1_early - Tmax - t0obs, t2_early - Tmax - t0obs)
     #ax[i].scatter(0, 19.9, marker='v', c='k')

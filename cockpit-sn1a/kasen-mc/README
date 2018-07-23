@@ -14,6 +14,8 @@ Key Note:
 You should move this kasen-fit directory onto sn1987a,
 which has many more cores, and continue to run KasenMC on 32 cores.
 Your home computer may crash otherwise.
+Note RAM usage, if RAM usage too high, computer may crash.
+To use less RAM, reduce size of a13s array in KasenMC.py
 
 Note:
 Whenever you suspect monte carlo behaves funny (non-smooth features),

@@ -25,12 +25,12 @@ from SNAP.Analysis.Cosmology import*
 from ObjData import *
 
 #ejecta mass in chandrasekhar masses
-m_c = m_ni/1.4 #*1.4 Mchandra
-m_c_err = m_ni_err/1.4
+m_c = m_ej/1.4 #*1.4 Mchandra
+m_c_err = m_ej_err/1.4
 
 print "loading binned data"
 #load binned early LC
-t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(len(t))]
 #crop to relevant window
@@ -40,7 +40,11 @@ for i in range(len(t)):
 limconf = []
 #load each set of limiting magnitudes
 for i in range(len(limSNs)):
-    tc, Mc, Mc_err, Fc, SNc, Mlimc = LCload(conffiles.T[i], tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+    tc, Mc, Mc_err, Fc, SNc, Mlimc = LCload(conffiles.T[i], tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
+    #crop to relevant window
+    for j in range(len(t)):
+        tc[j], Mlimc[j] = LCcrop(tc[j], t1_early, t2_early, Mlimc[j])
+        print len(Mlimc[j])
     limconf.append(Mlimc)
 
 #deredden flux and shift light curve
@@ -65,6 +69,10 @@ for i in range(len(t)):
 print "Computing viewing angles at each separation distance"
 #list of sample models
 a13s = np.concatenate((np.arange(0.001,0.05,0.005), np.arange(0.05,0.2,0.02), np.arange(0.2, 2.0, 0.05), np.arange(2.0,11.0,1.0)))
+
+#If it takes too much RAM, use the following line
+#a13s = np.array_split(a13s, 2)[0] 
+
 #list of viewing angles
 thetas = np.linspace(0,180,100)
 #SNR of 1, 2, 3, 4, 5

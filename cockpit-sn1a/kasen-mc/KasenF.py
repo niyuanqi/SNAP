@@ -22,12 +22,12 @@ from SNAP.Analysis.Cosmology import*
 from ObjData import *
 
 #ejecta mass in chandrasekhar masses
-m_c = m_ni/1.4 #*1.4 Mchandra
-m_c_err = m_ni_err/1.4
+m_c = m_ej/1.4 #*1.4 Mchandra
+m_c_err = m_ej_err/1.4
 
 print "loading binned data"
 #load binned early LC
-t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(len(t))]
 #crop to relevant window
@@ -37,7 +37,11 @@ for i in range(len(t)):
 limconf = []
 #load each set of limiting magnitudes
 for i in range(len(limSNs)):
-    tc, Mc, Mc_err, Fc, SNc, Mlimc = LCload(conffiles.T[i], tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+    tc, Mc, Mc_err, Fc, SNc, Mlimc = LCload(conffiles.T[i], tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
+    #crop to relevant window
+    for j in range(len(t)):
+        tc[j], Mlimc[j] = LCcrop(tc[j], t1_early, t2_early, Mlimc[j])
+        print len(Mlimc[j])
     limconf.append(Mlimc)
 
 #deredden flux and shift light curve
@@ -94,6 +98,7 @@ for n, conf in enumerate(confs):
                 #check if any points rule out angle with conf
                 level = F[i] + sig*F_err[i]
                 #if not above limit at this conf, replace with limit
+                print len(level), len(flimconf[n][i])
                 level[level < flimconf[n][i]] = flimconf[n][i][level < flimconf[n][i]]
                 if any(Fk > level):
                     #ruled out

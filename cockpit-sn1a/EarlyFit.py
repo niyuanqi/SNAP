@@ -23,7 +23,7 @@ plot = False #plot polynomial fits to light curves
 
 print "Loading binned early light curve."
 #get N300-1.Q0.SN binned light curve
-t, M, M_err, F, SN, Mlim = LCload(binfiles, tcol=0, magcols=6, errcols=7, fluxcols=4, SNcols=5, limcols=8, SNthres=-10.0, scols=9, flags=['-99.99999'], mode='multi')
+t, M, M_err, F, SN, Mlim = LCload(binfiles, tcol=0, magcols=7, errcols=8, fluxcols=5, SNcols=6, limcols=9, SNthres=-10.0, scols=10, flags=['-99.99999'], mode='multi')
 
 #crop window in data
 for i in range(len(M)):
@@ -31,6 +31,19 @@ for i in range(len(M)):
 
 #get noise in flux
 F_err = [F[i]/SN[i] for i in range(len(t))]
+
+#Where theres no SN, estimate background level.
+bg = np.zeros(len(M))
+bg_err = np.zeros(len(M))
+for i in range(len(M)):
+    mask = t[i] < 418.0
+    w = 1/np.square(F_err[i][mask])
+    bg[i] = np.sum(F[i][mask]*w)/np.sum(w)
+    bg_err[i] = np.sqrt(1/np.sum(w))
+
+    #Warning, you can't do that because data number =/= jansky!
+    #F[i] = F[i] - bg[i]
+    #F_err[i] = np.sqrt(np.square(F_err[i])+np.square(bg_err[i]))
 
 print "Loading reliable total light curve"
 #get absolute fluxes
@@ -84,7 +97,7 @@ L_err = [lerr[L[i]<f] for i, lerr in enumerate(L_err)]
 L = [l[l<f] for l in L]
 
 #fit for early light curve using leastsq
-p0 = [-16.56, 0.0014,0.027,0.027, 2.81,2.45,2.49]
+p0 = [-16.7120900068, 0.0057208154898343525, 0.0074170018284233702, 0.019945558712668135, 2.0016550276367129, 1.9739100509713501, 1.5029759166486247]
 
 #for each band, perturb flux by flux errors
 n = 100000 #number of perturbations
@@ -110,7 +123,7 @@ x2dof = np.sqrt(np.square(earlyMultiErr(x, t, L, L_err)).sum())/(len(L[0])+len(L
 #output data
 print ""
 print "Epoch of first light in rest frame:", t0, t0_err
-print "Epoch of first light in obs frame:", t0*(1.0+z), t0*(1.0+z)*np.sqrt(np.square(zerr/(1.0+z))+np.square(t0_err/t0))
+print "Epoch of first light in obs frame:", t0*(1.0+z), np.absolute(t0*(1.0+z)*np.sqrt(np.square(zerr/(1.0+z))+np.square(t0_err/t0)))
 print "Coefficient", C, C_err
 print "Power:", a, a_err
 print "Fit Chi2/dof", x2dof
@@ -146,7 +159,7 @@ ax[-1].set_xlabel("Days from peak", fontsize = 14)
 ax[1].set_ylabel("Normalized Flux", fontsize = 14)
 for i in range(len(t)):
     #plot residuals
-    ax[i].errorbar(t[i],L[i]-earlyFit(t[i],t0,C[i],a[i]),L_err[i],fmt='g+')
+    ax[i].errorbar(t[i],L[i]-earlyFit(t[i],t0,C[i],a[i]),2*L_err[i],fmt='g+')
     #ax[i].scatter(t[i],Llim[i]-earlyFit(t[i],*popts[i]),c='r',marker='v')
     ax[i].plot(tT,[0]*len(tT),label='power fit')
     ax[i].set_xlim(t1_early-s.Tmax, t2_early-s.Tmax)

@@ -27,6 +27,8 @@ t, M, M_err, F, SN, Mlim = LCload(files, tcol=0, magcols=6, errcols=7, fluxcols=
 #crop window in data
 for i in range(len(M)):
     t[i], M[i], M_err[i], F[i], SN[i], Mlim[i] = LCcrop(t[i], t1, t2, M[i], M_err[i], F[i], SN[i], Mlim[i])
+for i in range(len(M)):
+    Mlim[i], t[i], M[i], M_err[i], F[i], SN[i] = LCcrop(Mlim[i], limcuts[i], 100, t[i], M[i], M_err[i], F[i], SN[i])
 
 #for each band, write light curve
 for i in range(len(t)):
