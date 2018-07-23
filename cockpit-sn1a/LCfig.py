@@ -35,8 +35,8 @@ tc, C, C_err = LCcolors(t, M, M_err)
 f, ax = plt.subplots(len(t)+len(t)-1, sharex=True)
 ax[-1].set_xlabel("Days from peak", fontsize = 14)
 
-tw1=t1 - Tmax
-tw2=t2 - Tmax
+tw1=t1 - Tmax + 15
+tw2=t2 - Tmax 
 
 for i in range(len(t)):
     ax[i].errorbar(t[i], M[i], yerr=M_err[i], fmt="k+", label='MagCalc')
@@ -48,20 +48,20 @@ for i in range(len(t)):
     #ax[i].plot([0+Tmaxerr,0+Tmaxerr], [0,30], 'k:')
     #ax[i].plot([0-Tmaxerr,0-Tmaxerr], [0,30], 'k:')
     #ax[i].scatter(t[i],Mlim[i],color='r',marker='v', label='det. limit')
-    ax[i].set_ylim(24.5,11.5)
-    ax[i].yaxis.set_ticks([14,18,22])
+    ax[i].set_ylim(24.0, 18.5)
+    ax[i].yaxis.set_ticks([19,21,23])
     ax[i].tick_params(labelsize=12)
     ax[i].set_xlim(tw1,tw2)
     #ax[i].legend()
     if i == 0:
         ax[i].set_ylabel("B", fontsize = 14, fontstyle='italic', fontweight='bold')
-        ax[i].text(tw1+0.5, 15, "(a)", fontsize = 14)
+        ax[i].text(tw1+0.5, 20, "(a)", fontsize = 14)
     elif i == 1:
         ax[i].set_ylabel("V", fontsize = 14, fontstyle='italic', fontweight='bold')
-        ax[i].text(tw1+0.5, 15, "(b)", fontsize = 14)
+        ax[i].text(tw1+0.5, 20, "(b)", fontsize = 14)
     elif i == 2:
         ax[i].set_ylabel("I", fontsize = 14, fontstyle='italic', fontweight='bold')
-        ax[i].text(tw1+0.5, 15, "(c)", fontsize = 14)
+        ax[i].text(tw1+0.5, 20, "(c)", fontsize = 14)
 
 for i in range(len(t)-1):
     ax[i+len(t)].errorbar(tc[i], C[i], C_err[i], fmt='k', label='1st Diff')
@@ -72,8 +72,8 @@ for i in range(len(t)-1):
     ax[i+len(t)].plot([0,0], [-5,5], 'k--', linewidth=1)
     #ax[i+len(t)].plot([0+Tmaxerr,0+Tmaxerr], [-5,5], 'k:')
     #ax[i+len(t)].plot([0-Tmaxerr,0-Tmaxerr], [-5,5], 'k:')
-    ax[i+len(t)].set_ylim(-2.6, 2.6)
-    ax[i+len(t)].yaxis.set_ticks([-2.0,0.0,2.0])
+    ax[i+len(t)].set_ylim(-1.6, 2.6)
+    ax[i+len(t)].yaxis.set_ticks([-1.0,0.0,1.0])
     ax[i+len(t)].tick_params(labelsize=12)
     ax[i+len(t)].set_xlim(tw1,tw2)
     if i == 0:
