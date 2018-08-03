@@ -306,8 +306,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     noise = catSkyNs.mean() #mean std from background
     if verbosity > 0:
         print "Average PSF [ax, ay, b, theta] =",str(catPSF)
-        print "Average FWHMx,FWHMy =",str(plib.E2moff_toFWHM(*catPSF[:-1]))
         print "parameter errors =",str(catPSFerr)
+        print "Average FWHMx,FWHMy =",str(plib.E2moff_toFWHM(*catPSF[:-1]))
         print "Average background sky count =",str(skyval)
         print "Average noise in background =",str(noise)
         print ""
