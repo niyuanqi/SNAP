@@ -220,6 +220,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     x0 = np.sum(intens*x)/intens.sum()
     y0 = np.sum(intens*y)/intens.sum()
     #get centered fit box
+    fsize = 3
     intens, x, y = ap_get(image, x0, y0, 0, fsize*fwhm)
 
     if fitsky:
