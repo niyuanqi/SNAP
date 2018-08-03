@@ -167,7 +167,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     Xo, Yo = np.zeros(Nobj), np.zeros(Nobj)
     for i in range(Nobj):
         Xo[i], Yo[i] = wcs.all_world2pix(RAo[i], DECo[i], 0)
-        Xo[i], Yo[i] = int(Xo[i]), int(Yo[i])
         if verbosity > 0:
             print "Source "+str(i+1)+" located at: "+str(Xo[i])+", "+str(Yo[i])
         

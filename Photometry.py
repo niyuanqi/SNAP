@@ -234,7 +234,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     try:
         #fit 2d psf to background subtracted source light
         est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
-        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),2*fwhm,2*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]])
+        bounds = ([-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0],[float("Inf"),5*fwhm,5*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #DONT FLAG COSMICS IN PSFEXTRACT, will break moffat function.
         #Fit function
@@ -530,7 +530,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
         if psftype[i] == 3:
             #given is empty, general psf params are all in free
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0]))
-            ubounds = np.concatenate((ubounds,[float("Inf"),4*fwhm,4*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]]))
+            ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,8*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]]))
         if psftype[i] == 2:
             #given contains [ax,ay,b,theta], free has [A, x0, y0]
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
@@ -799,6 +799,10 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
         #compute optimal aperture size (90% source light)
         ap_size = E2moff_apsize(ax,ay,b,frac)
         sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+        #EXPERIMENTAL using error of fit
+        #Problem is, you lose SNR to I sqrt relation in phot regime...
+        #sigmao = Io*np.sqrt((Aerr/A)**2+(axerr/ax)**2+(ayerr/ay)**2+(berr/(b-1))**2)
+        #EXPERIMENTAL
         SNo = Io/sigmao
     else:
         if verbosity > 0:
