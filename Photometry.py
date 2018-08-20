@@ -502,43 +502,44 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
 
-    #given parameters for fitting
+    #given, estimate free parameters, upper lower bounds
     given = []
-    for i in range(Nobj):
-        if psftype[i] == 3:
-            #given is empty, general psf params are all in free
-            given.append([])
-        if psftype[i] == 2:
-            #given contains [ax,ay,b,theta], free has [A, x0, y0]
-            given.append(PSF)
-        if psftype[i] == 1:
-            given.append([PSF[0],PSF[1],PSF[2],PSF[3],x0[i],y0[i]])
-    given = np.array(given)
-    #estimate free parameters for fitting
     est = []
-    for i in range(Nobj):
-        if psftype[i] == 3:
-            #given is empty, general psf params are all in free
-            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm/4.0,fwhm,3.0,0.0,x0[i],y0[i]]))
-        if psftype[i] == 2:
-            #given contains [ax,ay,b,theta], free has [A, x0, y0]
-            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],x0[i],y0[i]]))
-        if psftype[i] == 1:
-            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])]]))
-    #estimate bounds on free parameters
     lbounds, ubounds = [], []
     for i in range(Nobj):
-        if psftype[i] == 3:
+        if psftype[i] == '3':
             #given is empty, general psf params are all in free
+            given.append([])
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm/4.0,fwhm,3.0,0.0,x0[i],y0[i]]))
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,1.01,0.0,0.0,0.0]))
             ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,8*fwhm,float("Inf"),179.99,image.shape[1],image.shape[0]]))
-        if psftype[i] == 2:
+        if psftype[i] == '2':
             #given contains [ax,ay,b,theta], free has [A, x0, y0]
+            given.append(PSF)
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],x0[i],y0[i]]))
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
             ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[1],image.shape[0]]))
-        if psftype[i] == 1:
+        if psftype[i] == '1':
+            #given contains [ax,ay,b,theta,x0,y0], free has [A]
+            given.append([PSF[0],PSF[1],PSF[2],PSF[3],x0[i],y0[i]])
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])]]))
             lbounds = np.concatenate((lbounds,[-float("Inf")]))
             ubounds = np.concatenate((ubounds,[float("Inf")]))
+        if psftype[i][0] == 's':
+            if psftype[i][1] == 'n':
+                #given is empty, general Sersic params are all in free
+                given.append([])
+                est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm,4.0,x0[i],y0[i],0.0,0.0]))
+                lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,0.0,0.0,0.0,0.0]))
+                ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,float("Inf"),image.shape[1],image.shape[0],0.99,179.99]))
+            else:
+                #given is empty, Sersic n is fixed
+                given.append([])
+                est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm,x0[i],y0[i],0.0,0.0]))
+                lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.0,0.0,0.0,0.0]))
+                ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,image.shape[1],image.shape[0],0.99,179.99]))
+    
+    given = np.array(given)
     bounds = (lbounds,ubounds)
     
     try:
@@ -565,21 +566,32 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
         PSFpopt, PSFperr = [], []
         count = 0
         for i in range(Nobj):
-            if psftype[i] == 3:
+            if psftype[i] == '3':
                 #given is empty, general psf params are all in free
                 PSFpopt.append(fitpopt[count:count+7])
                 PSFperr.append(fitperr[count:count+7])
                 count = count+7
-            if psftype[i] == 2:
+            if psftype[i] == '2':
                 #given contains [ax,ay,b,theta], free has [A, x0, y0]
                 PSFpopt.append([fitpopt[count],given[i][0],given[i][1],given[i][2],given[i][3],fitpopt[count+1],fitpopt[count+2]])
                 PSFperr.append([fitperr[count],axerr,ayerr,berr,thetaerr,fitperr[count+1],fitperr[count+2]])
                 count = count+3
-            if psftype[i] == 1:
+            if psftype[i] == '1':
                 #given contains [ax,ay,b,theta,x0,y0], free has [A]
                 PSFpopt.append([fitpopt[count],given[i][0],given[i][1],given[i][2],given[i][3],given[i][4],given[i][5]])
                 PSFperr.append([fitperr[count],axerr,ayerr,berr,thetaerr,0,0])
                 count = count+1
+            if psftype[i][0] == 's':
+                if psftype[i][1] == 'n':
+                    #given is empty, general Sersic params are all in free
+                    PSFpopt.append(fitpopt[count:count+7])
+                    PSFperr.append(fitperr[count:count+7])
+                    count = count+7
+                else:
+                    #given is empty, Sersic n is fixed
+                    PSFpopt.append(fitpopt[count:count+6])
+                    PSFperr.append(fitperr[count:count+6])
+                    count = count+6
         #calculate goodness of fit
         I_theo = E2moff_multi((x, y),psftype, given, fitpopt)
         X2dof = np.sum(np.square((intens-I_theo)/np.sqrt(np.absolute(intens)+skyN**2)))/(len(intens)-len(fitpopt))
@@ -612,22 +624,28 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
     if verbosity > 0:
         print "PSF moffat fit parameters"
         for i in range(Nobj):
-            print "Object "+str(i+1)+":"
-            print "[A,ax,ay,b,theta,X0,Y0] = "+str(PSFpopt[i])
-            print "parameter errors = "+str(PSFperr[i])
-            print "Chi2 = "+str(X2dof)
-            FWHMx, FWHMy = E2moff_toFWHM(PSFpopt[i][1], PSFpopt[i][2], PSFpopt[i][3])
-            print "[FWHMx', FWHMy]' = "+str([FWHMx, FWHMy])
+            if psftype[i][0] != 's':
+                print "Object "+str(i+1)+":"
+                print "[A,ax,ay,b,theta,X0,Y0] = "+str(PSFpopt[i])
+                print "parameter errors = "+str(PSFperr[i])
+                print "Chi2 = "+str(X2dof)
+                FWHMx, FWHMy = E2moff_toFWHM(PSFpopt[i][1], PSFpopt[i][2], PSFpopt[i][3])
+                print "[FWHMx', FWHMy]' = "+str([FWHMx, FWHMy])
+            else:
+                print "Object "+str(i+1)+":"
+                print "[Ie,re,n,X0,Y0,e,theta] = "+str(PSFpopt[i])
+                print "parameter errors = "+str(PSFperr[i])
+                print "Chi2 = "+str(X2dof)
 
     #graph fits if verbosity is high enough
     if verbosity > 1:
-        PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15)
+        PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky, window=15)
         
     #check if fit is ridiculous, give back no fit
     ridic = False
     checks = []
     for i in range(Nobj):
-        if psftype[i] != 3:
+        if psftype[i] != '3' and psftype[i][0] != 's':
             if not E2moff_verify(PSFpopt[i], x0[i], y0[i]):
                 ridic = True
                 if verbosity > 0:
@@ -711,37 +729,51 @@ def PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
     plt.show()
 
 #function: plot multi-object PSF fitting
-def PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=15):
+def PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky, window=15):
 
     import matplotlib.pyplot as plt
     from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM
 
     psfpopt = np.concatenate(PSFpopt)
-    psftype = [3]*len(PSFpopt)
 
     for i in range(len(PSFpopt)):
-        ax = abs(PSFpopt[i][1])
-        ay = abs(PSFpopt[i][2])
-        b = PSFpopt[i][3]
-        FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
-        
         x = np.arange(x0[i]-window,x0[i]+window+1,dtype=int)
         xt = np.arange(x0[i]-window,x0[i]+window+1,0.1)
         Ix_im = np.array([image[int(y0[i])][j] for j in x])
         y = np.arange(y0[i]-window,y0[i]+window+1,dtype=int)
         yt = np.arange(y0[i]-window,y0[i]+window+1,0.1)
         Iy_im = np.array([image[j][int(x0[i])] for j in y])
-        if FWHMx*FWHMy != 0:
-            #compute PSF fit
-            Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psftype, [], psfpopt)
-            Ix_res = Ix_im - E2moff_multi((x,np.array([int(y0[i])]*len(x))), psftype, [], psfpopt)
-            Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psftype, [], psfpopt)
-            Iy_res = Iy_im - E2moff_multi((np.array([int(x0[i])]*len(y)),y), psftype, [], psfpopt)
+
+        if psftype[i][0] != 's':
+            #Moffat psf
+            ax = abs(PSFpopt[i][1])
+            ay = abs(PSFpopt[i][2])
+            b = PSFpopt[i][3]
+            FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
+            if FWHMx*FWHMy != 0:
+                #compute PSF fit
+                Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psftype, [], psfpopt)
+                Ix_res = Ix_im - E2moff_multi((x,np.array([int(y0[i])]*len(x))), psftype, [], psfpopt)
+                Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psftype, [], psfpopt)
+                Iy_res = Iy_im - E2moff_multi((np.array([int(x0[i])]*len(y)),y), psftype, [], psfpopt)
+            else:
+                Ix_theo = 0
+                Iy_theo = 0
+                Ix_res = Ix_im
+                Iy_res = Iy_im
         else:
-            Ix_theo = 0
-            Iy_theo = 0
-            Ix_res = Ix_im
-            Iy_res = Iy_im
+            from astropy.modeling.models import Sersic2D
+            #Sersic profile
+            if psftype[i][1] == 'n':
+                Ix_theo = Sersic2D(*PSFpopt[i])(xt,np.array([int(y0[i])]*len(xt)))
+                Ix_res = Ix_im - Sersic2D(*PSFpopt[i])(x,np.array([int(y0[i])]*len(x)))
+                Iy_theo = Sersic2D(*PSFpopt[i])(np.array([int(x0[i])]*len(yt)),yt)
+                Iy_res = Iy_im - Sersic2D(*PSFpopt[i])(np.array([int(x0[i])]*len(y)),y)
+            else:
+                Ix_theo = Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(xt,np.array([int(y0[i])]*len(xt)))
+                Ix_res = Ix_im - Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(x,np.array([int(y0[i])]*len(x)))
+                Iy_theo = Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(np.array([int(x0[i])]*len(yt)),yt)
+                Iy_res = Iy_im - Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(np.array([int(x0[i])]*len(y)),y)
     
         if fitsky:
             Ix_theo = Ix_theo+D2plane((xt,np.array([int(y0[i])]*len(xt))),*skypopt)
@@ -749,7 +781,7 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=1
             Iy_theo = Iy_theo+D2plane((np.array([int(x0[i])]*len(yt)),yt),*skypopt)
             Iy_res = Iy_res-D2plane((np.array([int(x0[i])]*len(y)),y),*skypopt)
         
-        #plot psf moffat in X and Y slice side by side
+        #plot best fits in X and Y slice side by side
         f, ax = plt.subplots(2, 2, sharex="col", sharey="row")
         ax[0][0].errorbar(x,Ix_im,yerr=np.sqrt(np.absolute(Ix_im)+skyN**2),fmt='r+', label='slice at Y='+str(int(y0[i])))
         ax[0][0].plot(xt, Ix_theo, label='fit X2/dof='+str(X2dof)[:6])
@@ -775,43 +807,71 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, window=1
         plt.setp([a.get_yticklabels()[0] for a in ax[:, 0]], visible=False)
         plt.setp([a.get_xticklabels()[-1] for a in ax[1, :]], visible=False)
         plt.setp([a.get_yticklabels()[-1] for a in ax[:, 0]], visible=False)
-        plt.suptitle("PSF Moffat Fit")
+        plt.suptitle("Best Fit Object "+str(i))
         plt.show()
     
 #function: calculates photometric intensity and sky background using PSF
-def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=0):
+def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, psftype, skypopt, skyN, verbosity=0):
 
-    from PSFlib import D2plane, E2moff, E2moff_verify, E2moff_integrate, E2moff_apsize
+    from PSFlib import D2plane, E2moff, E2moff_verify, E2moff_integrate, E2moff_apsize, Sersic_integrate
+
+    if psftype[0] != 's':
+        #Moffat psf integration
+        #get some critical values
+        A, Aerr = PSFpopt[0], PSFperr[0]
+        ax, axerr = abs(PSFpopt[1]), PSFperr[1]
+        ay, ayerr = abs(PSFpopt[2]), PSFperr[2]
+        b, berr = PSFpopt[3], PSFperr[3]
+        theta, thetaerr = PSFpopt[4], PSFperr[4]
+        X0 = PSFpopt[5]
+        Y0 = PSFpopt[6]
     
-    #get some critical values
-    A, Aerr = PSFpopt[0], PSFperr[0]
-    ax, axerr = abs(PSFpopt[1]), PSFperr[1]
-    ay, ayerr = abs(PSFpopt[2]), PSFperr[2]
-    b, berr = PSFpopt[3], PSFperr[3]
-    theta, thetaerr = PSFpopt[4], PSFperr[4]
-    X0 = PSFpopt[5]
-    Y0 = PSFpopt[6]
-    
-    #fraction of light to include (Kron)
-    frac = 0.9
-    if b > 1:
-        #integrate source PSF
-        Io = E2moff_integrate(A,ax,ay,b,frac)
-        #compute optimal aperture size (90% source light)
-        ap_size = E2moff_apsize(ax,ay,b,frac)
-        sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
-        #EXPERIMENTAL using error of fit
-        #Problem is, you lose SNR to I sqrt relation in phot regime...
-        #sigmao = Io*np.sqrt((Aerr/A)**2+(axerr/ax)**2+(ayerr/ay)**2+(berr/(b-1))**2)
-        #EXPERIMENTAL
-        SNo = Io/sigmao
+        #fraction of light to include (Kron)
+        frac = 0.9
+        if b > 1:
+            #integrate source PSF
+            Io = E2moff_integrate(A,ax,ay,b,frac)
+            #compute optimal aperture size (90% source light)
+            ap_size = E2moff_apsize(ax,ay,b,frac)
+            sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+            #EXPERIMENTAL using error of fit
+            #Problem is, you lose SNR to I sqrt relation in phot regime...
+            #sigmao = Io*np.sqrt((Aerr/A)**2+(axerr/ax)**2+(ayerr/ay)**2+(berr/(b-1))**2)
+            #EXPERIMENTAL
+            SNo = Io/sigmao
+        else:
+            if verbosity > 0:
+                print "Divergent integral, PSF not viable for PSF photometry"
+            Io = 0
+            SNo = 0
+            SNr = 0
+            opt_r = 0
     else:
-        if verbosity > 0:
-            print "Divergent integral, PSF not viable for PSF photometry"
-        Io = 0
-        SNo = 0
-        SNr = 0
-        opt_r = 0
+        #Sersic profile integration
+        if psftype[1] == 'n':
+            #full sersic profile
+            #get some critical values
+            Ie, Ieerr = PSFpopt[0], PSFperr[0]
+            re, reerr = abs(PSFpopt[1]), PSFperr[1]
+            n, nerr = abs(PSFpopt[2]), PSFperr[2]
+            e, eerr = PSFpopt[5], PSFperr[5]
+            theta, thetaerr = PSFpopt[6], PSFperr[6]
+        else:
+            #known sersic n
+            n = float(psftype[1:])
+            #get some critical values
+            Ie, Ieerr = PSFpopt[0], PSFperr[0]
+            re, reerr = abs(PSFpopt[1]), PSFperr[1]
+            e, eerr = PSFpopt[4], PSFperr[4]
+            theta, thetaerr = PSFpopt[5], PSFperr[5]
+        frac = 0.9
+        #Numerical sersic integrator
+        Io = Sersic_integrate(Ie, re, n, e, f=frac)
+        #Estimate of noise
+        ap_size = np.pi*16*re**2
+        sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+        SNo = Io/sigmao
+            
     #output information
     if verbosity > 0:
         print "\n"

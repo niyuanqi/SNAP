@@ -182,22 +182,89 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
             #seems legit
             return True
 
+###############################################
+# Sersic Profile                              #
+###############################################
+
+def b_integrand(r, re, n, C, b):
+    """
+    This is used in the integration to find b
+    """
+    return r*Sersic(r, re, n, C, b)
+
+def Sersic(r, re, n, C, b):
+    """
+    Sersic Function for integration
+    """
+    ra=np.power((r/re), 1/n)
+    return C*np.exp(-b*(ra-1))
+
+def Sersic_integrate(Ie,re,n,e,f=0.9):
+    from scipy import integrate
+    from scipy.special import gamma
+
+    if n > 0.35:
+        #Approximate well using MacArthur 2003
+        bn = 2*n - 1./3. + 4./(405.*n) + 46./(25515.*n**2) + 131./(1148175.*n**3) - 2194697./(30690717750.*n**4)
+    else:
+        #Numerically using Mohammad Akhlaghi 2012
+        #This is the value of b for n=0.36
+        b_test=0.426200378468
+        #rate of increasing b
+        b_drate=1.002
+        #rate of decreasing b
+        b_irate=1.001
+        #Effective radius:
+        re=2
+
+        while True:
+            a=integrate.quad(b_integrand, 0, float('inf'), 
+                             args=(re, n, 1, b_test))[0]
+            b=integrate.quad(b_integrand, 0, re, 
+                             args=(re, n, 1, b_test))[0]
+            I_diff=2*np.pi*(a-(2*b))
+            if I_diff>-0.00001 and I_diff<0.00001:
+                break
+            elif I_diff<=-0.00001:
+                b_test=b_test/b_drate
+            elif I_diff>=0.00001:
+                b_test=b_test*b_irate
+            bn = b_test
+        print "n={} --> b(n)={}".format(n, bn)
+    return np.pi*re**2*Ie*2*n*gamma(2*n)*np.power(np.e, bn)/np.power(bn, 2*n)*f
+    
+
+###############################################
+# Multi-object fit                            #
+###############################################
+        
 #function: Composite moffat psf for multiple objects
 def E2moff_multi((x,y), psftype, given, free):
     out = 0
     count = 0
     for i, psf in enumerate(psftype):
         #add moffat to output for each moffat
-        if psf == 3:
+        if psf == '3':
             #given is empty, general psf params are all in free
             out+= E2moff((x, y),*free[count:count+7])
             count = count+7
-        if psf == 2:
+        if psf == '2':
             #given contains [ax,ay,b,theta], free has [A, x0, y0]
             out+= E2moff((x,y),free[count],given[i][0],given[i][1],given[i][2],given[i][3],free[count+1],free[count+2])
             count = count+3
-        if psf == 1:
+        if psf == '1':
             #given contains [ax,ay,b,theta,x0,y0], free has [A]
             out+= E2moff((x, y),free[count],*given[i])
             count = count+1
+        if psf[0] == 's':
+            #we need to use sersic profile
+            from astropy.modeling.models import Sersic2D
+            if psf[1] == 'n':
+                #full sersic profile
+                out+= Sersic2D(*free[count:count+7])(x,y)
+                count = count+7
+            else:
+                #known sersic n
+                out+= Sersic2D(amplitude=free[count],r_eff=free[count+1],n=float(psf[1:]),x_0=free[count+2],y_0=free[count+3],ellip=free[count+4],theta=free[count+5])(x,y)
+                count = count+6
     return out

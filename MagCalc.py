@@ -106,7 +106,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf=1, name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -331,7 +331,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
-            I, SN = pht.PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, skypopt, skyN, verbosity=verbosity-1)
+            I, SN = pht.PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, '1', skypopt, skyN, verbosity=verbosity-1)
         else:
             #perform aperture photometry
             if aperture <= 0:
@@ -384,11 +384,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     if Nobj == 1 and aperture is not None:
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
-        if psf[0] == 1:
+        if psf[0] == '1':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
-        elif psf[0] == 2:
+        elif psf[0] == '2':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
-        elif psf[0] == 3:
+        elif psf[0] == '3':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         else:
             #Invalid fit selected, don't fit source
@@ -420,7 +420,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             for i in range(Nobj):
                 if verbosity > 0:
                     print "Computing photometry of source "+name[i]
-                Io[i], SNo[i] = pht.PSF_photometry(image, Xo[i], Yo[i], PSFpopt[i], PSFperr[i], skypopto, skyNo, verbosity=verbosity)
+                Io[i], SNo[i] = pht.PSF_photometry(image, Xo[i], Yo[i], PSFpopt[i], PSFperr[i], psf[i], skypopto, skyNo, verbosity=verbosity)
         else:
             #perform aperture photometry
             print "Multi-object aperture photometry under construction!"
