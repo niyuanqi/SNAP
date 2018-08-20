@@ -823,10 +823,10 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, psftype, skypopt, skyN, verb
             Io = E2moff_integrate(A,ax,ay,b,frac)
             #compute optimal aperture size (90% source light)
             ap_size = E2moff_apsize(ax,ay,b,frac)
-            sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+            #sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
             #EXPERIMENTAL using error of fit
             #Problem is, you lose SNR to I sqrt relation in phot regime...
-            #sigmao = Io*np.sqrt((Aerr/A)**2+(axerr/ax)**2+(ayerr/ay)**2+(berr/(b-1))**2)
+            sigmao = Io*np.sqrt((Aerr/A)**2+(axerr/ax)**2+(ayerr/ay)**2+(berr/(b-1))**2)
             #EXPERIMENTAL
             SNo = Io/sigmao
         else:
@@ -858,8 +858,11 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, psftype, skypopt, skyN, verb
         #Numerical sersic integrator
         Io = Sersic_integrate(Ie, re, n, e, f=frac)
         #Estimate of noise
-        ap_size = np.pi*16*re**2
-        sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+        #ap_size = np.pi*16*re**2
+        #sigmao = np.sqrt(np.absolute(Io) + (skyN**2)*ap_size)
+        #EXPERIMENTAL using error of fit
+        #Problem is, you lose SNR to I sqrt relation in phot regime...
+        sigmao = Io*np.sqrt((2*reerr/re)**2+(Ieerr/Ie)**2)
         SNo = Io/sigmao
             
     #output information

@@ -358,6 +358,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         import matplotlib.pyplot as plt
         #diagnostic for SNR, N, I calculation routine
         #checks for wrong correlation between intensity and noise
+        plt.title("Measured SNR of reference stars")
+        plt.scatter(catMags, np.log(catSNs), c='r')
+        fit = np.polyfit(catMags, np.log(catSNs), 1)
+        plt.plot(catMags, np.polyval(fit, catMags), zorder=2)
+        plt.ylabel("log SNR")
+        plt.xlabel("Mag (~log I)")
+        plt.show()
         catNs = catIs/catSNs
         plt.title("Measured noise under reference stars")
         plt.scatter(catMags, np.log(catNs), c='r')
