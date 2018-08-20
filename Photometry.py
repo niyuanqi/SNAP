@@ -639,8 +639,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
 
     #graph fits if verbosity is high enough
     if verbosity > 1:
-        PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky, window=15)
         print np.concatenate(PSFpopt), fitpopt
+        PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky, window=15)
         
     #check if fit is ridiculous, give back no fit
     ridic = False
