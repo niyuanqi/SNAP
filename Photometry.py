@@ -736,6 +736,10 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky,
     from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM
 
     psfpopt = np.concatenate(PSFpopt)
+    psfmod = np.copy(psftype)
+    for i in range(len(PSFpopt)):
+        if psftype[i][0] != 's':
+            psfmod[i] = '3'
 
     for i in range(len(PSFpopt)):
         x = np.arange(x0[i]-window,x0[i]+window+1,dtype=int)
@@ -744,6 +748,11 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky,
         y = np.arange(y0[i]-window,y0[i]+window+1,dtype=int)
         yt = np.arange(y0[i]-window,y0[i]+window+1,0.1)
         Iy_im = np.array([image[j][int(x0[i])] for j in y])
+        #compute PSF fit
+        Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psfmod, [], psfpopt)
+        Ix_res = Ix_im - E2moff_multi((x,np.array([int(y0[i])]*len(x))), psfmod, [], psfpopt)
+        Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psfmod, [], psfpopt)
+        Iy_res = Iy_im - E2moff_multi((np.array([int(x0[i])]*len(y)),y), psfmod, [], psfpopt)
 
         if psftype[i][0] != 's':
             #Moffat psf
@@ -751,30 +760,11 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, psftype, X2dof, skypopt, skyN, fitsky,
             ay = abs(PSFpopt[i][2])
             b = PSFpopt[i][3]
             FWHMx, FWHMy = E2moff_toFWHM(ax, ay, b)
-            if FWHMx*FWHMy != 0:
-                #compute PSF fit
-                Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psftype, [], psfpopt)
-                Ix_res = Ix_im - E2moff_multi((x,np.array([int(y0[i])]*len(x))), psftype, [], psfpopt)
-                Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psftype, [], psfpopt)
-                Iy_res = Iy_im - E2moff_multi((np.array([int(x0[i])]*len(y)),y), psftype, [], psfpopt)
-            else:
+            if FWHMx*FWHMy == 0:
                 Ix_theo = 0
                 Iy_theo = 0
                 Ix_res = Ix_im
                 Iy_res = Iy_im
-        else:
-            from astropy.modeling.models import Sersic2D
-            #Sersic profile
-            if psftype[i][1] == 'n':
-                Ix_theo = Sersic2D(*PSFpopt[i])(xt,np.array([int(y0[i])]*len(xt)))
-                Ix_res = Ix_im - Sersic2D(*PSFpopt[i])(x,np.array([int(y0[i])]*len(x)))
-                Iy_theo = Sersic2D(*PSFpopt[i])(np.array([int(x0[i])]*len(yt)),yt)
-                Iy_res = Iy_im - Sersic2D(*PSFpopt[i])(np.array([int(x0[i])]*len(y)),y)
-            else:
-                Ix_theo = Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(xt,np.array([int(y0[i])]*len(xt)))
-                Ix_res = Ix_im - Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(x,np.array([int(y0[i])]*len(x)))
-                Iy_theo = Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(np.array([int(x0[i])]*len(yt)),yt)
-                Iy_res = Iy_im - Sersic2D(amplitude=PSFpopt[i][0],r_eff=PSFpopt[i][1],n=float(psftype[i][1:]),x_0=PSFpopt[i][2],y_0=PSFpopt[i][3],ellip=PSFpopt[i][4],theta=PSFpopt[i][5])(np.array([int(x0[i])]*len(y)),y)
     
         if fitsky:
             Ix_theo = Ix_theo+D2plane((xt,np.array([int(y0[i])]*len(xt))),*skypopt)
