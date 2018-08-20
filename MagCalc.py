@@ -461,7 +461,14 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #try to compute magnitude if source is present
         if I[i] != float('NaN') and I[i] > 0 and skyNo != 0:
             #convert position to world coordinates
-            Xp, Yp = PSFpopt[i][5], PSFpopt[i][6]
+            if psf[i][0] != 's':
+                Xp, Yp = PSFpopt[i][5], PSFpopt[i][6]
+            else:
+                if psf[i][1] == 'n':
+                    Xp, Yp = PSFpopt[i][3], PSFpopt[i][4]
+                else:
+                    Xp, Yp = PSFpopt[i][2], PSFpopt[i][3]
+                    
             RAo[i], DECo[i] = wcs.all_pix2world(Xp, Yp, 0)
             #calculate magnitude from flux
             mo[i] = -2.512*np.log10(I[i]/fluxes[bands[band]])
