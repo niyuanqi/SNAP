@@ -251,6 +251,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             PSFpopt = [0]*7
         #Take only reference stars whose fits are sane
         if plib.E2moff_verify(PSFpopt, x0, y0):
+            PSF[3] = PSF[3] % 360.0 #principle angle
             #break x,y degeneracy in theta
             if PSF[0] > PSF[1]:
                 #switched up x,y axes
@@ -296,6 +297,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catXs = np.array(catXs)
     catYs = np.array(catYs)
     catX2dofs = np.array(catX2dofs)
+    print catPSFs.T[3]
     
     #calculate average psf among reference stars
     w = 1/np.square(catPSFerrs)
