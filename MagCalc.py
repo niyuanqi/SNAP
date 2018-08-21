@@ -297,7 +297,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catXs = np.array(catXs)
     catYs = np.array(catYs)
     catX2dofs = np.array(catX2dofs)
-    print catPSFs.T[3]
+    #print catPSFs.T[3]
     
     #calculate average psf among reference stars
     w = 1/np.square(catPSFerrs)

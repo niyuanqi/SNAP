@@ -234,7 +234,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     
     try:
         #fit 2d psf to background subtracted source light
-        est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,0.0,x0,y0]
+        est = [image[int(y0)][int(x0)],fwhm/4.0,fwhm,3.0,120.0,x0,y0]
         bounds = ([-float("Inf"),0.01,0.01,1.01,-float("Inf"),0.0,0.0],[float("Inf"),5*fwhm,5*fwhm,float("Inf"),float("Inf"),image.shape[1],image.shape[0]])
         PSFpopt, PSFpcov = curve_fit(E2moff, (x, y), intens, sigma=np.sqrt(np.absolute(intens)+skyN**2), p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         #DONT FLAG COSMICS IN PSFEXTRACT, will break moffat function.
@@ -510,7 +510,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
         if psftype[i] == '3':
             #given is empty, general psf params are all in free
             given.append([])
-            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm/4.0,fwhm,3.0,0.0,x0[i],y0[i]]))
+            est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm/4.0,fwhm,3.0,120.0,x0[i],y0[i]]))
             lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,1.01,-float("Inf"),0.0,0.0]))
             ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,8*fwhm,float("Inf"),float("Inf"),image.shape[1],image.shape[0]]))
         if psftype[i] == '2':
@@ -529,9 +529,9 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
             if psftype[i][1] == 'n':
                 #given is empty, general Sersic params are all in free
                 given.append([])
-                est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm,4.0,x0[i],y0[i],0.0,0.0]))
+                est = np.concatenate((est,[image[int(y0[i])][int(x0[i])],fwhm,4.0,x0[i],y0[i],0.0,120.0]))
                 lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,0.0,0.0,0.0,-float("Inf")]))
-                ubounds = np.concatenate((ubounds,[float("Inf"),8*fwhm,float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
+                ubounds = np.concatenate((ubounds,[float("Inf"),float("Inf"),float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
             else:
                 #given is empty, Sersic n is fixed
                 given.append([])
