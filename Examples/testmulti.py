@@ -8,13 +8,11 @@ hdu = fits.open(filename)
 image = hdu[0].data
 hdu.close()
 
-RA = [94.49705394, 94.49953134, 94.49971101, 94.49547835,
-      94.49938554791362, 94.49645553780057]
-DEC = [-23.81448059, -23.8123183, -23.81819249, -23.81783911,
-       -23.814054381807857, -23.81759326245937]
-psftype = [2,3,2,3,2,2]
-fitsky = [1,1,1,1,1,1]
-names = ['sn', 'star1','star2','star3','star4','star5']
+RA = [94.49705394, 94.49953134, 94.49971101, 94.49547835]
+DEC = [-23.81448059, -23.8123183, -23.81819249, -23.81783911]
+psftype = [2,3,2,3]
+fitsky = [1,1,1,1]
+names = ['sn', 'star1','star2','star3']
 
 from SNAP.MagCalc import *
 
@@ -41,6 +39,6 @@ plt.scatter(x0, y0, color='b')
 plt.show()
 """
 
-RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, image, wcs, 'aavso', 'E489-1.Q0.AAVSO.cat', (RA[:-2],DEC[:-2]), radius=2000.0, psf=psftype[:-2], name=names[:-2], band='V', fwhm=5.0, limsnr=2.0, satmag=15.0, refmag=16.0, fitsky=fitsky[:-2], satpix=1000000000, verbosity=2)
+RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, image, wcs, 'aavso', 'E489-1.Q0.AAVSO.cat', (RA,DEC), radius=2000.0, psf=psftype, name=names, band='B', fwhm=5.0, limsnr=2.0, satmag=15.0, refmag=16.0, fitsky=fitsky, satpix=40000.0, verbosity=2)
 #output position, magnitude
 print time, RA, DEC, I, SN, M, Merr, Mlim
