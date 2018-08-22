@@ -622,7 +622,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
         PSFperr = [[0]*7]*Nobj
         X2dof = 0
     if verbosity > 0:
-        print "PSF moffat fit parameters"
+        print "Multi-obj best fit parameters"
         for i in range(Nobj):
             if psftype[i][0] != 's':
                 print "Object "+str(i+1)+":"
