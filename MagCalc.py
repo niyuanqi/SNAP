@@ -628,7 +628,7 @@ if __name__ == "__main__":
     parser.add_argument("catname", type=str, help="tab separated reference stars catalog file")
     parser.add_argument("-r", "--radius", type=float, default=1000.0, help="pixel radius in which to take reference stars")
     parser.add_argument("-a", "--aperture", type=float, default=None, help="Aperture on which to perform aperture photometry. If not given, default is PSF photometry. If not a positive number, will use PSF to define Kron radius as aperture.")
-    parser.add_argument("-psf", type=int, default=1, help="Degrees of freedom to fit PSF of source. All reference stars are fit will full moffat fit to get PSF on image. 1=only relax height of PSF for source. 2=relax height and centroid of PSF. 3=relax height, centroid, and shape.")
+    parser.add_argument("-psf", type=str, default='1', help="Degrees of freedom to fit PSF of source. All reference stars are fit will full moffat fit to get PSF on image. 1=only relax height of PSF for source. 2=relax height and centroid of PSF. 3=relax height, centroid, and shape. sn=Sersic galaxy fit with general n. s1.324=Sersic galaxy fit with n=1.324 or whatev.")
     parser.add_argument("-o", "--source", type=str, default='object', help="target source name")
     parser.add_argument("-y", "--year", type=int, default=2016, help="year in which source was observed")
     parser.add_argument("-b", "--band", type=str, default='V', help="image filter band")
