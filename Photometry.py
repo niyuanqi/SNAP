@@ -474,7 +474,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, verbosity
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM, E2moff_verify
 
-    maxfev = 100000
+    maxfev = 1000000
 
     #get given fit parameters
     ax, axerr = PSF[0], PSFerr[0]
