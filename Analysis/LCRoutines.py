@@ -139,7 +139,7 @@ def LCsplit(valerrs):
     return mags, errs
 
 #function: filter bad data from light curve
-def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, ras=None, decs=None, flags=['_'], aflag='sn'):
+def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, ras=None, decs=None, flags=None, aflag=None):
     '''
     #######################################################################
     # Input                                                               #
@@ -219,24 +219,26 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         #base index
         index = np.array([True]*len(ts[i]))
         #remove elements with flag value for each flag
-        for flag in flags:
-            if nthres is not None:
-                #fluxes better than mags, check where fluxes are available
-                #presumably when you give fluxes, you give SNR
-                index = np.logical_and(index, fluxes[i]!=flag)
-            else:
-                #use light curve only where mags are available
-                index = np.logical_and(index, mags[i]!=flag)
-                index = np.logical_and(index, errs[i]!=flag)
+        if flags is not None:
+            for flag in flags:
+                if nthres is not None:
+                    #fluxes better than mags, check where fluxes are available
+                    #presumably when you give fluxes, you give SNR
+                    index = np.logical_and(index, fluxes[i]!=flag)
+                else:
+                    #use light curve only where mags are available
+                    index = np.logical_and(index, mags[i]!=flag)
+                    index = np.logical_and(index, errs[i]!=flag)
         #check for string comments
         if strs is not None:
             #str flag values
             sflags = ['BAD_IMAGE', 'SATURATED', 'FALSE_DET']+flags
             #remove elements with bad sflag value
-            for sflag in sflags:
-                #apply filter based on strs
-                strlist = np.array([streach[-len(sflag):] for streach in strs[i]])
-                index = np.logical_and(index,strlist!=sflag)
+            if flags is not None:
+                for sflag in sflags:
+                    #apply filter based on strs
+                    strlist = np.array([streach[-len(sflag):] for streach in strs[i]])
+                    index = np.logical_and(index,strlist!=sflag)
         #check for SNR filter (better than limiting magnitudes)
         if nthres is not None:
             index = np.logical_and(index, snrs[i] >= nthres)
@@ -349,7 +351,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: load light curve from text file
-def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, scols=None, flags=['_'], aflag='sn', mode='single'):
+def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, scols=None, flags=None, aflag=None, mode='single'):
     '''
     #######################################################################
     # Input                                                               #
@@ -573,7 +575,7 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
                 decs.append(dec)
         else: #no strings given
             decs = [np.array([0]*len(t)) for t in ts]
-
+    
     #check if SN filter is applied
     if SNthres is not None:
         #filter out bad data with all information
@@ -585,8 +587,9 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
             #filter out bad data with all information
             ts, mags, errs, fluxes, snrs, lims, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
         else:
-            #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
+            if flags is not None:
+                #filter out bad data with all information
+                ts, mags, errs, fluxes, snrs, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
             
     #convert mags to float
     mags = [mag.astype(float) for mag in mags]
@@ -659,3 +662,27 @@ def Swift_load(filename, bcol, tcol, magcol, errcol, limcol=None, bands=['UVW2',
         errs.append(err[mask])
         lims.append(lim[mask])
     return ts, mags, errs, lims
+
+#function: load light curve from LCOGT file
+def LCOGT_load(filename, bcol, tcol, magcol, errcol, bands=['U','B','V','g','r','i']):
+
+    from astropy.time import Time
+    
+    #load band column
+    b = np.loadtxt(filename,usecols=(bcol,),comments='#',unpack=True,dtype='str')
+    #load time column, convert to day of year
+    t = np.loadtxt(filename,usecols=(tcol,),comments='#',unpack=True)
+    year = Time(t[0], format='jd').isot[:4]
+    year_isot = year + '-01-01T00:00:00.000'
+    year = Time(year_isot, format='isot', scale='utc').jd
+    t = t - year
+    #load magnitudes, divide into bands
+    mag = np.loadtxt(filename,usecols=(magcol,),comments='#',unpack=True)
+    err = np.loadtxt(filename,usecols=(errcol,),comments='#',unpack=True)
+    ts, mags, errs = [], [], []
+    for band in bands:
+        mask = b == band
+        ts.append(t[mask])
+        mags.append(mag[mask])
+        errs.append(err[mask])
+    return ts, mags, errs

@@ -22,15 +22,15 @@ from ObjData import *
 N = 50 #number of Monte Carlo trials to run
 plot = False #plot polynomial fits to light curves
 #window of phillips relation in which intersection is estimated
-sBV1 = 0.62
-sBV2 = 0.82
+sBV1 = 0.75
+sBV2 = 0.90
 #polynomial order with which to fit phillips section
 npoly = 2
 #dispersion intervals away from fit to consider point an outlier (for removal)
 Nsig = 1.0
 #window of redshifts in which SN redshift is estimated
-z1 = 0.055
-z2 = 0.075
+z1 = 0.004
+z2 = 0.007
 
 print "Loading SN File"
 s = get_sn(sn_file)
@@ -68,11 +68,14 @@ Mst_err = np.zeros([N,len(band)])
 st, st_err = np.zeros(N), np.zeros(N)
 #for each trial redshift
 for i in range(N):
-    print z[i]
+    print ""
+    print "-----------------------------"
+    print "Trial redshift", z[i]
+    print "-----------------------------"
     s.z = z[i]
     #fit SN dm15
     s.choose_model("EBV_model2", stype="dm15")
-    s.fit(band)
+    s.fit(snband)
     s.kcorr()
     print s.Tmax, s.e_Tmax
     #t, m, e, b = s.get_max(band, restframe=1, deredden=1, use_model=1)
@@ -102,7 +105,7 @@ for i in range(N):
 
     #fit SN sBV
     s.choose_model("EBV_model2", stype="st")
-    s.fit(band)
+    s.fit(snband)
     s.kcorr()
     print s.Tmax, s.e_Tmax
     #t, m, e, b = s.get_max(band, restframe=1, deredden=1, use_model=1)
@@ -130,6 +133,7 @@ for i in range(N):
     print st[i], st_err[i]
     print Mst[i][0], Mst_err[i][0]
 
+print ""
 poly = []
 disp = []
 for i in range(len(band)):
@@ -174,6 +178,7 @@ print ""
 zs = []
 zs_err = []
 for i in range(len(band)):
+    print "Determine best fit redshift."
     curst = st[i]
     curst_err = st_err[i]
     curM = Mst.T[i]
@@ -189,9 +194,11 @@ w = 1/np.square(zs_err)
 z_mean = np.sum(zs*w)/np.sum(w)
 z_err = np.sqrt(1/np.sum(w))
 print ""
+print "---------------------------------------"
 print "Best fit redshifts by band"
 print zs, zs_err
 print "Best fit mean z:", z_mean, z_err
+print "---------------------------------------"
 print ""
 
 #colorbar parameterized by redshift

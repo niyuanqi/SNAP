@@ -11,18 +11,19 @@ import numpy as np
 
 #global constants
 #Planck 2015 results. XIII. Cosmological parameters from CMB
+
+#Reiss 2016 Cosmological parameters from SN1a
 H0 = 73.24 #km/s/Mpc Hubble constant (1.74)
 H = H0*1e3/1e6 #m/s/pc Hubble Constant
 c = 2.9979e8 #m/s
 Wm = 0.27 #matter density parameter
 Wl = 0.73 #vacuum density parameter
-#Reiss  Cosmological parameters from SN1a
 
 #calibration information
 #band zero fluxes [Jy] from Bessel 1998 (outdated)
 #flux_0 = [1790, 4063, 3636, 3064, 2416]
 #band zero fluxes [Jy] in UBVri with mix from AB system
-flux_0 = [3631, 4063, 3636, 3631, 3631]
+flux_0 = [1790, 4063, 3636, 3631, 3631]
 
 #telescope information
 #band isophotal wavelengths [Angstrom] from Bessel 2005
