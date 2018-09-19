@@ -376,8 +376,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         plt.xlabel("Mag (~log I)")
         plt.show()
         plt.title("Measured intensity of reference stars")
-        plt.errorbar(catMags, 2.512*np.log10(catIs), xerr=catMagerrs, yerr=(2.512/np.log(10))*catNs/catIs, fmt='r+', zorder=1)
-        fit = np.polyfit(catMags, 2.512*np.log10(catIs), 1)
+        plt.errorbar(catMags, 2.5*np.log10(catIs), xerr=catMagerrs, yerr=(2.5/np.log(10))*catNs/catIs, fmt='r+', zorder=1)
+        fit = np.polyfit(catMags, 2.5*np.log10(catIs), 1)
         plt.plot(catMags, np.polyval(fit, catMags), zorder=2)
         plt.ylabel("log I")
         plt.xlabel("Mag (catalog)")
@@ -447,10 +447,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #check if source is valid
         if Io[i] != 0 and SNo[i] != 0 and skyNo != 0:
             #calculate relative flux of object wrt each reference star
-            Ir = fluxes[bands[band]]*np.power(10,-catMags/2.512)*Io[i]/catIs
+            Ir = fluxes[bands[band]]*np.power(10,-catMags/2.5)*Io[i]/catIs
             Io_err = Io[i]/SNo[i]
             catI_err = catIs/catSNs
-            Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.512))
+            Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
 
             #calculate weighted mean
             w = 1/np.square(Ir_err)
@@ -480,8 +480,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                     
             RAo[i], DECo[i] = wcs.all_pix2world(Xp, Yp, 0)
             #calculate magnitude from flux
-            mo[i] = -2.512*np.log10(I[i]/fluxes[bands[band]])
-            mo_err[i] = (2.512/np.log(10))*(I_err/I[i])
+            mo[i] = -2.5*np.log10(I[i]/fluxes[bands[band]])
+            mo_err[i] = (2.5/np.log(10))*(I_err/I[i])
         else:
             #bad source
             mo[i], mo_err[i] = float('NaN'), float('NaN')
@@ -578,8 +578,8 @@ def limitingM(ru, rl, limsnr, PSF, PSFerr, skyN, catM, catMerr, catSN, catI, ver
         SNUbound = max(SN_trials)
         SNLbound = min(SN_trials)
         #calculate magnitude wrt each reference star
-        mlim = catM - 2.512*np.log10(Ilim/np.array(catI))
-        mlim_err = np.sqrt(np.square((2.512/np.log(10))*(1/catSN))+np.square(catMerr))
+        mlim = catM - 2.5*np.log10(Ilim/np.array(catI))
+        mlim_err = np.sqrt(np.square((2.5/np.log(10))*(1/catSN))+np.square(catMerr))
         w = 1/np.square(mlim_err)
         mlim = np.sum(mlim*w)/np.sum(w)
         #output comments
