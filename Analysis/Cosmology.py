@@ -18,6 +18,7 @@ H = H0*1e3/1e6 #m/s/pc Hubble Constant
 c = 2.9979e8 #m/s
 Wm = 0.27 #matter density parameter
 Wl = 0.73 #vacuum density parameter
+Tcmb=2.725 #CMB current temperature
 
 #calibration information
 #band zero fluxes [Jy] from Bessel 1998 (outdated)
@@ -39,10 +40,12 @@ def comov(z):
 
 #function: integrate comoving distance to some redshift [pc]
 def intDc(z):
+    #import scipy.integrate as integrate
+    #return integrate.quad(comov,0,z)[0]
+    from astropy.cosmology import FlatLambdaCDM
 
-    import scipy.integrate as integrate
-    
-    return integrate.quad(comov,0,z)[0]*(1.0+z)
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Wm, Tcmb0=2.725)
+    return cosmo.comoving_distance(z).value*1e-6
 
 #function: integrate angular diameter distance to some redshift
 def intDa(z):
@@ -61,24 +64,24 @@ def deredMag(appMag, EBV, Coef):
     return appMag - EBV*Coef
 #function: calculate dereddened fluxes
 def deredFlux(appFlux, EBV, Coef):
-    return appFlux*np.power(10,EBV*Coef/2.512)
+    return appFlux*np.power(10,EBV*Coef/2.5)
     
 #function: calculate absolute magnitude at redshift z
 def absMag(appMag, z, appMag_err=None, z_err=None, Kcorr=None):
     dl = intDl(z)
     if Kcorr is None:
         #estimate absolute magnitude using luminosity distance and naive K
-        Mabs = appMag - 5.024*np.log10(dl/10.0) - 2.512*np.log10(1+z)
+        Mabs = appMag - 5.*np.log10(dl/10.0) - 2.5*np.log10(1+z)
     else:
         #compute absolute magnitude using luminosity distance and K correction
-        Mabs = appMag - 5.024*np.log10(dl/10.0) - Kcorr
+        Mabs = appMag - 5.*np.log10(dl/10.0) - Kcorr
     if appMag_err is not None:
         #calculate corresponding errors
         dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
         if Kcorr is None:
-            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5.024/(10*np.log(10)))*(dl_err/dl)) + np.square((2.512/np.log(10))*(z_err/(1.0+z))))
+            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5./(10*np.log(10)))*(dl_err/dl)) + np.square((2.5/np.log(10))*(z_err/(1.0+z))))
         else:
-            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5.024/(10*np.log(10.0)))*(dl_err/dl)))
+            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5./(10*np.log(10.0)))*(dl_err/dl)))
         return Mabs, Mabs_err
     else:
         #don't calculate errors
@@ -92,7 +95,7 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
         Fabs = appFlux*(1+z)*(dl/10.0)**2
     else:
         #compute absolute magnitude using luminosity distance and K correction
-        Fabs = appFlux*np.power(10,Kcorr/2.512)*(dl/10.0)**2
+        Fabs = appFlux*np.power(10,Kcorr/2.5)*(dl/10.0)**2
     if appFlux_err is not None:
         #calculate corresponding errors
         dl_err = (intDl(z+z_err)-intDl(z-z_err))/(2.0*np.sqrt(3))
@@ -107,10 +110,10 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
 
 #function: calculate flux [Jy] from mag
 def Mag_toFlux(band, mag, mag_err=None):
-    flux = flux_0[bands[band]]*np.power(10,mag/-2.512)
+    flux = flux_0[bands[band]]*np.power(10,mag/-2.5)
     if mag_err is not None:
         #calculate errors
-        flux_err = flux*np.log(10)*mag_err/-2.512
+        flux_err = flux*np.log(10)*mag_err/-2.5
         return flux, flux_err
     else:
         #don't calculate errors
@@ -118,10 +121,10 @@ def Mag_toFlux(band, mag, mag_err=None):
 #function: calculate flux [Jy] from mag
 def Flux_toMag(band, flux, flux_err=None):
     mod = flux/flux_0[bands[band]]
-    mag =  -2.512 * np.array([np.log10(m) for m in mod])
+    mag =  -2.5 * np.array([np.log10(m) for m in mod])
     if flux_err is not None:
         #calculate errors
-        mag_err = -2.512*flux_err/(np.log(10)*flux)
+        mag_err = -2.5*flux_err/(np.log(10)*flux)
         return mag, mag_err
     else:
         #don't calculate errors

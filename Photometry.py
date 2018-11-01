@@ -51,7 +51,7 @@ def ap_multi(image, x0, y0, fitsky, r1, r2):
     xmask = np.zeros(image.shape[1])
     ymask = np.zeros(image.shape[0])
     for i in range(Nobj):
-        if fitsky[i]:
+        if fitsky[i] or i == 0:
             xap_single = np.absolute(xaxis-x0[i]) <= r2
             xmask = np.logical_or(xmask, xap_single)
             yap_single = np.absolute(yaxis-y0[i]) <= r2
@@ -65,7 +65,7 @@ def ap_multi(image, x0, y0, fitsky, r1, r2):
             #is this pixel in an aperture?
             inap = False
             for i in range(Nobj):
-                if dist(x0[i],y0[i],x,y)<=r2 and fitsky[i]:
+                if dist(x0[i],y0[i],x,y)<=r2 and (fitsky[i] or i==0):
                     inap = True
             #exclude pixels too close to any objects
             for i in range(Nobj):
@@ -113,6 +113,14 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     from PSFlib import D2plane
     from MagCalc import PSFError
     
+    if hasattr(x0, '__iter__'):
+        Nobj = len(x0)
+    else:
+        Nobj = 1
+        x0 = [x0]
+        y0 = [y0]
+        fitsky = [fitsky]
+
     #get background sky annulus
     #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
     #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
@@ -144,20 +152,24 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
         #filter out noisy pixels at 5sigma level (cosmic rays/hot pix)
         skyx, skyy, skyi = PSFclean(skyx,skyy,skyi,skyTheo,skyN,sat,fu=2, fl=2)
         
-        #calculate better fit from cleaner data
-        skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
-        try:
-            #try to calculate fit error
-            skyperr = np.sqrt(np.diag(skypcov))
-        except:
-            #fit error uncalculable
+        if any(fitsky):
+            #calculate better fit from cleaner data
+            skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
             try:
-                #take closer initial conditions, try again
-                skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
+                #try to calculate fit error
                 skyperr = np.sqrt(np.diag(skypcov))
             except:
-                #fit error really is uncalculable, how???
-                raise PSFError('Unable to fit sky.')
+                #fit error uncalculable
+                try:
+                    #take closer initial conditions, try again
+                    skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=skypopt, maxfev=maxfev, absolute_sigma=True)
+                    skyperr = np.sqrt(np.diag(skypcov))
+                except:
+                    #fit error really is uncalculable, how???
+                    raise PSFError('Unable to fit sky.')
+        else:
+            skypopt = np.array([0,0,0])
+            skyperr = np.array([0,0,0])
         #calculate sky noise near source
         skyTheo = D2plane((skyx,skyy),*skypopt)
         skyN = np.std(skyi-skyTheo)
@@ -191,6 +203,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
         print "sky plane fit parameters"
         print "[a, b, c] = "+str(skypopt)
         print "errors = "+str(skyperr)
+        print "Noise = "+str(skyN)
     #return sky plane, sky noise, and goodness of fit
     return skypopt, skyperr, skyX2dof, skyN
 
@@ -288,7 +301,7 @@ def PSFextract(image, x0, y0, fwhm=5.0, fitsky=True, sat=40000.0, verbosity=0):
     if verbosity > 1:
         PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize*fwhm)
     #check, if fit is ridiculous or noise object: give no fit
-    if E2moff_verify(PSFpopt, x0, y0) and PSFpopt[0]>5*skyN:
+    if E2moff_verify(PSFpopt, x0, y0):
         return PSFpopt, PSFperr, X2dof, skypopt, skyN
     else:
         return [0]*7, [0]*7, 0, [0]*3, skyN
@@ -943,8 +956,8 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         f.subplots_adjust(wspace=0)
         plt.suptitle("Aperture Section")
         plt.show()
-        plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
-        plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
+        #plt.setp([a.get_yticklabels()[0] for a in ax], visible=False)
+        #plt.setp([a.get_yticklabels()[-1] for a in ax], visible=False)
     
         #plot psf aperture to snr, intensity
         ap_r = np.linspace(1,2*radius,100)

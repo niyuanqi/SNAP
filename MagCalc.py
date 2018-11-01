@@ -1,3 +1,4 @@
+
 #################################################################
 # Name:     MagCalc.py                                          #
 # Author:   Yuan Qi Ni                                          #
@@ -182,7 +183,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
         ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
-
+    
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
     catX, catY = catX.astype(float), catY.astype(float)
@@ -204,7 +205,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         print "Selected catalog star IDs:"
         for i in range(len(ID)):
             print ID[int(i)], catX[int(i)], catY[int(i)]
-            print RA[int(i)], DEC[int(i)], catM[int(i)], catMerr[int(i)]
+            print catRA[int(i)], catDEC[int(i)], catM[int(i)], catMerr[int(i)]
     #number of selected catalog stars
     Ncat = len(ID)
 
@@ -245,11 +246,12 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #calculate intensity and SN ratio
         #verbosity is reduced for catalog stars
         try:
-            PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=True, sat=satpix, verbosity=verbosity-1)
+            PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity-1)
             PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
         except:
             PSFpopt = [0]*7
-        #Take only reference stars whose fits are sane
+        
+        #Take only reference stars whose fits are sane 
         if plib.E2moff_verify(PSFpopt, x0, y0):
             PSF[3] = PSF[3] % 180.0 #principle angle
             #break x,y degeneracy in theta
@@ -269,7 +271,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             catPSFs.append(PSF)
             catPSFerrs.append(PSFerr)
             #save sky details
-            catSkyMs.append(plib.D2plane((PSFpopt[5],PSFpopt[6]),*skypopt))
+            catSkyMs.append(skypopt[0]*PSFpopt[5]+skypopt[1]*PSFpopt[6]+skypopt[2])
             catSkyNs.append(skyN)
             #save ref star position
             catXs.append(PSFpopt[5])
@@ -329,19 +331,18 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #position of star in catalog
         x0, y0 = catXs[i], catYs[i]
         #calculate intensity and SN ratio with reduced verbosity
-        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(catimage, catPSF, catPSFerr, x0, y0, fitsky=True, sat=satpix, verbosity=verbosity-1)
+        PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFscale(catimage, catPSF, catPSFerr, x0, y0, fitsky=fitsky[0], sat=satpix, verbosity=verbosity-1)
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
             I, SN = pht.PSF_photometry(catimage, x0, y0, PSFpopt, PSFperr, '1', skypopt, skyN, verbosity=verbosity-1)
-        else:
+        elif aperture <= 0:
             #perform aperture photometry
-            if aperture <= 0:
-                #use FWHM of catPSF to define Kron aperture
-                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=True, verbosity=verbosity-1)
-            else:
-                #use aperture given directly
-                I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=True, verbosity=verbosity-1)
+            #use FWHM of catPSF to define Kron aperture
+            I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=True, verbosity=verbosity-1)
+        else:
+            #use aperture given directly
+            I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=True, verbosity=verbosity-1)
         #check if reference stars are valid
         if I == 0 or SN == 0 or skyN == 0:
             raise PSFError('Unable to perform photometry on reference stars.')
@@ -390,25 +391,23 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
 
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source
-    if Nobj == 1 and aperture is not None:
+    if Nobj == 1 or aperture is not None:
+        PSFpopt, PSFperr, X2dof, skypopto, skyNo = [0]*7, [0]*7, 0, [0]*3, 0
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
+
         if psf[0] == '1':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '2':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '3':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
-        else:
-            #Invalid fit selected, don't fit source
-            if verbosity > 0:
-                print "No fit selected for source."
-                PSFpopt, PSFperr, X2dof, skypopto, skyNo = [0]*7, [0]*7, 0, [0]*3, 0
+        
         PSFpopt, PSFperr = [PSFpopt], [PSFperr]
         #check preferred intensity calculation method
         if aperture is None:
             #integrate PSF directly
-            Io, SNo = pht.PSF_photometry(image, Xo, Yo, PSFpopt[0], PSFperr[0], skypopto, skyNo, verbosity=verbosity)
+            Io, SNo = pht.PSF_photometry(image, Xo[0], Yo[0], PSFpopt[0], PSFperr[0], psf[0], skypopto, skyNo, verbosity=verbosity)
         else:
             #perform aperture photometry
             if aperture <= 0:
@@ -450,13 +449,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             Ir = fluxes[bands[band]]*np.power(10,-catMags/2.5)*Io[i]/catIs
             Io_err = Io[i]/SNo[i]
             catI_err = catIs/catSNs
-            Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
+            Ir_err = Ir*np.sqrt(np.square(1/SNo[i])+np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
 
             #calculate weighted mean
             w = 1/np.square(Ir_err)
             I[i] = np.sum(Ir*w)/np.sum(w)
-            I_rand = np.sqrt(1/np.sum(w))
-            I_err = np.sqrt((I[i]*Io_err/Io[i])**2 + I_rand**2)
+            I_err = np.sqrt(1/np.sum(w))
+            #I_err = np.sqrt((I[i]*Io_err/Io[i])**2 + I_rand**2)
             JN = I[i]/Io[i] #jansky - data number conversion, uJy/#
 
             if verbosity > 0:

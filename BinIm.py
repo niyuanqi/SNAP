@@ -13,7 +13,7 @@ import numpy as np
 from SNAP.Astrometry import *
 
 #function: bin images between two times in day of year float
-def binTimes(band, t1, t2, out_name, delete_temp=True):
+def binTimes(band, t1, t2, year, out_name, delete_temp=True):
     
     #essential modules
     from glob import glob
@@ -30,7 +30,7 @@ def binTimes(band, t1, t2, out_name, delete_temp=True):
     binfiles = []
     for i in range(len(bandfiles)):
         ksp_time = bandfiles[i].split('.')[3]
-        day_time = isot_day(ksp_isot(ksp_time))
+        day_time = isot_day(ksp_isot(ksp_time), year)
         if day_time > t1 and day_time < t2:
             binfiles.append(bandfiles[i])
 

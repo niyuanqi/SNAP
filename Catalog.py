@@ -41,6 +41,8 @@ def catAAVSO(radeg,decdeg,fovam,band,out=False):
 def catDiff(catname, band=False):
     #load stable reference star location
     ID,RA,DEC,B,Berr,V,Verr,i,ierr = np.loadtxt(catname, unpack=True, comments=';')
+    if not hasattr(ID, '__iter__'):
+        ID,RA,DEC,B,Berr,V,Verr,i,ierr = np.array([ID]),np.array([RA]),np.array([DEC]),np.array([B]),np.array([Berr]),np.array([V]),np.array([Verr]),np.array([i]),np.array([ierr])
 
     #standard filters
     bands = {'V':0,'B':1,'I':2}
@@ -69,6 +71,9 @@ def catDiff(catname, band=False):
     if band:
         catM =  np.array(catM).squeeze().astype(float)
         catMerr =  np.array(catMerr).squeeze().astype(float)
+        if catM.shape == ():
+            catM = np.array([catM])
+            catMerr = np.array([catMerr])
         return ID, RA, DEC, catM, catMerr
     else:
         catM = [cat.astype(float) for cat in catM]
