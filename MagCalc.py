@@ -458,9 +458,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             #I_err = np.sqrt((I[i]*Io_err/Io[i])**2 + I_rand**2)
             JN = I[i]/Io[i] #jansky - data number conversion, uJy/#
 
-            if verbosity > 0:
-                print "Contribution of intrinsic error:", Io_err/Io[i]
-                print "Contribution of ref star scatter:", I_rand/I[i]
+            #if verbosity > 0:
+                #print "Contribution of intrinsic error:", Io_err/Io[i]
+                #print "Contribution of ref star scatter:", I_rand/I[i]
                 
             #SN = I/I_err
         else:
