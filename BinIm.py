@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument('band', type=str, help='band to bin.')
     parser.add_argument('t1', type=float, help='start time, day of year float')
     parser.add_argument('t2', type=float, help='end time, day of year float')
-    parser.add_argument('year', type=float, help='year number float')
+    parser.add_argument('year', type=int, help='year number float')
     parser.add_argument('out_name', type=str, help='output binned file name')
     args = parser.parse_args()
     
