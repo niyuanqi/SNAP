@@ -44,6 +44,7 @@ def ap_multi(image, x0, y0, fitsky, r1, r2):
         x0 = [x0]
         y0 = [y0]
         fitsky = [fitsky]
+
         
     #Extract zone around all objects for which fitsky=1
     xaxis = np.arange(0,image.shape[1], dtype=int)
@@ -136,7 +137,6 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     for i in range(len(annuli)):
         #clean saturated pixels
         xs[i], ys[i], annuli[i] = PSFclean(xs[i],ys[i],annuli[i],annuli[i],sat=sat)
-        print xs[i], ys[i], annuli[i]
         #get first estimate mean background value
         B[i] = np.mean(np.absolute(annuli[i]))
     #pick annulus with lowest background
@@ -145,7 +145,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     color = colors[lowest]
     
     #fit sky background
-    if 1:
+    try:
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=[0,0,skyB], maxfev=maxfev, absolute_sigma=True)
         #Fit function
         skyTheo = D2plane((skyx,skyy),*skypopt)
@@ -205,9 +205,9 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
             plt.scatter(skyx-x1, skyy-y1, c=color, marker='.')
             plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
             plt.show()
-    #except:
+    except:
         #catastrophic failure of sky plane fitting, How???
-    #    raise PSFError('Sky fitting catastrophic failure.')
+        raise PSFError('Sky fitting catastrophic failure.')
     if verbosity > 0:
         print "sky plane fit parameters"
         print "[a, b, c] = "+str(skypopt)
