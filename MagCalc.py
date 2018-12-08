@@ -245,11 +245,15 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio
         #verbosity is reduced for catalog stars
-        try:
+        if verbosity > 2:
             PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity-1)
             PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
-        except:
-            PSFpopt = [0]*7
+        else:
+            try:
+                PSFpopt, PSFperr, X2dof, skypopt, skyN = pht.PSFextract(catimage, x0, y0, fwhm=fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity-1)
+                PSF, PSFerr = PSFpopt[1:5], PSFperr[1:5]
+            except:
+                PSFpopt = [0]*7
         
         #Take only reference stars whose fits are sane 
         if plib.E2moff_verify(PSFpopt, x0, y0):
