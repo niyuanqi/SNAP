@@ -144,7 +144,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     color = colors[lowest]
     
     #fit sky background
-    try:
+    if 1:
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=[0,0,skyB], maxfev=maxfev, absolute_sigma=True)
         #Fit function
         skyTheo = D2plane((skyx,skyy),*skypopt)
@@ -204,9 +204,9 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
             plt.scatter(skyx-x1, skyy-y1, c=color, marker='.')
             plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
             plt.show()
-    except:
+    #except:
         #catastrophic failure of sky plane fitting, How???
-        raise PSFError('Sky fitting catastrophic failure.')
+    #    raise PSFError('Sky fitting catastrophic failure.')
     if verbosity > 0:
         print "sky plane fit parameters"
         print "[a, b, c] = "+str(skypopt)
