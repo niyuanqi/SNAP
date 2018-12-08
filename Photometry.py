@@ -137,7 +137,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
         #clean saturated pixels
         xs[i], ys[i], annuli[i] = PSFclean(xs[i],ys[i],annuli[i],annuli[i],sat=sat)
         #get first estimate mean background value
-        B[i] = np.mean(annuli[i])
+        B[i] = np.mean(np.absolute(annuli[i]))
     #pick annulus with lowest background
     lowest = np.argmin(B)
     skyB, skyi, skyx, skyy = B[lowest], annuli[lowest], xs[lowest], ys[lowest]
