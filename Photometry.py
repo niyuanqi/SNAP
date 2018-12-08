@@ -142,6 +142,7 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
     lowest = np.argmin(B)
     skyB, skyi, skyx, skyy = B[lowest], annuli[lowest], xs[lowest], ys[lowest]
     color = colors[lowest]
+    print skyB, skyi, skyx, skyy
     
     #fit sky background
     if 1:
