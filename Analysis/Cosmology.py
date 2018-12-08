@@ -45,7 +45,7 @@ def intDc(z):
     from astropy.cosmology import FlatLambdaCDM
 
     cosmo = FlatLambdaCDM(H0=H0, Om0=Wm, Tcmb0=2.725)
-    return cosmo.comoving_distance(z).value*1e-6
+    return cosmo.comoving_distance(z).value*1e6
 
 #function: integrate angular diameter distance to some redshift
 def intDa(z):
@@ -69,6 +69,7 @@ def deredFlux(appFlux, EBV, Coef):
 #function: calculate absolute magnitude at redshift z
 def absMag(appMag, z, appMag_err=None, z_err=None, Kcorr=None):
     dl = intDl(z)
+    print dl
     if Kcorr is None:
         #estimate absolute magnitude using luminosity distance and naive K
         Mabs = appMag - 5.*np.log10(dl/10.0) - 2.5*np.log10(1+z)

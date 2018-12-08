@@ -122,19 +122,27 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
         fitsky = [fitsky]
 
     #get background sky annulus
-    #inner_annulus, inner_x, inner_y = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
-    #outer_annulus, outer_x, outer_y = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
-    inner_annulus, inner_x, inner_y = ap_multi(image, x0, y0, fitsky, 7*fwhm, 10*fwhm)
-    inner_x, inner_y, inner_annulus = PSFclean(inner_x,inner_y,inner_annulus,inner_annulus,sat=sat)
-    outer_annulus, outer_x, outer_y = ap_multi(image, x0, y0, fitsky, 10*fwhm, 12*fwhm)
-    outer_x, outer_y, outer_annulus = PSFclean(outer_x,outer_y,outer_annulus,outer_annulus,sat=sat)
-    #get first estimate mean background value
-    innerB = np.mean(inner_annulus)
-    outerB = np.mean(outer_annulus)
-    #take outer annulus if inner annulus probably contains a star
-    skyB = outerB if outerB<innerB else innerB
-    color = 'g' if outerB<innerB else 'b'
-    skyi, skyx, skyy = (outer_annulus, outer_x, outer_y) if outerB<innerB else (inner_annulus, inner_x, inner_y)
+    annulus1, x1, y1 = ap_get(image, x0, y0, 4*fwhm, 5*fwhm)
+    annulus2, x2, y2 = ap_get(image, x0, y0, 5*fwhm, 6*fwhm)
+    annulus3, x3, y3 = ap_get(image, x0, y0, 6*fwhm, 7*fwhm)
+    annulus4, x4, y4 = ap_get(image, x0, y0, 7*fwhm, 10*fwhm)
+    annulus5, x5, y5 = ap_get(image, x0, y0, 10*fwhm, 12*fwhm)
+    xs = [x1,x2,x3,x4,x5]
+    ys = [y1,y2,y3,y4,x5]
+    annuli = [annulus1, annulus2, annulus3, annulus4, annulus5]
+    colors = ['r','o','y','g','b']
+    #check all annuli
+    B = np.zeros(len(annuli))
+    for i in range(len(annuli)):
+        #clean saturated pixels
+        xs[i], xs[i], annuli[i] = PSFclean(xs[i],ys[i],annuli[i],annuli[i],sat=sat)
+        #get first estimate mean background value
+        B[i] = np.mean(annuli[i])
+    #pick annulus with lowest background
+    lowest = np.argmin[B]
+    skyB, skyi, skyx, skyy = B[lowest], annuli[lowest], xs[lowest], ys[lowest]
+    color = colors[lowest]
+    
     #fit sky background
     try:
         skypopt, skypcov = curve_fit(D2plane, (skyx, skyy), skyi, p0=[0,0,skyB], maxfev=maxfev, absolute_sigma=True)
