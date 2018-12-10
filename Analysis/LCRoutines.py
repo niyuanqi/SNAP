@@ -379,13 +379,15 @@ def BVcorrection(ts, mags, errs, Bcol=0, Vcol=1):
     # ------------------------------------------------------------------- #
     # Output                                                              #
     # ------------------------------------------------------------------- #
-    #     ts: list of time arrays.                                        #
+    #    tcs: list of time arrays.                                        #
     #                                                                     #
-    #   mags: list of corrected light curves.                             #
+    #  magcs: list of corrected light curves.                             #
     #                                                                     #
-    #   errs: list of corrected errors.                                   #
+    #  errcs: list of corrected errors.                                   #
     #######################################################################
     '''
+    import copy
+    tcs, magcs, errcs = copy.deepcopy(ts), copy.deepcopy(mags), copy.deepcopy(errs)
     #B band correlation with B-V
     c = 0.27
     #correct B band using Bout = (B-Vin)*c + Bin
@@ -394,10 +396,10 @@ def BVcorrection(ts, mags, errs, Bcol=0, Vcol=1):
     Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
     Bout = (1./(1.-c))*(-Vin*c + Bin)
     Bout_err = (1./(1.-c))*np.sqrt(np.square(c*Vin_err)+np.square(Bin_err))
-    mags[Bcol] = Bout
-    errs[Bcol] = Bout_err
+    magcs[Bcol] = Bout
+    errcs[Bcol] = Bout_err
     #return corrected light curves
-    return ts, mags, errs
+    return tcs, magcs, errcs
 
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):
