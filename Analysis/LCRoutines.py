@@ -362,6 +362,43 @@ def LCcolors(ts, mags, errs):
     #return first difference light curves
     return tdiff, diffs, derrs
 
+#function: return corrected B band colors based on V band correlation
+def BVcorrection(ts, mags, errs, Bcol=0, Vcol=1):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   mags: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #   errs: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitude errors in float.        #
+    #                                                                     #
+    #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
+    #         array of time (in float) corresponding to the light curve.  #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #     ts: list of time arrays.                                        #
+    #                                                                     #
+    #   mags: list of corrected light curves.                             #
+    #                                                                     #
+    #   errs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    #B band correlation with B-V
+    c = 0.27
+    #correct B band using Bout = (B-Vin)*c + Bin
+    Bin, Bin_err = mags[Bcol], errs[Bcol]
+    Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
+    Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
+    Bout = (1./(1.-c))*(-Vin*c + Bin)
+    Bout_err = (1./(1.-c))*np.sqrt(np.square(c*Vin_err)+np.square(Bin_err))
+    mags[Bcol] = Bout
+    errs[Bcol] = Bout_err
+    #return corrected light curves
+    return ts, mags, errs
+
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):
     '''
