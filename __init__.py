@@ -5,6 +5,7 @@ from Photometry import *
 from Catalog import *
 from Vizier import *
 from MagCalc import *
+from MagPlot import *
 from DiffIm import *
 from CropIm import *
 from StampIm import *

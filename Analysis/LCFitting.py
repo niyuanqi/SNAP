@@ -113,6 +113,10 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
         #return parameters
         return fit, fit_err, params, params_err
 
+#function: linear
+def linfunc(t, a, b):
+    return a*t + b
+
 #function: 10 parameter Supernova 1a fit function
 def SN1aLC(t, g0, t0, sigma0, g1, t1, sigma1, gamma, f0, tau, theta):
     gaus0 = g0*np.exp(-np.square((t-t0)/sigma0)/2)

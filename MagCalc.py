@@ -234,6 +234,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catXs = []
     catYs = []
     catX2dofs = []
+    catIDs = []
     if verbosity > 0:
         print "Extracting PSF of "+str(Ncat)+" catalog stars."
     
@@ -278,6 +279,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             catYs.append(PSFpopt[6])
             #save fit X2/dof
             catX2dofs.append(X2dof)
+            catIDs.append(ID[i])
         else:
             if verbosity > 0:
                 #say something about fit being bad for this particular star
@@ -299,6 +301,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     catXs = np.array(catXs)
     catYs = np.array(catYs)
     catX2dofs = np.array(catX2dofs)
+    catIDs = np.array(catIDs)
     #print catPSFs.T[3]
     
     #calculate average psf among reference stars
@@ -355,39 +358,25 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         print "Mean SN of reference stars:",np.mean(catSNs)
         print "Mean background noise:", np.mean(skyNs), np.std(skyNs)
         print ""
-
     if verbosity > 1:
         #essential extra import
-        import matplotlib.pyplot as plt
+        import MagPlot as magplt
+        
         #diagnostic for SNR, N, I calculation routine
-        #checks for wrong correlation between intensity and noise
-        plt.title("Measured SNR of reference stars")
-        plt.scatter(catMags, np.log(catSNs), c='r')
-        fit = np.polyfit(catMags, np.log(catSNs), 1)
-        plt.plot(catMags, np.polyval(fit, catMags), zorder=2)
-        plt.ylabel("log SNR")
-        plt.xlabel("Mag (~log I)")
-        plt.show()
+        #instrumental magnitudes
+        insMags = -2.5*np.log10(catIs)
+        insMagerrs = (2.5/np.log(10))*(1/catSNs)
+        #checks for right correlation between intensity and SNR
+        magplt.sn_corr_plot(insMags, catSNs)
+        #checks for right correlation between intensity and noise
         catNs = catIs/catSNs
-        plt.title("Measured noise under reference stars")
-        plt.scatter(catMags, np.log(catNs), c='r')
-        fit = np.polyfit(catMags, np.log(catNs), 1)
-        plt.plot(catMags, np.polyval(fit, catMags), zorder=2)
-        plt.ylabel("log Noise")
-        plt.xlabel("Mag (~log I)")
-        plt.show()
-        plt.title("Measured intensity of reference stars")
-        plt.errorbar(catMags, 2.5*np.log10(catIs), xerr=catMagerrs, yerr=(2.5/np.log(10))*catNs/catIs, fmt='r+', zorder=1)
-        fit = np.polyfit(catMags, 2.5*np.log10(catIs), 1)
-        plt.plot(catMags, np.polyval(fit, catMags), zorder=2)
-        plt.ylabel("log I")
-        plt.xlabel("Mag (catalog)")
-        plt.show()
-        nums, bins, patches = plt.hist(catX2dofs, bins=30)
-        plt.xlabel("X2/dof")
-        plt.ylabel("Counts")
-        plt.title("Reference star fit qualities")
-        plt.show()
+        magplt.noise_corr_plot(insMags, catNs)
+        #photometric solution between instrumental magnitudes vs catalog
+        magplt.phot_sol(insMags, insMagerrs, catMags, catMagerrs)
+        if band == 'B':
+            magplt.col_corr(cat, catname, catIDs, insMags, insMagerrs, catMags, catMagerrs)
+        #check reference star fit qualities
+        magplt.X2_hist(catX2dofs)
 
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source

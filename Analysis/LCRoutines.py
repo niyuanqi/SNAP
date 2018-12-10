@@ -139,7 +139,7 @@ def LCsplit(valerrs):
     return mags, errs
 
 #function: filter bad data from light curve
-def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, ras=None, decs=None, flags=None, aflag=None):
+def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lims=None, fs=None, ras=None, decs=None, terrs=None, flags=None, aflag=None):
     '''
     #######################################################################
     # Input                                                               #
@@ -178,6 +178,8 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
     #    ras; list of float ra locations                                  #
     #   decs; list of float dec locations                                 #
     #                                                                     #
+    #  terrs; list of time errors                                         #
+    #                                                                     #
     #  flags; list of str flags defining what values in strs would cause  #
     #         all corresponding light curve values to be purged.          #
     #                                                                     #
@@ -211,6 +213,9 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
     #                                                                     #
     #    ras; list of float ra locations                                  #
     #   decs; list of float dec locations                                 #
+    #         bad elements defined by flags, snrs, and lims were purged.  #
+    #                                                                     #
+    #  terrs; list of time errors                                         #
     #         bad elements defined by flags, snrs, and lims were purged.  #
     #######################################################################
     '''
@@ -275,10 +280,13 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         if decs is not None:
             decs[i] = decs[i][index]
             retlist += [decs]
+        if terrs is not None:
+            terrs[i] = terrs[i][index]
+            retlist += [terrs]
     return retlist
 
 #function: crop time segment from dataset
-def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None):
+def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None, terr=None):
     '''
     ##############################################
     # Input                                      #
@@ -287,12 +295,14 @@ def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None):
     #  M_err; array of magnitude errors          #
     #   Mlim; array of limiting magnitudes       #
     #      t: array of time                      #
+    #   terr: array of time errors               #
     #     t1: start of time segment crop         #
     #     t2: end of time segment crop           #
     # ------------------------------------------ #
     # Output                                     #
     # ------------------------------------------ #
     #      t: cropped time array                 #
+    #   terr: cropped array of time errors       #
     #      M: cropped magnitude array            #
     #  M_err; cropped error array                #
     #   Mlim; cropped limiting magnitude array   #
@@ -308,6 +318,8 @@ def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None):
         retlist += [SN[index]]
     if Mlim is not None:
         retlist += [Mlim[index]]
+    if terr is not None:
+        retlist += [terr[index]]
     return retlist
 
 #function: return first difference (color) between a set of light curves
@@ -351,7 +363,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: load light curve from text file
-def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, scols=None, flags=None, aflag=None, mode='single'):
+def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):
     '''
     #######################################################################
     # Input                                                               #
@@ -387,8 +399,10 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #     fcols; int location of filename indicator column (multi) or     #
     #            location of filename columns (single).                   #
     #                                                                     #
-    #    racols; list of RA (if given)                                    #
-    #   deccols; list of DEc (if given)                                   #
+    #    racols; int location of RA column (if given)                     #
+    #   deccols; int location of DEc column (if given)                    #
+    #                                                                     #
+    #  terrcols; int location of time error columns (if given)            #
     #                                                                     #
     #     scols; int location of comments column (multi) or location of   #
     #            comments columns (single).                               #
@@ -423,8 +437,11 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     #                                                                     #
     #     fs; list of filename arrays (if given) where bad elements       #
     #         defined by flags, snrs, and lims were purged.               #
+    #                                                                     #
     #     ra; list of RA (if given)                                       #
-    #    dec; list of DEc (if given)                                      #
+    #    dec; list of DEC (if given)                                      #
+    #                                                                     #
+    #  terrs; list of terr (if given)                                     #
     #######################################################################
     '''
     #check load mode, multifile or singlefile
@@ -485,6 +502,11 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
             decs = np.loadtxt(filenames,usecols=deccols,comments=';',unpack=True)
         else: #no strings given
             decs = [np.array([0]*len(t)) for t in ts]
+        if terrcols is not None:
+            #extract comments from files
+            terrs = np.loadtxt(filenames,usecols=terrcols,comments=';',unpack=True)
+        else: #no strings given
+            terrs = [np.array([0]*len(t)) for t in ts]
             
     elif mode == 'multi':
         #load from each file
@@ -575,21 +597,30 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
                 decs.append(dec)
         else: #no strings given
             decs = [np.array([0]*len(t)) for t in ts]
+        if terrcols is not None:
+            #extract comments from files
+            terrs = []
+            for filename in filenames:
+                #load comment column
+                terr = np.loadtxt(filename,usecols=(terrcols,),comments=';',unpack=True)
+                terrs.append(terr)
+        else: #no strings given
+            terrs = [np.array([0]*len(t)) for t in ts]
     
     #check if SN filter is applied
     if SNthres is not None:
         #filter out bad data with all information
-        ts, mags, errs, fluxes, snrs, lims, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
+        ts, mags, errs, fluxes, snrs, lims, fs, ras, decs, terrs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, nthres=SNthres, lims=lims, fs=fs, ras=ras, decs=decs, terrs=terrs, flags=flags, aflag=aflag)
     #check if SNR are given
     else:
         #check if limiting magnitudes are given
         if limcols is not None:
             #filter out bad data with all information
-            ts, mags, errs, fluxes, snrs, lims, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
+            ts, mags, errs, fluxes, snrs, lims, fs, ras, decs, terrs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, lims=lims, fs=fs, ras=ras, decs=decs, terrs=terrs, flags=flags, aflag=aflag)
         else:
             if flags is not None:
                 #filter out bad data with all information
-                ts, mags, errs, fluxes, snrs, fs, ras, decs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, ras=ras, decs=decs, flags=flags, aflag=aflag)
+                ts, mags, errs, fluxes, snrs, fs, ras, decs, terrs = LCpurify(ts, mags, errs, strs=strs, fluxes=fluxes, snrs=snrs, fs=fs, ras=ras, decs=decs, terrs=terrs, flags=flags, aflag=aflag)
             
     #convert mags to float
     mags = [mag.astype(float) for mag in mags]
@@ -612,6 +643,8 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         retlist += [ras]
     if deccols is not None:
         retlist += [decs]
+    if terrcols is not None:
+        retlist += [terrs]
     #return arrays of data
     return retlist
 
