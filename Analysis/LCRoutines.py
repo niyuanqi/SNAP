@@ -362,8 +362,8 @@ def LCcolors(ts, mags, errs):
     #return first difference light curves
     return tdiff, diffs, derrs
 
-#function: return corrected B band colors based on V band correlation
-def BVcorrection(ts, mags, errs, Bcol=0, Vcol=1):
+#function: return corrected B band magnitude based on V band correlation
+def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1):
     '''
     #######################################################################
     # Input                                                               #
@@ -400,6 +400,74 @@ def BVcorrection(ts, mags, errs, Bcol=0, Vcol=1):
     errcs[Bcol] = Bout_err
     #return corrected light curves
     return tcs, magcs, errcs
+
+#function: return corrected B band magnitude based on V band correlation
+#only to be applied over short times, where B-V doesn't vary much
+def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   mags: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #   errs: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitude errors in float.        #
+    #                                                                     #
+    #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
+    #         array of time (in float) corresponding to the light curve.  #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #    tcs: list of time arrays.                                        #
+    #                                                                     #
+    #  magcs: list of corrected light curves.                             #
+    #                                                                     #
+    #  errcs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    import copy
+    from scipy.optimize import curve_fit
+    from SNAP.Analysis.Cosmology import flux_0
+    from SNAP.Analysis.LCFitting import linfunc
+    
+    tce, Fce, SNce = copy.deepcopy(te), copy.deepcopy(Fe), copy.deepcopy(SNe)
+    #B band correlation with B-V
+    c = 0.27
+    #correct B band
+    Bin, Bin_err = Fe[0], Fe[0]/SNe[0]
+    #compute B-V color
+    tdiff, C, C_err = LCcolors(ts, mags, errs)
+    tBV, BV, BV_err = tdiff[0], C[0], C_err[0]
+    import matplotlib.pyplot as plt
+    plt.errorbar(tBV, BV, BV_err, fmt='k-')
+    plt.show()
+    #take only relevant interval
+    mask = np.logical_and(tBV>te[0][0], tBV<te[0][-1])
+    tBV, BV, BV_err = tBV[mask], BV[mask], BV_err[mask]
+    #interpolate
+    popt, pcov = curve_fit(linfunc,tBV,BV,p0=[0.0,0.0],sigma=BV_err,absolute_sigma=True)
+    perr = np.sqrt(np.diag(pcov))
+    #color at flux epochs
+    BVe = popt[0]*te[0] + popt[1]
+    print popt, perr
+    BVe_err = np.sqrt(perr[1]**2 + (te[0]*perr[0])**2)
+    #plot fit
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.title("B-V fit interpolation")
+        plt.errorbar(tBV, BV, yerr=BV_err, fmt='k-')
+        plt.errorbar(te[0], BVe, yerr=BVe_err, fmt='g-')
+        plt.xlabel("Time")
+        plt.ylabel("B-V")
+        plt.show()
+    #correct flux
+    Bout = Bin*np.power(10., (-c/(1.-c))*(BVe/2.5))
+    Bout_err = Bout*np.sqrt((Bin_err/Bin)**2+(c*np.log(10)*BVe_err/(2.5*(1.-c)))**2)
+    Fce[0] = Bout
+    SNce[0] = Bout/Bout_err
+    #return corrected light curves
+    return tce, Fce, SNce
 
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):

@@ -377,6 +377,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             magplt.col_corr(cat, catname, catIDs, insMags, insMagerrs, catMags, catMagerrs)
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
+        print ""
 
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source
