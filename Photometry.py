@@ -350,7 +350,7 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     #filter out saturated pixels
     x, y, intens = PSFclean(x,y,intens,intens,skyN,sat,10,10)
     
-    if 1:
+    try:
         #fit 2d fixed psf to background subtracted source light
         est = [image[int(y0)][int(x0)],x0,y0]
         bounds = ([-float("Inf"),0,0],[float("Inf"),image.shape[1],image.shape[0]])
@@ -386,12 +386,12 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         #calculate goodness of fit
         I_theo = E2moff((x, y),*PSFpopt)
         X2dof = np.sum(np.square((intens-I_theo)/np.sqrt(np.absolute(intens)+skyN**2)))/(len(intens)-len(fitpopt))
-    #except:
+    except:
         #catastrophic failure of PSF fitting
-    #    print "PSF fitting catastrophic failure"
-    #    PSFpopt = [0]*7
-    #    PSFperr = [0]*7
-    #    X2dof = 0
+        print "PSF fitting catastrophic failure"
+        PSFpopt = [0]*7
+        PSFperr = [0]*7
+        X2dof = 0
     if verbosity > 0:
         print "PSF moffat fit parameters"
         print "[A,ax,ay,b,theta,X0,Y0] = "+str(PSFpopt)
