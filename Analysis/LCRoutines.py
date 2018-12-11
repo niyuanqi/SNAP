@@ -439,9 +439,6 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
     #compute B-V color
     tdiff, C, C_err = LCcolors(ts, mags, errs)
     tBV, BV, BV_err = tdiff[0], C[0], C_err[0]
-    import matplotlib.pyplot as plt
-    plt.errorbar(tBV, BV, BV_err, fmt='k-')
-    plt.show()
     #take only relevant interval
     mask = np.logical_and(tBV>te[0][0], tBV<te[0][-1])
     tBV, BV, BV_err = tBV[mask], BV[mask], BV_err[mask]
