@@ -10,7 +10,7 @@
 import numpy as np
 
 #maximum fev for curve_fit
-maxfev = 100000
+maxfev = 1000
 
 #class: exception to clarify cause of crash as missing object in image
 class MissingError(Exception):
