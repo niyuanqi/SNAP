@@ -123,15 +123,14 @@ def SkyFit(image, x0, y0, fitsky, fwhm=5.0, sat=40000.0, verbosity=0):
         fitsky = [fitsky]
 
     #get background sky annulus
-    annulus0, x0, y0 = ap_multi(image, x0, y0, fitsky, 3*fwhm, 4*fwhm)
     annulus1, x1, y1 = ap_multi(image, x0, y0, fitsky, 4*fwhm, 5*fwhm)
     annulus2, x2, y2 = ap_multi(image, x0, y0, fitsky, 5*fwhm, 6*fwhm)
-    #annulus3, x3, y3 = ap_multi(image, x0, y0, fitsky, 6*fwhm, 7*fwhm)
+    annulus3, x3, y3 = ap_multi(image, x0, y0, fitsky, 6*fwhm, 7*fwhm)
     #annulus4, x4, y4 = ap_multi(image, x0, y0, fitsky, 7*fwhm, 10*fwhm)
     #annulus5, x5, y5 = ap_multi(image, x0, y0, fitsky, 10*fwhm, 12*fwhm)
-    xs = [x0,x1,x2]
-    ys = [y0,x1,y2]
-    annuli = [annulus0, annulus1, annulus2]
+    xs = [x1,x2,x3]
+    ys = [y1,y2,y3]
+    annuli = [annulus1, annulus2, annulus3]
     colors = ['m','r','y']
     #check all annuli
     B = np.zeros(len(annuli))
