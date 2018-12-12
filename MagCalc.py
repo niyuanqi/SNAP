@@ -342,7 +342,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         elif aperture <= 0:
             #perform aperture photometry
             #use FWHM of catPSF to define Kron aperture
-            I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=PSF, fitsky=True, verbosity=verbosity-1)
+            I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, PSF=catPSF, fitsky=True, verbosity=verbosity-1)
         else:
             #use aperture given directly
             I, SN = pht.Ap_photometry(catimage, x0, y0, skypopt, skyN, radius=aperture, fitsky=True, verbosity=verbosity-1)
