@@ -237,7 +237,7 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
         #check for string comments
         if strs is not None:
             #str flag values
-            sflags = ['BAD_IMAGE', 'SATURATED', 'FALSE_DET']+flags
+            sflags = ['BAD_IMAGE', 'SATURATED', 'FALSE_DET']
             #remove elements with bad sflag value
             if flags is not None:
                 for sflag in sflags:
@@ -452,6 +452,7 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
     #plot fit
     if plot:
         import matplotlib.pyplot as plt
+        print "Plotting color interpolation"
         plt.title("B-V fit interpolation")
         plt.errorbar(tBV, BV, yerr=BV_err, fmt='k-')
         plt.errorbar(te[0], BVe, yerr=BVe_err, fmt='g-')
