@@ -4,7 +4,7 @@ SuperNova Analysis Package
 Performs data analysis and processing on images containing transient sources.
 Implements python routines for performing photometry, astrometry, etc. Also can analyse supernova type 1a light curves.
 
-The flagship program is MagCalc.py.
+The flagship program is MagCalc.py. This [document](KMTNet_Photometry.pdf) contains some explanation of how it does photometry works.
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
