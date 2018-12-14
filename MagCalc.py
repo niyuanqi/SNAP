@@ -439,13 +439,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             Ir = fluxes[bands[band]]*np.power(10,-catMags/2.5)*Io[i]/catIs
             Io_err = Io[i]/SNo[i]
             catI_err = catIs/catSNs
-            Ir_err = Ir*np.sqrt(np.square(1/SNo[i])+np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
+            Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
 
             #calculate weighted mean
             w = 1/np.square(Ir_err)
             I[i] = np.sum(Ir*w)/np.sum(w)
-            I_err = np.sqrt(1/np.sum(w))
-            #I_err = np.sqrt((I[i]*Io_err/Io[i])**2 + I_rand**2)
+            I_rand = np.sqrt(1/np.sum(w))
+            I_err = np.sqrt((I[i]*Io_err/Io[i])**2 + I_rand**2)
             JN = I[i]/Io[i] #jansky - data number conversion, uJy/#
 
             #if verbosity > 0:
