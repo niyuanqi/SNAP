@@ -48,7 +48,7 @@ def phot_sol(insMags, insMagerrs, catMags, catMagerrs):
     plt.show()
 
 #function: plot B band color correlation
-def col_corr(cat, catname, catIDs, insMags, insMagerrs, catMags, catMagerrs):
+def col_corr(cat, catname, catIDs, radius, insMags, insMagerrs, catMags, catMagerrs):
     #essential extra imports
     from scipy.optimize import curve_fit
     from SNAP.Analysis.LCFitting import linfunc
