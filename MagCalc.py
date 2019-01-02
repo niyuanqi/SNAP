@@ -374,7 +374,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #photometric solution between instrumental magnitudes vs catalog
         magplt.phot_sol(insMags, insMagerrs, catMags, catMagerrs)
         if band == 'B':
-            magplt.col_corr(cat, catname, catIDs, radius, insMags, insMagerrs, catMags, catMagerrs)
+            magplt.col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
         print ""
