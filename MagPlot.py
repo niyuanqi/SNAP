@@ -75,6 +75,11 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     BV = catMags - V
     BV_err = np.sqrt(catMagerrs**2 + np.square(Verr))
     plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
+    #average B-V color
+    w = 1/np.square(BV_err)
+    BV_mean = np.sum(BV*w)/np.sum(w)
+    BV_merr = np.sqrt(1/np.sum(w))
+    print "Average color (B-V):", BV_mean, "+/-", BV_merr 
     #fit color dependence
     popt, pcov = curve_fit(linfunc,BV,dI,p0=[0.27,28.1])
     perr = np.sqrt(np.diag(pcov))
