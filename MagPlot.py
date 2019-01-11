@@ -54,26 +54,54 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     from SNAP.Analysis.LCFitting import linfunc
     import Catalog as ctlg
     #load V band data
-    if cat == 'phot':
-        IDV, RAV, DECV, catMV, catMerrV = ctlg.catPhot(catname,band='V')
-    elif cat == 'dprs':
-        IDV, RAV, DECV, catMV, catMerrV = ctlg.catDPRS(catname,band='V')
-    elif cat == 'diff':
-        IDV, RAV, DECV, catMV, catMerrV = ctlg.catDiff(catname,band='V')
-    elif cat == 'aavso':
+    if cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
-        IDV, RAV, DECV, catMV, catMerrV = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'V',out=catname)
+        IDBV, RABV, DECBV, catBV, catBVerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'B-V',out=catname)
+        B, Berr = [], []
+        KB, KBerr = [], []
+        BV, BV_err = [], []
+        for i in range(len(catBV)):
+            if IDBV[i] in catIDs:
+                Bid = [catid for catid in catIDs if catid == IDV[i]][0]
+                B.append(catMags[Bid])
+                Berr.append(catMagerrs[Bid])
+                KB.append(insMags[Bid])
+                KBerr.append(insMagerrs[Bid])
+                BV.append([catBV[i]])
+                BV_err.append([catBVerr[i]])
+        B, Berr = np.array(B), np.array(Berr)
+        KB, KBerr = np.array(KB), np.array(KBerr)
+        BV, BV_err = np.array(BV), np.array(BV_err)
+    else:
+        #fetch V band magnitudes
+        if cat == 'phot':
+            IDV, RAV, DECV, catMV, catMerrV = ctlg.catPhot(catname,band='V')
+        elif cat == 'dprs':
+            IDV, RAV, DECV, catMV, catMerrV = ctlg.catDPRS(catname,band='V')
+        elif cat == 'diff':
+            IDV, RAV, DECV, catMV, catMerrV = ctlg.catDiff(catname,band='V')
+        #compute B-V
+        B, Berr = [], []
+        KB, KBerr = [], []
+        V , Verr = [], []
+        for i in range(len(catMV)):
+            if IDV[i] in catIDs:
+                Bid = [catid for catid in catIDs if catid == IDV[i]][0]
+                B.append(catMags[Bid])
+                Berr.append(catMagerrs[Bid])
+                KB.append(insMags[Bid])
+                KBerr.append(insMagerrs[Bid])
+                V.append(catMV[i])
+                Verr.append(catMerrV[i])
+        B, Berr = np.array(B), np.array(Berr)
+        KB, KBerr = np.array(KB), np.array(KBerr)
+        V, Verr = np.array(V), np.array(Verr)
+        BV = B-V
+        BV_err = np.sqrt(np.square(Berr) + np.square(Verr))
     #photometric solution color dependence
     plt.title("B band dependence on B-V")
-    dI = catMags - insMags
-    dI_err = np.sqrt(catMagerrs**2 + insMagerrs**2)
-    V , Verr = [], []
-    for i in range(len(catMV)):
-        if IDV[i] in catIDs:
-            V.append(catMV[i])
-            Verr.append(catMerrV[i])
-    BV = catMags - V
-    BV_err = np.sqrt(catMagerrs**2 + np.square(Verr))
+    dI = B - KB
+    dI_err = np.sqrt(Berr**2 + KBerr**2)
     plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
     #average B-V color
     w = 1/np.square(BV_err)

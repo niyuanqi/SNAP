@@ -114,7 +114,7 @@ def Mag_toFlux(band, mag, mag_err=None):
     flux = flux_0[bands[band]]*np.power(10,mag/-2.5)
     if mag_err is not None:
         #calculate errors
-        flux_err = flux*np.log(10)*mag_err/-2.5
+        flux_err = flux*np.log(10)*mag_err/2.5
         return flux, flux_err
     else:
         #don't calculate errors
@@ -125,7 +125,7 @@ def Flux_toMag(band, flux, flux_err=None):
     mag =  -2.5 * np.array([np.log10(m) for m in mod])
     if flux_err is not None:
         #calculate errors
-        mag_err = -2.5*flux_err/(np.log(10)*flux)
+        mag_err = 2.5*flux_err/(np.log(10)*flux)
         return mag, mag_err
     else:
         #don't calculate errors

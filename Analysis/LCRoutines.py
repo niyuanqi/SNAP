@@ -363,7 +363,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: return corrected B band magnitude based on V band correlation
-def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1):
+def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, cBV=0, cBVerr=0):
     '''
     #######################################################################
     # Input                                                               #
@@ -376,6 +376,12 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1):
     #                                                                     #
     #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
     #         array of time (in float) corresponding to the light curve.  #
+    #                                                                     #
+    #   Bcol: index of B band column                                      #
+    #   Vcol: index of V band column                                      #
+    #                                                                     #
+    #    cBV: correction factor of reference star colors cBV=0.370<B-V>_r #
+    # cBVerr: error in above correction factor                            #
     # ------------------------------------------------------------------- #
     # Output                                                              #
     # ------------------------------------------------------------------- #
@@ -394,8 +400,9 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1):
     Bin, Bin_err = mags[Bcol], errs[Bcol]
     Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
     Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
-    Bout = (1./(1.-c))*(-Vin*c + Bin)
+    Bout = (1./(1.-c))*(-Vin*c + Bin) - cBV
     Bout_err = (1./(1.-c))*np.sqrt(np.square(c*Vin_err)+np.square(Bin_err))
+    Bout_err = np.sqrt(np.square(Bout_err) + cBV_err**2)
     magcs[Bcol] = Bout
     errcs[Bcol] = Bout_err
     #return corrected light curves
