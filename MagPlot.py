@@ -99,7 +99,6 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
         BV = B-V
         BV_err = np.sqrt(np.square(Berr) + np.square(Verr))
     #photometric solution color dependence
-    plt.title("B band dependence on B-V")
     dI = B - KB
     dI_err = np.sqrt(Berr**2 + KBerr**2)
     #average B-V color
@@ -109,8 +108,9 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     BV_merr = np.sqrt(1/np.sum(w))
     print "Average color (B-V):", BV_mean, "+/-", BV_merr 
     #fit color dependence
+    plt.title("B band dependence on B-V")
     plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
-    popt, pcov = curve_fit(linfunc,BV,dI,sigma=dI_err,p0=[0.27,28.1],absolute_sigma=True)
+    popt, pcov = curve_fit(linfunc,BV,dI,sigma=dI_err,p0=[0.27,27.8],absolute_sigma=True)
     perr = np.sqrt(np.diag(pcov))
     colsol = linfunc(BV, *popt)
     print "Color correlation:",popt, perr
