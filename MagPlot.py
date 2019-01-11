@@ -110,7 +110,8 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     #fit color dependence
     plt.title("B band dependence on B-V")
     plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
-    popt, pcov = curve_fit(linfunc,BV,dI,p0=[0.27,27.8])
+    popt, pcov = curve_fit(linfunc,BV,dI,p0=[0.27,27.8],
+                           sigma=dI_err,absolute_sigma=True)
     perr = np.sqrt(np.diag(pcov))
     colsol = linfunc(BV, *popt)
     print "Color correlation:",popt, perr
