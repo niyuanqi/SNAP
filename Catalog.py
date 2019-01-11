@@ -13,7 +13,7 @@ import numpy as np
 #function: load AAVSO catalog from online
 def catAAVSO(radeg,decdeg,fovam,band,out=False):
     import os
-    from Vizier import *
+    from Vizier import aavso, aavso_static
 
     #output file supplied?
     if out:
