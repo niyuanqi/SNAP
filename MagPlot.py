@@ -104,6 +104,7 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     dI_err = np.sqrt(Berr**2 + KBerr**2)
     plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
     #average B-V color
+    BV_err = [BV_err[i] if BV_err[i] > 0 else 0.0005 for i in range(len(BV))]
     w = 1/np.square(BV_err)
     BV_mean = np.sum(BV*w)/np.sum(w)
     BV_merr = np.sqrt(1/np.sum(w))
