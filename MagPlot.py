@@ -62,7 +62,7 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
         BV, BV_err = [], []
         for i in range(len(catBV)):
             if IDBV[i] in catIDs:
-                Bid = [catid for catid in catIDs if catid == IDBV[i]][0]
+                Bid = list(catIDs).index(IDBV[i])
                 B.append(catMags[Bid])
                 Berr.append(catMagerrs[Bid])
                 KB.append(insMags[Bid])
@@ -86,7 +86,7 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
         V , Verr = [], []
         for i in range(len(catMV)):
             if IDV[i] in catIDs:
-                Bid = [catid for catid in catIDs if catid == IDV[i]][0]
+                Bid = list(catIDs).index(IDV[i])
                 B.append(catMags[Bid])
                 Berr.append(catMagerrs[Bid])
                 KB.append(insMags[Bid])
