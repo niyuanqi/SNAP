@@ -110,7 +110,7 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     BV_merr = np.sqrt(1/np.sum(w))
     print "Average color (B-V):", BV_mean, "+/-", BV_merr 
     #fit color dependence
-    popt, pcov = curve_fit(linfunc,BV,dI,sigma=dI_err,p0=[0.27,28.1])
+    popt, pcov = curve_fit(linfunc,BV,dI,sigma=dI_err,p0=[0.27,28.1],absolute_sigma=True)
     perr = np.sqrt(np.diag(pcov))
     colsol = linfunc(BV, *popt)
     print "Color correlation:",popt, perr
