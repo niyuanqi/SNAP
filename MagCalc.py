@@ -183,6 +183,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
         if band == 'I':
+            if verbosity > 0:
+                print "Performing AAVSO i -> I band conversion (Jodri 2006)"
             IDi, RAi, DECi, catMi, catMierr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'i',out=catname)
             IDr, RAr, DECr, catMr, catMrerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'r',out=catname)
             ID, RA, DEC, catM, catMerr = [], [], [], [], []
