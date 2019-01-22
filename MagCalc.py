@@ -199,7 +199,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                     DEC.append(DECi[i])
                     #Jodri 2006 general stars transform
                     catMI = 1.083*catMi[i] - 0.083*catMr[j] - 0.376
-                    catMIerr = np.sqrt((catMi[i]*0.006)**2 + (catMr[j]*0.006)**2 + (0.004)**2 + (1.083*catMierr[i])**2 + (0.083*catMrerr[j])**2)
+                    catMIerr = np.sqrt(((catMr[j]-catMi[i])*0.006)**2 + (0.004)**2 + (1.083*catMierr[i])**2 + (0.083*catMrerr[j])**2)
                     catM.append(catMI)
                     catMerr.append(catMIerr)
             ID, RA, DEC, catM, catMerr = np.array(ID), np.array(RA), np.array(DEC), np.array(catM), np.array(catMerr)
