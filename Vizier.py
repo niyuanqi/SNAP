@@ -39,8 +39,8 @@ def aavso(radeg,decdeg,fovam,band,out=False):
 def aavso_static(lines, band):
     RAcol = 1
     DEcol = 2
-    bands = {'B-V':8, 'B': 12, 'V': 10, 'I': 18}
-    banderrs = {'B-V':9, 'B': 13, 'V': 11, 'I': 19}
+    bands = {'B-V':8, 'B': 12, 'V': 10, 'i': 18, 'r': 16}
+    banderrs = {'B-V':9, 'B': 13, 'V': 11, 'i': 19, 'r': 17}
     null = '      '
 
     #parse text

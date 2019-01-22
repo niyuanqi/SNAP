@@ -182,7 +182,27 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         ID, RA, DEC, catM, catMerr = ctlg.catDiff(catname,band=band)
     elif cat == 'aavso':
         fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
-        ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
+        if band == 'I':
+            IDi, RAi, DECi, catMi, catMierr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'i',out=catname)
+            IDr, RAr, DECr, catMr, catMrerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'r',out=catname)
+            ID, RA, DEC, catM, catMerr = [], [], [], [], []
+            for i in range(len(IDi)):
+                #for each ID in i band
+                if IDi[i] in IDr:
+                    #if also in r band
+                    j = list(IDr).index(IDi[i]) #here it is
+                    #get I band from i and r
+                    ID.append(IDi[i])
+                    RA.append(RAi[i])
+                    DEC.append(DECi[i])
+                    #Jodri 2006 general stars transform
+                    catMI = 1.083*catMi[i] - 0.083*catMr[j] - 0.376
+                    catMIerr = np.sqrt((catMi[i]*0.006)**2 + (catMr[j]*0.006)**2 + (0.004)**2 + (1.083*catMierr[i])**2 + (0.083*catMrerr[j])**2)
+                    catM.append(catMI)
+                    catMerr.append(catMIerr)
+            ID, RA, DEC, catM, catMerr = np.array(ID), np.array(RA), np.array(DEC), np.array(catM), np.array(catMerr)
+        else:
+            ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
     
     #convert position of catalog stars to world coordinates
     catX, catY = wcs.all_world2pix(RA, DEC, 0)

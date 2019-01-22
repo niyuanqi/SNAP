@@ -363,7 +363,7 @@ def LCcolors(ts, mags, errs):
     return tdiff, diffs, derrs
 
 #function: return corrected B band magnitude based on V band correlation
-def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, cBV=0, cBVerr=0):
+def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     '''
     #######################################################################
     # Input                                                               #
@@ -380,8 +380,8 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, cBV=0, cBVerr=0):
     #   Bcol: index of B band column                                      #
     #   Vcol: index of V band column                                      #
     #                                                                     #
-    #    cBV: correction factor of reference star colors cBV=0.370<B-V>_r #
-    # cBVerr: error in above correction factor                            #
+    #   mBVr: mean color of reference stars used mBVr=<B-V>_r             #
+    #mBVrerr: error in above color                                        #
     # ------------------------------------------------------------------- #
     # Output                                                              #
     # ------------------------------------------------------------------- #
@@ -400,13 +400,46 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, cBV=0, cBVerr=0):
     Bin, Bin_err = mags[Bcol], errs[Bcol]
     Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
     Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
-    Bout = (1./(1.-c))*(-Vin*c + Bin) - cBV
-    Bout_err = (1./(1.-c))*np.sqrt(np.square(c*Vin_err)+np.square(Bin_err))
-    Bout_err = np.sqrt(np.square(Bout_err) + cBV_err**2)
+    Bout = (Bin - c*Vin - c*mBVr)/(1.-c)
+    Bout_err = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err)+np.square(c*mBVrerr))/(1.-c)
     magcs[Bcol] = Bout
     errcs[Bcol] = Bout_err
     #return corrected light curves
     return tcs, magcs, errcs
+
+#function: return corrected B band limiting magnitude based reference star B-V
+def BVcorrectLim(ts, lims, Bcol=0, mBVr=0):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   lims: list of det limits (eg. in different bands [B, V, I])       #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
+    #         array of time (in float) corresponding to the light curve.  #
+    #                                                                     #
+    #   Bcol: index of B band column                                      #
+    #                                                                     #
+    #   mBVr: mean color of reference stars used mBVr=<B-V>_r             #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #    tcs: list of time arrays.                                        #
+    #                                                                     #
+    #  limcs: list of corrected det limits.                               #
+    #######################################################################
+    '''
+    import copy
+    tcs, limcs = copy.deepcopy(ts), copy.deepcopy(lims)
+    #B band correlation with B-V
+    c = 0.27
+    #correct B band using Bout = (B-Vin)*c + Bin
+    Bin = lims[Bcol]
+    Bout = Bin - c*mBVr
+    limcs[Bcol] = Bout
+    #return corrected light curves
+    return tcs, limcs
 
 #function: return corrected B band magnitude based on V band correlation
 #only to be applied over short times, where B-V doesn't vary much

@@ -85,6 +85,34 @@ def day_isot(day, year):
     #return isot time
     return (t_ref+t_diff).value
 
+def day_mjd(day, year):
+    '''
+    ################################################################
+    # Desc: Converts day of year float to mjd time.               #
+    # ------------------------------------------------------------ #
+    # Imports: astropy.time.(Time, TimeDelta)                      #
+    # ------------------------------------------------------------ #
+    # Input                                                        #
+    # ------------------------------------------------------------ #
+    #  day: float time in days since start of year YYYY            #
+    # year: int reference year YYYY                                #
+    # ------------------------------------------------------------ #
+    # Output                                                       #
+    # ------------------------------------------------------------ #
+    # time: float time format in mjd                                 #
+    ################################################################
+    '''
+    
+    from astropy.time import Time, TimeDelta
+    
+    #create astropy time object
+    t_ref = str(year)+"-01-01T00:00:00.000"
+    t_ref = Time(t_ref, format='isot', scale='utc')
+    #create astropy time difference object
+    t_diff = TimeDelta(day, format='jd')
+    #return isot time
+    return (t_ref+t_diff).mjd
+
 #function: return RA and DEC of the moon at utc isot time, location
 def moonEQC(time, loc):
     '''
