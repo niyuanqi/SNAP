@@ -48,7 +48,7 @@ def phot_sol(insMags, insMagerrs, catMags, catMagerrs):
     plt.show()
 
 #function: plot B band color correlation
-def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs):
+def Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs):
     #essential extra imports
     from scipy.optimize import curve_fit
     from SNAP.Analysis.LCFitting import linfunc
@@ -118,6 +118,62 @@ def col_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMa
     plt.plot(BV, colsol, zorder=2)
     plt.ylabel("B - b")
     plt.xlabel("B - V")
+    plt.show()
+
+#function: plot B band color correlation
+def Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs):
+    #essential extra imports
+    from scipy.optimize import curve_fit
+    from SNAP.Analysis.LCFitting import linfunc
+    import Catalog as ctlg
+    #fetch V band magnitudes
+    if cat == 'phot':
+        IDV, RAV, DECV, catMV, catMerrV = ctlg.catPhot(catname,band='V')
+    elif cat == 'dprs':
+        IDV, RAV, DECV, catMV, catMerrV = ctlg.catDPRS(catname,band='V')
+    elif cat == 'diff':
+        IDV, RAV, DECV, catMV, catMerrV = ctlg.catDiff(catname,band='V')
+    elif cat == 'aavso':
+        fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
+        IDV, RAV, DECV, catMV, catMerrV = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'V',out=catname)
+    #compute V-I
+    I, Ierr = [], []
+    KI, KIerr = [], []
+    V , Verr = [], []
+    for i in range(len(catMV)):
+        if IDV[i] in catIDs:
+            Iid = list(catIDs).index(IDV[i])
+            I.append(catMags[Iid])
+            Ierr.append(catMagerrs[Iid])
+            KI.append(insMags[Iid])
+            KIerr.append(insMagerrs[Iid])
+            V.append(catMV[i])
+            Verr.append(catMerrV[i])
+    I, Ierr = np.array(I), np.array(Ierr)
+    KI, KIerr = np.array(KI), np.array(KIerr)
+    V, Verr = np.array(V), np.array(Verr)
+    VI = V-I
+    VI_err = np.sqrt(np.square(Verr) + np.square(Ierr))
+    #photometric solution color dependence
+    dI = I - KI
+    dI_err = np.sqrt(Ierr**2 + KIerr**2)
+    #average B-V color
+    VI_err = [VI_err[i] if VI_err[i] > 0 else 0.0005 for i in range(len(VI))]
+    w = 1/np.square(VI_err)
+    VI_mean = np.sum(VI*w)/np.sum(w)
+    VI_merr = np.sqrt(1/np.sum(w))
+    print "Average color (V-I):", VI_mean, "+/-", VI_merr 
+    #fit color dependence
+    plt.title("V band dependence on V-I")
+    plt.errorbar(VI, dI, xerr=VI_err, yerr=dI_err, fmt='r+', zorder=1)
+    popt, pcov = curve_fit(linfunc,VI,dI,p0=[0.27,27.8],
+                           sigma=dI_err,absolute_sigma=True)
+    perr = np.sqrt(np.diag(pcov))
+    colsol = linfunc(VI, *popt)
+    print "Color correlation:",popt, perr
+    plt.plot(VI, colsol, zorder=2)
+    plt.ylabel("I - i")
+    plt.xlabel("V - I")
     plt.show()
 
 #function: plot Chi2 histogram

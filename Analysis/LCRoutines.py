@@ -362,6 +362,72 @@ def LCcolors(ts, mags, errs):
     #return first difference light curves
     return tdiff, diffs, derrs
 
+#function: return corrected B band magnitude based Spectral Corrections
+def ScorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0,
+                Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   mags: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #   errs: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitude errors in float.        #
+    #                                                                     #
+    #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
+    #         array of time (in float) corresponding to the light curve.  #
+    #                                                                     #
+    #   Bcol: index of B band column                                      #
+    #   Vcol: index of V band column                                      #
+    #                                                                     #
+    #   tdiv: dividing time, before which apply spectral information is   #
+    #         insufficient, and we should apply simple BV correction.     #
+    #  tcorr: epochs at which S corrections were measured                 #
+    #  Scorr: spectral correction measured from spectra                   #
+    # SBVega: spectral correction for vega
+    #                                                                     #
+    #   mBVr: mean color of reference stars used mBVr=<B-V>_r             #
+    #mBVrerr: error in above color                                        #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #    tcs: list of time arrays.                                        #
+    #                                                                     #
+    #  magcs: list of corrected light curves.                             #
+    #                                                                     #
+    #  errcs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    import copy
+    tcs, magcs, errcs = copy.deepcopy(ts), copy.deepcopy(mags), copy.deepcopy(errs)
+    #B band correlation with B-V
+    c = 0.27
+    #B band to be corrected
+    Bin, Bin_err = mags[Bcol], errs[Bcol]
+    Bout, Bout_err = magcs[Bcol], errcs[Bcol]
+    #mask times over which Scorrs are valid
+    mask = [ts[Bcol]>=tdiv]
+    #correct B band using Bout = Bin + Scorr
+    scorr = np.interp(tcs[Bcol][mask],tcorr,Scorr)
+    Bout[mask] = Bin[mask] + scorr + SBVega - c*mBVr
+    Bout_err[mask] = np.sqrt(Bin_err[mask]**2 + (c*mBVrerr)**2)
+    
+    #mask times over which Scorrs are invalid
+    mask = [ts[Bcol]<tdiv]
+    #correct B band using Bout = (Bout-Vin)*c + Bin
+    Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
+    Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])
+    Bout[mask] = (Bin[mask] - c*Vin - c*mBVr)/(1.-c)
+    Bout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err[mask])
+                             +np.square(c*mBVrerr))/(1.-c)
+
+    #return corrected magnitudes
+    magcs[Bcol] = Bout
+    errcs[Bcol] = Bout_err
+    #return corrected light curves
+    return tcs, magcs, errcs
+
 #function: return corrected B band magnitude based on V band correlation
 def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     '''
@@ -396,7 +462,7 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     tcs, magcs, errcs = copy.deepcopy(ts), copy.deepcopy(mags), copy.deepcopy(errs)
     #B band correlation with B-V
     c = 0.27
-    #correct B band using Bout = (B-Vin)*c + Bin
+    #correct B band using Bout = (Bout-Vin)*c + Bin
     Bin, Bin_err = mags[Bcol], errs[Bcol]
     Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
     Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
