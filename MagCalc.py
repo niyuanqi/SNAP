@@ -203,6 +203,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                     catM.append(catMI)
                     catMerr.append(catMIerr)
             ID, RA, DEC, catM, catMerr = np.array(ID), np.array(RA), np.array(DEC), np.array(catM), np.array(catMerr)
+            ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'i',out=catname)
         else:
             ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
     

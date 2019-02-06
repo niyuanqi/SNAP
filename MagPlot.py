@@ -109,14 +109,23 @@ def Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
     print "Average color (B-V):", BV_mean, "+/-", BV_merr 
     #fit color dependence
     plt.title("B band dependence on B-V")
-    plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='r+', zorder=1)
+    plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='k+', zorder=1)
     popt, pcov = curve_fit(linfunc,BV,dI,p0=[0.27,27.8],
                            sigma=dI_err,absolute_sigma=True)
     perr = np.sqrt(np.diag(pcov))
     colsol = linfunc(BV, *popt)
+    #mask out 3sig deviators 
+    mask = np.absolute(dI-colsol) < 3*np.std(dI-colsol)
+    plt.scatter(BV[mask], dI[mask], c='r')
+    popt, pcov = curve_fit(linfunc,BV[mask],dI[mask],p0=[0.27,27.8],
+                           sigma=dI_err[mask],absolute_sigma=True)
+    perr = np.sqrt(np.diag(pcov))
+    colsol = linfunc(BV[mask], *popt)
     print "Color correlation:",popt, perr
-    plt.plot(BV, colsol, zorder=2)
-    plt.ylabel("B - b")
+    print "Nstar:",len(BV[mask])
+    print "Pearson:",np.corrcoef(BV[mask],dI[mask])
+    plt.plot(BV[mask], colsol, zorder=2)
+    plt.ylabel("B - inst")
     plt.xlabel("B - V")
     plt.show()
 
@@ -164,16 +173,25 @@ def Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
     VI_merr = np.sqrt(1/np.sum(w))
     print "Average color (V-I):", VI_mean, "+/-", VI_merr 
     #fit color dependence
-    plt.title("V band dependence on V-I")
-    plt.errorbar(VI, dI, xerr=VI_err, yerr=dI_err, fmt='r+', zorder=1)
+    plt.title("I band dependence on V-I")
+    plt.errorbar(VI, dI, xerr=VI_err, yerr=dI_err, fmt='k+', zorder=1)
     popt, pcov = curve_fit(linfunc,VI,dI,p0=[0.27,27.8],
                            sigma=dI_err,absolute_sigma=True)
     perr = np.sqrt(np.diag(pcov))
     colsol = linfunc(VI, *popt)
+    #mask out 3sig deviators 
+    mask = np.absolute(dI-colsol) < 3*np.std(dI-colsol)
+    plt.scatter(VI[mask], dI[mask], c='r')
+    popt, pcov = curve_fit(linfunc,VI[mask],dI[mask],p0=[0.27,27.8],
+                           sigma=dI_err[mask],absolute_sigma=True)
+    perr = np.sqrt(np.diag(pcov))
+    colsol = linfunc(VI[mask], *popt)
     print "Color correlation:",popt, perr
-    plt.plot(VI, colsol, zorder=2)
-    plt.ylabel("I - i")
-    plt.xlabel("V - I")
+    print "Nstar:",len(VI[mask])
+    print "Pearson:",np.corrcoef(VI[mask],dI[mask])
+    plt.plot(VI[mask], colsol, zorder=2)
+    plt.ylabel("i - inst")
+    plt.xlabel("V - i")
     plt.show()
 
 #function: plot Chi2 histogram
