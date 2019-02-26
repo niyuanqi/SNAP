@@ -117,7 +117,8 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
     Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
     Bout = (Bin - c*Vin - c*mBVr)/(1.-c)
-    Bout_err = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err)+np.square(c*mBVrerr))/(1.-c)
+    Bout_err = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err)
+                       +np.square(c*mBVrerr))/(1.-c)
     magcs[Bcol] = Bout
     errcs[Bcol] = Bout_err
     #return corrected light curves
@@ -186,6 +187,7 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
     from scipy.optimize import curve_fit
     from SNAP.Analysis.Cosmology import flux_0
     from SNAP.Analysis.LCFitting import linfunc
+    from SNAP.Analysis.LCRoutines import LCcolors
     
     tce, Fce, SNce = copy.deepcopy(te), copy.deepcopy(Fe), copy.deepcopy(SNe)
     #B band correlation with B-V

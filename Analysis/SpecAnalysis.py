@@ -1,9 +1,10 @@
+
 #################################################################
-# Name:     LCFitting.py                                        #
+# Name:     SpecAnalysis.py                                     #
 # Author:   Yuan Qi Ni                                          #
-# Version:  Oct, 19, 2016                                       #
+# Version:  Feb. 19, 2019                                       #
 # Function: Program contains various models to analyse and fit  #
-#           single-band light curves.                           #
+#           supernova spectra.                                  #
 #################################################################
 
 #essential modules
@@ -30,6 +31,8 @@ def spec_fits(filename, get_err=False, get_meta=False):
         spec = spec_fits[1]
         if get_err:
             spec_err = spec_fits[3]
+    else:
+        spec = spec_fits
     #spectrum flux data
     flux = spec.data
     if spec_meta['BUNIT']=='erg/cm2/s/A':
@@ -183,3 +186,44 @@ def Scorr(filt1,filt2, zerof1,zerof2, syn_spec, syn_err=None, wrange1=None,wrang
         mag2 = filter_mag(filt2, zerof2, syn_spec, wrange2)
         scorr = mag2 - mag1
         return scorr
+
+#function: Gaussian line profile
+def lpGauss(x, A, mu, sig, b):
+    return A*np.exp(-(x-mu)**2/(2.*sig**2)) + b
+    
+#function: fit the center of a line feature
+def fitLine(center, width, spec, spec_err=None, plot=False):
+    from scipy.optimize import curve_fit
+    
+    spec_wave = spec.waveset.value
+    b_est = max(spec(spec_wave, flux_unit='flam').value)
+    mask = np.logical_and(spec_wave < center+width/2.,
+                          spec_wave > center-width/2.)
+    spec_wave = spec_wave[mask]
+    spec_flux = spec(spec_wave, flux_unit='flam').value
+
+    #fit line center
+    
+    est = [-1.0, center, width/2.0, b_est]
+    if spec_err is None:
+        popt, pcov = curve_fit(lpGauss, spec_wave, spec_flux, p0=est,
+                               maxfev=100000)
+    else:
+        spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
+        popt, pcov = curve_fit(lpGauss, spec_wave, spec_flux, p0=est,
+                               sigma=spec_flux_err, maxfev=100000)
+    perr = np.sqrt(np.diag(pcov))
+    
+    #plot best fit
+    if plot:
+        import matplotlib.pyplot as plt
+        
+        plt.plot(spec_wave, spec_flux, c='g')
+        plt.plot(spec_wave, lpGauss(spec_wave, *popt), c='r')
+        plt.title("Gaussian Line Fit")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.show()
+
+    #return line center
+    return popt[1], perr[1]
