@@ -406,12 +406,12 @@ def blackbod(x, T):
     wave = x*1e-8 #angstrom to cm
     h = 6.6260755e-27 #erg*s
     c = 2.99792458e10 #cm/s
-    k = 1.380658e-16 #erg/k
+    k = 1.380658e-16 #erg/K
     freq = c/wave #Hz
     #planck distribution
     p_rad = (2*h*freq**3/c**2)/(np.exp(h*freq/(k*T))-1.0) #erg/s/cm2/rad2/Hz power per area per solid angle per frequency
     #integrated planck over solid angle
-    p_int = np.pi*p_rad #erg/s/cm2/Hz #power per area per frequency [Jy]
+    p_int = np.pi*p_rad #erg/s/cm2/Hz #power per area per frequency [fnu]
     return p_int
 
 #function: normalized planck distribution (wavelength)
@@ -419,22 +419,25 @@ def planck(x, T):
     #black body total flux
     integ = SBlaw(T) #erg/s/cm2
     #blackbody distribution
-    p_int = blackbod(x,T) #erg/s/cm2/Hz #power per area per frequency [Jy]
+    p_int = blackbod(x,T) #erg/s/cm2/Hz #power per area per frequency [fnu]
     #normalized planck distribution
     return (p_int/integ) #1/Hz, luminosity density
 
 #function: fit planck's law for black body temperature, received fraction
-def fitBlackbod(waves, fluxes, fluxerrs, plot=False, ptitle=""):
+def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
 
     from scipy.optimize import curve_fit
 
     #blackbody flux function
-    BBflux = lambda x, T, r : blackbod(x,T)*r
+    BBflux = lambda x, T, r : planck(x,T)*r
     
     #estimate temperature
-    est = [10000.0, 0.05]
+    est = [10000.0, 1e16]
     #fit blackbody temperature
-    popt, pcov = curve_fit(BBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True)
+    if fluxerrs is not None:
+        popt, pcov = curve_fit(BBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True)
+    else:
+        popt, pcov = curve_fit(BBflux, waves, fluxes, p0=est)
     perr = np.sqrt(np.diag(pcov))
     T, Terr = popt[0], perr[0] #K
     r, rerr = popt[1], perr[1] #dimensionless
@@ -444,13 +447,16 @@ def fitBlackbod(waves, fluxes, fluxerrs, plot=False, ptitle=""):
 
         print "Temperature [K]:", T, Terr
         print "Received/Emitted:", r, rerr
-        plt.errorbar(waves, fluxes*1e6, yerr=fluxerrs*1e6, fmt='g+')
-        w = np.linspace(waves[0], waves[-1], 100)
-        plt.plot(w, BBflux(w, T, r)*1e6, c='b',
+        if fluxerrs is not None:
+            plt.errorbar(waves, fluxes, yerr=fluxerrs, fmt='g+')
+        else:
+            plt.plot(waves, fluxes, color='g')
+        w = np.linspace(min(waves), max(waves), 100)
+        plt.plot(w, BBflux(w, T, r), c='b',
                  label="T = {:.0f} ({:.0f}) K\nr = {:.3f} ({:.3f})".format(
                      T, Terr, r, rerr))
         plt.xlabel("Wavelength [A]")
-        plt.ylabel("Flux [uJy]")
+        plt.ylabel("Flux")
         plt.title(ptitle)
         plt.legend(loc='lower right')
         plt.tight_layout()
@@ -625,7 +631,7 @@ def fit_leastchi2(p0, datax, datay, yerr, function, errfunc=False):
         errfunc = function
         
     # Fit
-    pfit, perr = leastsq(errfunc, p0, args=(datax, datay, yerr), full_output=0, maxfev=100000)
+    pfit, ier = leastsq(errfunc, p0, args=(datax, datay, yerr), full_output=0, maxfev=100000)
     return pfit
 
 #function: bootstrap fitting method (Pedro Duarte)

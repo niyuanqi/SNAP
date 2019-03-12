@@ -1,4 +1,3 @@
-
 #################################################################
 # Name:     SpecAnalysis.py                                     #
 # Author:   Yuan Qi Ni                                          #
@@ -108,6 +107,51 @@ def filter_vega_zp(filterfile, filterzero):
     mag_0 = -2.512*np.log10(flux/filterzero)
     return mag_0
 
+#function: evaluates flux of spectrum in filter system
+def filter_flux(filterfile, syn_spec, syn_err=None, wrange=None):
+    '''
+    ######################################################
+    # Input                                              #
+    # -------------------------------------------------- #
+    # filterfile: file containing filter function        #
+    #   syn_spec: synphot spectrum object of source      #
+    #     wrange: (start,end) observed wavelength range  #
+    # -------------------------------------------------- #
+    # Output                                             #
+    # -------------------------------------------------- #
+    # flux: flux of source in filter system.             #
+    ######################################################
+    '''
+    from synphot import SpectralElement, Observation, Empirical1D, SourceSpectrum
+    import astropy.units as u
+    
+    #Load ascii filter function
+    if filterfile.split('/')[-1][:6] == 'Bessel':
+        filt = SpectralElement.from_file(filterfile, wave_unit='nm')
+    else:
+        filt = SpectralElement.from_file(filterfile, wave_unit='AA')
+    if wrange is None:
+        fwave = filt.waveset
+        swave = syn_spec.waveset
+        wrange = (max(fwave[0],swave[0]),min(fwave[-1],swave[-1]))
+    #Synthetic observation
+    obs = Observation(syn_spec, filt, force='extrap')
+    flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    #Synthetic observation of error spectrum
+    if syn_err is not None:
+        #square filter and error spectrum
+        filt2 = SpectralElement(Empirical1D, points=fwave,
+                          lookup_table=np.square(filt(fwave)))
+        pseudo_flux = np.square(syn_err(swave,flux_unit='jy')).value
+        syn_err2 = SourceSpectrum(Empirical1D, points=swave,
+                                   lookup_table=pseudo_flux)
+        #sum errors in quadrature
+        obs = Observation(syn_err2, filt2, force='extrap')
+        flux_err = np.sqrt(obs.effstim(waverange=wrange).value)
+        return flux, flux_err
+    else:
+        return flux
+
 #function: evaluates magnitudes of spectrum in filter system
 def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
     '''
@@ -158,6 +202,10 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
     else:
         return mag
 
+#################################################################
+# Spectral Filter Corrections                                   #
+#################################################################
+
 #function: evaluate S correction on Vega spectrum from filt1 to filt2
 def Scorr_vega(filt1,filt2, zerof1,zerof2):
     from synphot import SourceSpectrum
@@ -187,13 +235,19 @@ def Scorr(filt1,filt2, zerof1,zerof2, syn_spec, syn_err=None, wrange1=None,wrang
         scorr = mag2 - mag1
         return scorr
 
-#function: Gaussian line profile
-def lpGauss(x, A, mu, sig, b):
-    return A*np.exp(-(x-mu)**2/(2.*sig**2)) + b
+#################################################################
+# Spectral Line Fitting                                         #
+#################################################################
+
+#function: Skewed Gaussian line profile
+def lpNorm(x, A, mu, sig, skew, b):
+    from scipy.stats import skewnorm, beta
+
+    return A*skewnorm.pdf((x-mu)/sig, skew) + b
     
 #function: fit the center of a line feature
 def fitLine(center, width, spec, spec_err=None, plot=False):
-    from scipy.optimize import curve_fit
+    from scipy.optimize import curve_fit, minimize
     
     spec_wave = spec.waveset.value
     b_est = max(spec(spec_wave, flux_unit='flam').value)
@@ -204,26 +258,29 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
 
     #fit line center
     
-    est = [-1.0, center, width/2.0, b_est]
+    est = [-1.0, center, width/2.0, 0.0, b_est]
     if spec_err is None:
-        popt, pcov = curve_fit(lpGauss, spec_wave, spec_flux, p0=est,
+        popt, pcov = curve_fit(lpNorm, spec_wave, spec_flux, p0=est,
                                maxfev=100000)
     else:
         spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
-        popt, pcov = curve_fit(lpGauss, spec_wave, spec_flux, p0=est,
+        popt, pcov = curve_fit(lpNorm, spec_wave, spec_flux, p0=est,
                                sigma=spec_flux_err, maxfev=100000)
     perr = np.sqrt(np.diag(pcov))
+    min_wave = minimize(lambda x: 1e20*lpNorm(x, *popt), [popt[1]])['x'][0]
     
     #plot best fit
     if plot:
         import matplotlib.pyplot as plt
         
         plt.plot(spec_wave, spec_flux, c='g')
-        plt.plot(spec_wave, lpGauss(spec_wave, *popt), c='r')
-        plt.title("Gaussian Line Fit")
+        plt.plot(spec_wave, lpNorm(spec_wave, *popt), c='r')
+        plt.title("Skewed Gaussian Line Fit")
         plt.xlabel("Wavelength [A]")
         plt.ylabel("Flux [flam]")
         plt.show()
 
     #return line center
-    return popt[1], perr[1]
+    return min_wave, perr[1]
+
+
