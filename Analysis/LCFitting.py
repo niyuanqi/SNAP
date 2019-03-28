@@ -88,11 +88,11 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
             dM15s[j] = dM15
                            
         #average parameters among monte carlo datasets
-        fit_err = np.std(fits,0)/np.sqrt(N)
+        fit_err = np.std(fits,0)
         fit = np.mean(fits,0)
-        t_max_err = np.std(t_maxes)/np.sqrt(N)
-        M_max_err = np.std(M_maxes)/np.sqrt(N)
-        dM15_err = np.std(dM15s)/np.sqrt(N)
+        t_max_err = np.std(t_maxes)
+        M_max_err = np.std(M_maxes)
+        dM15_err = np.std(dM15s)
         #generate analytic curve
         ta = np.linspace(min(t),max(t),5000)
         Ma = np.polyval(fit, ta)
@@ -198,13 +198,13 @@ def LCSN1aFit(t, M, M_err=None, p0=None, N=30, plot=False):
             dM15s[j] = dM15
                            
         #average parameters among monte carlo datasets
-        fit_err = np.std(fits,0)/np.sqrt(N)
+        fit_err = np.std(fits,0)
         fit = np.mean(fits,0)
-        t_max_err = np.std(t_maxes)/np.sqrt(N)
+        t_max_err = np.std(t_maxes)
         t_max = np.mean(t_maxes)
-        M_max_err = np.std(M_maxes)/np.sqrt(N)
+        M_max_err = np.std(M_maxes)
         M_max = np.mean(M_maxes)
-        dM15_err = np.std(dM15s)/np.sqrt(N)
+        dM15_err = np.std(dM15s)
         dM15 = np.mean(dM15s)
         if plot:
             #generate analytic curve
@@ -432,7 +432,7 @@ def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
     BBflux = lambda x, T, r : planck(x,T)*r
     
     #estimate temperature
-    est = [10000.0, 1e16]
+    est = [10000.0, 1e14]
     #fit blackbody temperature
     if fluxerrs is not None:
         popt, pcov = curve_fit(BBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True)
@@ -463,6 +463,20 @@ def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
         plt.show()
     #return blackbody temperature
     return T, Terr, r, rerr
+
+#function: fit Rayleigh-Jeans tail
+def fitRJtail(waves, fluxes, fluxerrs):
+
+    from scipy.optimize import curve_fit
+
+    #estimate constant in F = a(lambda)^-2
+    a, aerr = fluxes*waves**2, fluxerrs*waves**2
+    #take a weighted sum
+    w = 1/np.square(aerr)
+    a_mean = np.sum(w*a)/np.sum(w)
+    a_err = np.sqrt(1/np.sum(w))
+    return a_mean, a_err
+    
 
 #function: Kasen model of shock interaction with companion
 def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):

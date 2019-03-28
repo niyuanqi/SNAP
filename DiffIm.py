@@ -89,6 +89,44 @@ def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692
     subprocess.call(['hotpants'] + flags)
 
 #make difference image
+def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", delete_temp=True):
+    try:
+        
+        import os
+        
+        #make temporary directory
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+            
+        #fix header info
+        src_name2 = remove_tan_from_header(src_name, tmpdir)
+        
+        #remap reference file to source file coordinates
+        remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
+
+        #hotpants arguments
+        default_flags = ['hotpants', '-inim', src_name, '-tmplim',
+                         tmp_name, '-outim', out_name, '-oci',
+                         conv_name, '-tl', '-100', '-il', '-100',
+                         '-n', 'i', '-c', 't', '-ko', '2',
+                         '-nrx', '2', '-nry', '2',
+                         '-nsx', '15', '-nsy', '15',
+                         '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
+            
+        #subtract remapped reference file from source file
+        subprocess.call(['hotpants'] + flags)
+
+        print "SUBTRACTION COMPLETE"
+        print "output:",out_name
+        
+    finally:
+        if delete_temp:
+            
+            import shutil
+            
+            shutil.rmtree(tmpdir)
+
+#make difference image
 def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imsize=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, tmpdir="DITemp", delete_temp=True):
     try:
         
