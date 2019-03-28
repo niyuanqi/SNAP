@@ -93,6 +93,7 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
     try:
         
         import os
+        import subprocess
         
         #make temporary directory
         if not os.path.exists(tmpdir):
@@ -106,7 +107,7 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
 
         #hotpants arguments
         default_flags = ['hotpants', '-inim', src_name, '-tmplim',
-                         tmp_name, '-outim', out_name, '-oci',
+                         ref_name, '-outim', out_name, '-oci',
                          conv_name, '-tl', '-100', '-il', '-100',
                          '-n', 'i', '-c', 't', '-ko', '2',
                          '-nrx', '2', '-nry', '2',
