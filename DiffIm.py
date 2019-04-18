@@ -115,7 +115,7 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
                          '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
             
         #subtract remapped reference file from source file
-        subprocess.call(['hotpants'] + flags)
+        subprocess.call(default_flags)
 
         print "SUBTRACTION COMPLETE"
         print "output:",out_name

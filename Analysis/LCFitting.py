@@ -293,7 +293,8 @@ def ArnettFit(t, M_N, MejE):
     e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
 
     #tau_m is the timescale of the light-curve
-    tau_m=((k_opt/(beta*c))**0.5)*((10./3.)**(0.25))*M_ejE_K
+    #tau_m=((k_opt/(beta*c))**0.5)*((10./3.)**(0.25))*M_ejE_K
+    tau_m=((k_opt/(beta*c))**0.5)*((6./5.)**(0.25))*M_ejE_K
 
     #integrate up the A(z) factor where z goes from 0 to x
     int_A=np.zeros(n) 
