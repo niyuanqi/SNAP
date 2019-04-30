@@ -322,6 +322,27 @@ def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None, terr=None):
         retlist += [terr[index]]
     return retlist
 
+#function: apply limiting magnitude cutoff
+def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
+    #within time range to cut
+    index_cuttime = np.logical_and(t>=t1, t<=t2)
+    #cut within timerange
+    index_cutmag = np.logical_and(index_cuttime, lim>limcut)
+    #outside time range to cut
+    index_outtime = np.logical_or(t<t1, t>t2)
+    #keep outer time range, and cut inner time range
+    index = np.logical_or(index_outtime, index_cutmag)
+    retlist = [t[index], lim[index], M[index]]
+    if M_err is not None:
+        retlist += [M_err[index]]
+    if F is not None:
+        retlist += [F[index]]
+    if SN is not None:
+        retlist += [SN[index]]
+    if terr is not None:
+        retlist += [terr[index]]
+    return retlist
+
 #function: return first difference (color) between a set of light curves
 def LCcolors(ts, mags, errs):
     '''

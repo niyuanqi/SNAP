@@ -55,6 +55,22 @@ def intDa(z):
 def intDl(z):
     return intDc(z)*(1.0+z)
 
+#function: integrate distance modulus to some redshift
+def intDM(z):
+    return 5.*np.log10(intDl(z)/10)
+
+#function: bootstrap DM error
+def MCDM(z, n=1000):
+    dzs = np.random.normal(0,zerr,n)
+    DMs = []
+    for i in range(n):
+        #get distance modulus
+        DM = intDM(z+dzs[i])
+        DMs.append(DM)
+    DM = intDM(z)
+    DMerr = np.std(DMs)
+    print DM, DMerr
+
 #function: projected dist (pc) between angle separated objects at redshift z
 def sepDistProj(sepRad, z):
     return intDa(z)*sepRad

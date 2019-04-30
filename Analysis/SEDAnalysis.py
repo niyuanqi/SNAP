@@ -24,7 +24,7 @@ def neg_log_like(params, y, gp):
 
 #function: SED gaussian interpolator
 def SEDinterp(t, bands, SED_ts, SED_lcs, SED_errs=None,
-              bandmask=None, interp='GP'):
+              bandmask=None, interp='GP', retGP=False):
 
     from scipy.stats import norm
     from scipy.optimize import minimize
@@ -59,6 +59,7 @@ def SEDinterp(t, bands, SED_ts, SED_lcs, SED_errs=None,
         if SED_errs is None:
             print "GP option requires input errorbars."
             return
+        gps = []
         for i in range(Nm):
             # matern kernel in time-band space
             rt = 3.0
@@ -78,11 +79,17 @@ def SEDinterp(t, bands, SED_ts, SED_lcs, SED_errs=None,
             gp.set_parameter_vector(r.x)
             gp.get_parameter_dict()
             print("GP trained parameters: {0}".format(r.x))
+            gps.append(gp)
+        if retGP:
+            #return gaussian process
+            return gps
+        else:
             #predict using gaussian process
-            flux, flux_var = gp.predict(SED_lcs[i], t)
-            flux_err = np.sqrt(np.diag(flux_var))
-            fluxes[i] = flux
-            flux_errs[i] = flux_err
+            for i in range(Nm):
+                flux, flux_var = gps[i].predict(SED_lcs[i], t)
+                flux_err = np.sqrt(np.diag(flux_var))
+                fluxes[i] = flux
+                flux_errs[i] = flux_err
     else:    
         #Create 1D array over wavelength
         fluxes = np.zeros(Nm)

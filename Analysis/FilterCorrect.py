@@ -13,7 +13,7 @@
 import numpy as np
 
 #function: return corrected B band magnitude based Spectral Corrections
-def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0,
+def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
                 Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0):
     '''
     #######################################################################
@@ -66,8 +66,17 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0,
     #mask times over which Scorrs are invalid
     mask = [ts[Bcol]<tdiv]
     #correct B band using Bout = (Bout-Vin)*c + Bin
-    Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
-    Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])
+    if interp == 'GP':
+        from SEDAnalysis import SEDinterp
+        #Construct V band Gaussian Process interpolator
+        gp = SEDinterp(np.mean(ts[Bcol][mask]), ['V'], [ts[Vcol]],
+                       [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
+        Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
+        Vin_err = np.sqrt(np.diag(Vin_var))
+    else:
+        #Interpolate linearly
+        Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
+        Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])
     Bout[mask] = (Bin[mask] - c*Vin - c*mBVr)/(1.-c)
     Bout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err[mask])
                              +np.square(c*mBVrerr))/(1.-c)

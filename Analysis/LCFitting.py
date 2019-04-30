@@ -117,6 +117,11 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
 def linfunc(t, a, b):
     return a*t + b
 
+#function: sBV fit from Burns 2014
+def sBVfit(t, s0, s1, tmax, tau, c):
+    y = 0.5*(s0 + s1)*(t-tmax)+0.5*tau*(s0-s1)*np.log(np.cosh((t-tmax)/tau))+c
+    return y
+    
 #function: 10 parameter Supernova 1a fit function
 def SN1aLC(t, g0, t0, sigma0, g1, t1, sigma1, gamma, f0, tau, theta):
     gaus0 = g0*np.exp(-np.square((t-t0)/sigma0)/2)

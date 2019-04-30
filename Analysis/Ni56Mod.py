@@ -132,10 +132,6 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
     
     #diffusion wave depth in solar masses
     dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
-    
-    #times after total diffusion
-    post_diff = t>t_diff
-    dM[post_diff] = Mej*1.4
     #diffusion wave depth at peak in solar masses
     dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
     
@@ -193,6 +189,8 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
             diff_corr = erfc(x_tail/x[i]/np.sqrt(2.))/erfc(1./np.sqrt(2.))
             L_tail[i] = L_diff * lambd[i] * simps(intg_tail*diff_corr, x_tail)
         else: #diffusion depth has exposed all nickel
+            #L_direct[i] = 0.35*M_sun*eps[i]
+            
             #luminosity due to Ni56 shallower than diffusion depth.
             x_direct = x_range
             X56_direct = X56_range
@@ -213,7 +211,7 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
         ax2 = plt.subplot2grid((4, 1), (2, 0))
         ax3 = plt.subplot2grid((4, 1), (3, 0))
         ax = [ax1, ax2, ax3]
-
+        
         #plot luminosity over time
         ax[0].plot(x, L_tail/L_diff, 'k', linestyle='--', label="$L_{tail}$")
         ax[0].plot(x, L_direct/L_diff, 'k', linestyle=':', label="$L_{direct}$")
@@ -247,6 +245,94 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
     #return results
     return L_ph
 
+#function: plot Ni56 model
+def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
+    from scipy.integrate import simps
+    from scipy.special import erfc
+
+    t = np.arange(t_diff/100,8,0.01)
+    L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
+
+    #Constants
+    M_sun=2.e33
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    
+    #diffusion wave depth in solar masses
+    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #diffusion wave depth at peak in solar masses
+    dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
+                                        np.exp(-t/tau_Ni))
+    #specific heating rate at peak
+    eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
+                                                  np.exp(-t_diff/tau_Ni))
+
+    #time normalized by rise time
+    x = t/t_diff
+
+    #normalize Ni56 distribution
+    x_range=np.linspace(0.01,1,1000, endpoint=True)
+    intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
+    #Ni56 mass
+    M_ni = L_diff/eps_diff/M_sun
+    #normalization factor
+    norm = M_ni/(1.76*dM_diff)/simps(intg_x56, x_range)
+    #Ni56 mass fraction at depth
+    X56_x = norm/(1+np.exp(-beta*(x-x_2)))
+    #total Ni56 distribution
+    X56_range = norm/(1+np.exp(-beta*(x_range-x_2)))
+
+    #quantity of nickel above diffusion depth
+    M_ni = np.zeros(len(t))
+    for i in range(len(t)):
+        mask_ni = x_range<=x[i]
+        x_ni = x_range[mask_ni]
+        X56_ni = X56_range[mask_ni]
+        intg_ni = X56_ni*x_ni**0.76
+        M_ni[i] = 1.76*dM[i]*simps(intg_ni, x_ni)
+    
+    #approx. local heating from Ni56 in erg/s
+    M56 = X56_x*dM
+    L56 = M56*M_sun*eps
+
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(6,6))
+    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((3, 1), (2, 0))
+    ax = [ax1, ax2]
+    
+    #plot luminosity over time
+    #ax[0].plot(t, L56, 'k', linestyle=':')
+    ax[0].plot(t, L, 'k')
+    ax[0].errorbar(tB, LB, LBerr, fmt='k+')
+    ax[0].plot(etc[0], etc[1], 'k', linestyle=":")
+    ax[0].set_ylabel("$Luminosity$ [ergs/s]")
+    ax[0].set_ylim([1.5e41,1e43])
+    ax[0].set_xlim([-0.1,t[-1]])
+    ax[0].set_yscale('log')
+    ax[0].axes.get_xaxis().set_ticklabels([])
+    
+    ax[1].plot(t, dM/(Mej*1.4), 'k')
+    ax[1].plot(t, M_ni/(Mni), 'k--')
+    ax[1].set_ylabel("$M_{diff}$ / $M_{total}$")
+    ax[1].set_ylim([0.0011, 1])
+    ax[1].set_xlim([-0.1,t[-1]])
+    ax[1].set_yscale('log')
+    
+    ax[-1].set_xlabel("Days since explosion")
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.0)
+    plt.show()
+
+
+"""
 #function: diffusion time through some ejecta mass
 def diff_time(Mej, Ek):
     #Mej in chandrasekhar masses
@@ -256,3 +342,4 @@ def diff_time(Mej, Ek):
     t_diff = np.power(Mej*1.4*(k_opt**0.88*Mej**0.32)/(2.0e-2*Ek**0.44),
                       1./1.76)
     return t_diff #in days
+"""
