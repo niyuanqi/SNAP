@@ -344,7 +344,7 @@ def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
     return retlist
 
 #function: return first difference (color) between a set of light curves
-def LCcolors(ts, mags, errs):
+def LCcolors(ts, mags, errs, interp='lin', win=0.5):
     '''
     #######################################################################
     # Input                                                               #
@@ -370,16 +370,52 @@ def LCcolors(ts, mags, errs):
     tdiff, diffs, derrs = [], [], []
     #for each adjacent pair of light curve in mags
     for i in range(len(ts)-1):
-        #create common axis (ordered union)
-        tdiff.append(np.sort(np.concatenate((ts[i],ts[i+1]))))
-        #interpolate light curves on matching axis
-        interp1 = np.interp(tdiff[i],ts[i],mags[i])
-        interp1_err2 = np.interp(tdiff[i],ts[i],np.square(errs[i]))
-        interp2 = np.interp(tdiff[i],ts[i+1],mags[i+1])
-        interp2_err2 = np.interp(tdiff[i],ts[i+1],np.square(errs[i+1]))
-        #take first difference with light curves
-        diffs.append(interp1 - interp2)
-        derrs.append(np.sqrt(interp1_err2 + interp2_err2))
+        if interp == 'lin':
+            #create common axis (ordered union)
+            tdiff.append(np.sort(np.concatenate((ts[i],ts[i+1]))))
+            #interpolate light curves on matching axis
+            interp1 = np.interp(tdiff[i],ts[i],mags[i])
+            interp1_err2 = np.interp(tdiff[i],ts[i],np.square(errs[i]))
+            interp2 = np.interp(tdiff[i],ts[i+1],mags[i+1])
+            interp2_err2 = np.interp(tdiff[i],ts[i+1],np.square(errs[i+1]))
+            #take first difference with light curves
+            diffs.append(interp1 - interp2)
+            derrs.append(np.sqrt(interp1_err2 + interp2_err2))
+        elif interp == 'bin':
+            tmin = min(np.concatenate((ts[i],ts[i+1])))
+            tmax = max(np.concatenate((ts[i],ts[i+1])))
+            tdiff.append([])
+            diffs.append([])
+            derrs.append([])
+            tscan = np.arange(tmin, tmax, win)
+            for j in range(len(tscan)):
+                mask1 = np.logical_and(ts[i]>=tscan[j], ts[i]<tscan[j]+win)
+                mask2 = np.logical_and(ts[i+1]>=tscan[j], ts[i+1]<tscan[j]+win)
+                if sum(mask1)>0 and sum(mask2)>0:
+                    #There is an observed color
+                    #mean value of first band
+                    winsum1 = np.sum(mags[i][mask1]/np.square(errs[i][mask1]))
+                    winnorm1 = np.sum(1/np.square(errs[i][mask1]))
+                    mag1 = winsum1/winnorm1
+                    err1 = np.sqrt(1./winnorm1)
+                    #mean value of second band
+                    winsum2 = np.sum(mags[i+1][mask2]/np.square(errs[i+1][mask2]))
+                    winnorm2 = np.sum(1/np.square(errs[i+1][mask2]))
+                    mag2 = winsum2/winnorm2
+                    err2 = np.sqrt(1./winnorm2)
+                    #compute color
+                    col = mag1 - mag2
+                    col_err = np.sqrt(err2**2 + err1**2)
+                    #mean time
+                    tcol = np.mean(np.concatenate([ts[i][mask1],
+                                                   ts[i+1][mask2]]))
+                    #append to list of colors
+                    tdiff[i].append(tcol)
+                    diffs[i].append(col)
+                    derrs[i].append(col_err)
+            tdiff[i] = np.array(tdiff[i])
+            diffs[i] = np.array(diffs[i])
+            derrs[i] = np.array(derrs[i])
     #return first difference light curves
     return tdiff, diffs, derrs
 

@@ -456,7 +456,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #check if source is valid
         if Io[i] != 0 and SNo[i] != 0 and skyNo != 0:
             #calculate relative flux of object wrt each reference star
-            Ir = flux_0[bands[band]]*1e-6*np.power(10,-catMags/2.5)*Io[i]/catIs
+            Ir = flux_0[bands[band]]*1e6*np.power(10,-catMags/2.5)*Io[i]/catIs
             Io_err = Io[i]/SNo[i]
             catI_err = catIs/catSNs
             Ir_err = Ir*np.sqrt(np.square(1/catSNs)+np.square(np.log(10)*catMagerrs/2.5))
@@ -489,7 +489,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
                     
             RAo[i], DECo[i] = wcs.all_pix2world(Xp, Yp, 0)
             #calculate magnitude from flux
-            mo[i] = -2.5*np.log10(I[i]/(flux_0[bands[band]]*1e-6))
+            mo[i] = -2.5*np.log10(I[i]/(flux_0[bands[band]]*1e6))
             mo_err[i] = (2.5/np.log(10))*(I_err/I[i])
         else:
             #bad source

@@ -69,7 +69,7 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     if interp == 'GP':
         from SEDAnalysis import SEDinterp
         #Construct V band Gaussian Process interpolator
-        gp = SEDinterp(np.mean(ts[Bcol][mask]), ['V'], [ts[Vcol]],
+        gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
                        [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
         Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
         Vin_err = np.sqrt(np.diag(Vin_var))
@@ -235,7 +235,7 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
     return tce, Fce, SNce
 
 #function: return corrected B band magnitude based Spectral Corrections
-def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0,
+def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
                 Icol=2, Vcol=1, SIVega=0, mVIr=0, mVIrerr=0):
     '''
     #######################################################################
@@ -287,12 +287,21 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0,
     
     #mask times over which Scorrs are invalid
     mask = [ts[Icol]<tdiv]
-    #correct I band using Iout = (Vin-Iout)*c + Iin
-    Vin = np.interp(ts[Icol][mask], ts[Vcol], mags[Vcol])
-    Vin_err = np.interp(ts[Icol][mask], ts[Vcol], errs[Vcol])
+    #correct B band using Bout = (Bout-Vin)*c + Bin
+    if interp == 'GP':
+        from SEDAnalysis import SEDinterp
+        #Construct V band Gaussian Process interpolator
+        gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
+                       [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
+        Vin, Vin_var = gp.predict(mags[Vcol], ts[Icol][mask])
+        Vin_err = np.sqrt(np.diag(Vin_var))
+    else:
+        #Interpolate linearly
+        Vin = np.interp(ts[Icol][mask], ts[Vcol], mags[Vcol])
+        Vin_err = np.interp(ts[Icol][mask], ts[Vcol], errs[Vcol])
     Iout[mask] = (Iin[mask] + c*Vin - c*mVIr)/(1.+c)
     Iout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Iin_err[mask])
-                             +np.square(c*mVIrerr))/(1.+c)
+                             +np.square(c*mVIrerr))/(1.-c)
 
     #return corrected magnitudes
     magcs[Icol] = Iout

@@ -30,6 +30,7 @@ def spec_fits(filename, get_err=False, get_meta=False):
         spec = spec_fits[1]
         if get_err:
             spec_err = spec_fits[3]
+        print spec_meta['SITEID']
     else:
         spec = spec_fits
     #spectrum flux data

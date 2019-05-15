@@ -150,7 +150,7 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
     x = t/t_diff
 
     #normalize Ni56 distribution
-    x_range=np.linspace(0.01,1,1000, endpoint=True)
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
     intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
     #Ni56 mass
     M_ni = L_diff/eps_diff/M_sun
@@ -249,8 +249,8 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
 def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     from scipy.integrate import simps
     from scipy.special import erfc
-
-    t = np.arange(t_diff/100,8,0.01)
+    
+    t = np.arange(t_diff/1000,8,0.01)
     L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
 
     #Constants
@@ -277,7 +277,7 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     x = t/t_diff
 
     #normalize Ni56 distribution
-    x_range=np.linspace(0.01,1,1000, endpoint=True)
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
     intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
     #Ni56 mass
     M_ni = L_diff/eps_diff/M_sun
@@ -302,6 +302,8 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     L56 = M56*M_sun*eps
 
     import matplotlib.pyplot as plt
+    plt.rcParams.update({'font.size': 11})
+    plt.rcParams.update({'axes.linewidth': 1.})
 
     plt.figure(figsize=(6,6))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -310,23 +312,29 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     
     #plot luminosity over time
     #ax[0].plot(t, L56, 'k', linestyle=':')
-    ax[0].plot(t, L, 'k')
-    ax[0].errorbar(tB, LB, LBerr, fmt='k+')
-    ax[0].plot(etc[0], etc[1], 'k', linestyle=":")
-    ax[0].set_ylabel("$Luminosity$ [ergs/s]")
+    ax[0].plot(t, L, 'k', label=r'L$_{\rm PN14}$')
+    ax[0].errorbar(tB, LB, LBerr, fmt='ko', ms=4, mfc='k')
+    #mask = tB < 4.2
+    #ax[0].errorbar(tB[mask], LB[mask], LBerr[mask], ms=4,
+    #               fmt='ko', mfc='white')
+    ax[0].plot(t, L56, 'k', linestyle="--", label=r'L$_{56}$')
+    ax[0].plot(etc[0], etc[1], 'k', linestyle=":", label=r'L$_{\rm Arnett}$')
+    ax[0].set_ylabel("Luminosity [erg s$^{-1}$]", fontsize=14)
     ax[0].set_ylim([1.5e41,1e43])
     ax[0].set_xlim([-0.1,t[-1]])
     ax[0].set_yscale('log')
     ax[0].axes.get_xaxis().set_ticklabels([])
+    ax[0].legend(framealpha=0, fontsize=12)
     
-    ax[1].plot(t, dM/(Mej*1.4), 'k')
-    ax[1].plot(t, M_ni/(Mni), 'k--')
-    ax[1].set_ylabel("$M_{diff}$ / $M_{total}$")
-    ax[1].set_ylim([0.0011, 1])
+    ax[1].plot(t, dM, 'k', label="M$_{diff}$")
+    ax[1].plot(t, M56, 'k--', label="M$_{56}$")
+    ax[1].set_ylabel("Mass [M$_{\odot}$]", fontsize=14)
+    ax[1].set_ylim([0.0011, 0.9])
     ax[1].set_xlim([-0.1,t[-1]])
     ax[1].set_yscale('log')
+    ax[1].legend(framealpha=0, fontsize=12)
     
-    ax[-1].set_xlabel("Days since explosion")
+    ax[-1].set_xlabel("Days since explosion", fontsize=14)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.0)
     plt.show()
