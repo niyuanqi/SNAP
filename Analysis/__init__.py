@@ -6,3 +6,4 @@ from FilterCorrect import *
 from SpecAnalysis import *
 from SEDAnalysis import *
 from Ni56Mod import *
+from InteractMod import *

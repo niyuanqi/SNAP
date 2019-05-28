@@ -90,6 +90,56 @@ def ArnettMejE(MejE, MejEerr, vej, vejerr):
     #return M[Msun], K[ergs]
     return Mej/M_sun, Mejerr/M_sun, Kej/10**51, Kejerr/10**51
 
+#function: easily get nickel mass from arnett model using max
+def ArnettNi56(p, tmax, Lmax):
+    return Lmax/ArnettFit(tmax, 1.0, np.absolute(p))
+
+#function: get Ni26 mass from arnett model using max and errors
+def ArnettNi56MC(p, tmax, Lmax, Lmax_err, n=100):
+    #bootstrap sample intercept
+    y = np.random.normal(Lmax, Lmax_err, n)
+    Nis = np.absolute(ArnettNi56(p, tmax, y))
+    return np.mean(Nis), np.std(Nis)
+
+#function: Arnett error function for determining MejEk parameter
+def ArnettMaxErr1(p, tmax, tmax_err):
+
+    from scipy.optimize import fmin
+
+    #get maximum of 
+    ta_max = fmin(lambda t: -1*ArnettFit(t, 1.0, np.absolute(p)), 50, (), 0.01)[0]
+    tX2 = np.absolute(ta_max-tmax)/tmax_err
+    return tX2
+
+#function: fit 2 parameter function to a 2D intercept using Monte Carlo
+def ArnettIntercept(tmax, Lmax, tmax_err, Lmax_err, p0=1.2, n=100, nproc=4):
+
+    from scipy.optimize import fmin
+    from multiprocessing import Pool
+
+    #to pickle properly, you need dill.
+    from multi import apply_async
+
+    pool = Pool(nproc)
+    
+    #bootstrap sample in x-direction to determine MejEk
+    xs = np.random.normal(tmax, tmax_err, n)
+    #For each point, solve function
+    procs = []
+    for i, x in enumerate(xs):
+        print str(i+1)+'/'+str(n)
+        errfunc = lambda p: ArnettMaxErr1(p, x, tmax_err)
+        procs.append(apply_async(pool, fmin, [errfunc, p0, (), 0.001, 0.01]))
+    #retrieve processes
+    popt = [proc.get()[0] for proc in procs]
+    pool.terminate()
+    #interpret results
+    ME = np.mean(popt, axis=0)
+    MEerr = np.std(popt, axis=0)
+    #use vertical error to get Ni56
+    Ni56, Ni56err = ArnettNi56MC(ME, tmax, Lmax, Lmax_err, n=n)
+    #return parameters
+    return Ni56, ME, Ni56err, MEerr
 
 #################################################################
 # Piro and Nakar 2014 based Ni56 model.                         #
@@ -256,11 +306,15 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     #Constants
     M_sun=2.e33
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    sb_const = 5.6704e-5 #erg/cm^2/s/K^4
     
     #diffusion wave depth in solar masses
     dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
     #diffusion wave depth at peak in solar masses
     dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+
+    #photospheric radius for calculating temperature [cm]
+    rph = 3.0e14 * (t**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
     
     tau_Ni=8.8 #decay time of Ni56 in day
     tau_Co=9.822e6/86400. #decay time of Co56 in day
@@ -300,15 +354,19 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     #approx. local heating from Ni56 in erg/s
     M56 = X56_x*dM
     L56 = M56*M_sun*eps
+    #color temperature (approximate)
+    Tc = np.power(L/(4.*np.pi*rph**2*sb_const), 0.25)
 
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import NullFormatter
     plt.rcParams.update({'font.size': 11})
     plt.rcParams.update({'axes.linewidth': 1.})
 
     plt.figure(figsize=(6,6))
-    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
-    ax2 = plt.subplot2grid((3, 1), (2, 0))
-    ax = [ax1, ax2]
+    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((4, 1), (2, 0))
+    ax3 = plt.subplot2grid((4, 1), (3, 0))
+    ax = [ax1, ax2, ax3]
     
     #plot luminosity over time
     #ax[0].plot(t, L56, 'k', linestyle=':')
@@ -321,33 +379,99 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     ax[0].plot(etc[0], etc[1], 'k', linestyle=":", label=r'L$_{\rm Arnett}$')
     ax[0].set_ylabel("Luminosity [erg s$^{-1}$]", fontsize=14)
     ax[0].set_ylim([1.5e41,1e43])
+    #ax[0].set_ylim([1.5e39,1e43])
     ax[0].set_xlim([-0.1,t[-1]])
     ax[0].set_yscale('log')
     ax[0].axes.get_xaxis().set_ticklabels([])
     ax[0].legend(framealpha=0, fontsize=12)
-    
-    ax[1].plot(t, dM, 'k', label="M$_{diff}$")
-    ax[1].plot(t, M56, 'k--', label="M$_{56}$")
-    ax[1].set_ylabel("Mass [M$_{\odot}$]", fontsize=14)
-    ax[1].set_ylim([0.0011, 0.9])
-    ax[1].set_xlim([-0.1,t[-1]])
+
+    ax[1].plot(t, Tc, 'k')
+    arrs = t[::100][1:]
+    arrows = Tc[::100][1:]
+    for i in range(len(arrs)):
+        ax[1].arrow(arrs[i], arrows[i], 0, 1000,
+                    head_width=0.1, head_length=500, fc='k', ec='k')
+    ax[1].set_ylabel("$T_c$", fontsize=14)
+    ax[1].set_ylim([3e3+100, 1.5e4])
     ax[1].set_yscale('log')
-    ax[1].legend(framealpha=0, fontsize=12)
+    ax[1].set_xlim([-0.1,t[-1]])
+    ax[1].axes.get_xaxis().set_ticklabels([])
+    ax[1].yaxis.set_minor_formatter(NullFormatter())
+    
+    ax[2].plot(t, dM, 'k', label="M$_{diff}$")
+    ax[2].plot(t, M56, 'k--', label="M$_{56}$")
+    ax[2].set_ylabel("Mass [M$_{\odot}$]", fontsize=14)
+    ax[2].set_ylim([0.0011, 0.9])
+    ax[2].set_xlim([-0.1,t[-1]])
+    ax[2].set_yscale('log')
+    ax[2].legend(framealpha=0, fontsize=12)
     
     ax[-1].set_xlabel("Days since explosion", fontsize=14)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.0)
     plt.show()
 
+#function: predict observations in some band
+def predNi56mod(wave, z, DM, tau, t_diff, L_diff, Mej, Ek, beta, x_2):
+    from SEDAnalysis import BBflux
 
-"""
-#function: diffusion time through some ejecta mass
-def diff_time(Mej, Ek):
-    #Mej in chandrasekhar masses
-    #Ek in 10^51ergs
+    t = np.arange(t_diff/1000,8,0.01)
+    L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
 
+    #Constants
+    M_sun=2.e33
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
-    t_diff = np.power(Mej*1.4*(k_opt**0.88*Mej**0.32)/(2.0e-2*Ek**0.44),
-                      1./1.76)
-    return t_diff #in days
-"""
+    sb_const = 5.6704e-5 #erg/cm^2/s/K^4
+
+    #diffusion wave depth in solar masses
+    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #diffusion wave depth at peak in solar masses
+    dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+
+    #photospheric radius for calculating temperature [cm]
+    rph = 3.0e14 * (t**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
+
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
+                                        np.exp(-t/tau_Ni))
+    #specific heating rate at peak
+    eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
+                                                  np.exp(-t_diff/tau_Ni))
+
+    #time normalized by rise time
+    x = t/t_diff
+
+    #normalize Ni56 distribution
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
+    intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
+    #Ni56 mass
+    M_ni = L_diff/eps_diff/M_sun
+    #normalization factor
+    norm = M_ni/(1.76*dM_diff)/simps(intg_x56, x_range)
+    #Ni56 mass fraction at depth
+    X56_x = norm/(1+np.exp(-beta*(x-x_2)))
+    #total Ni56 distribution
+    X56_range = norm/(1+np.exp(-beta*(x_range-x_2)))
+
+    #quantity of nickel above diffusion depth
+    M_ni = np.zeros(len(t))
+    for i in range(len(t)):
+        mask_ni = x_range<=x[i]
+        x_ni = x_range[mask_ni]
+        X56_ni = X56_range[mask_ni]
+        intg_ni = X56_ni*x_ni**0.76
+        M_ni[i] = 1.76*dM[i]*simps(intg_ni, x_ni)
+    
+    #approx. local heating from Ni56 in erg/s
+    M56 = X56_x*dM
+    L56 = M56*M_sun*eps
+    #color temperature (approximate)
+    Tc = np.power(L*tau/(4.*np.pi*rph**2*sb_const), 0.25)
+
+    return t, BBflux(L, Tc, wave, z, DM)
+
+

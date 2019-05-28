@@ -144,8 +144,6 @@ def SEDtrap(wave, flux, fluxerr=None, N=100):
 #function: generate SED using blackbody
 def genBlackbod(wave, T, r, Terr=None, rerr=None, N=100):
     
-    from SNAP.Analysis.LCFitting import planck
-    
     if Terr is None:
         return planck(wave,T)*r
     else:
@@ -201,3 +199,105 @@ def SEDcalib(p0, spec, SED_filts, SED_flux, SED_flux_err):
     #fit using scipy least-squares minimizer
     popt, ier = leastsq(errfunc, p0, full_output=0, maxfev=1000000)
     return popt[0]
+
+#################################################################
+# Blackbody SED template                                        #
+#################################################################
+
+#function: stefan Boltzmann's law
+def SBlaw(T):
+    sb = 5.67051e-5 #erg/s/cm2/K4
+    #black body total flux
+    integ = sb*np.power(T,4) #ergs/s/cm2
+    return integ
+
+#function: black body distribution (wavelength)
+def blackbod(x, T):
+    #constants
+    wave = x*1e-8 #angstrom to cm
+    h = 6.6260755e-27 #erg*s
+    c = 2.99792458e10 #cm/s
+    k = 1.380658e-16 #erg/K
+    freq = c/wave #Hz
+    #planck distribution
+    p_rad = (2*h*freq**3/c**2)/(np.exp(h*freq/(k*T))-1.0) #erg/s/cm2/rad2/Hz power per area per solid angle per frequency
+    #integrated planck over solid angle
+    p_int = np.pi*p_rad #erg/s/cm2/Hz #power per area per frequency [fnu]
+    return p_int
+
+#function: normalized planck distribution (wavelength)
+def planck(x, T):
+    #black body total flux
+    integ = SBlaw(T) #erg/s/cm2
+    #blackbody distribution
+    p_int = blackbod(x,T) #erg/s/cm2/Hz #power per area per frequency [fnu]
+    #normalized planck distribution
+    return (p_int/integ) #1/Hz, luminosity density
+
+#function: fit planck's law for black body temperature, received fraction
+def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
+
+    from scipy.optimize import curve_fit
+
+    #blackbody flux function
+    BBflux = lambda x, T, r : planck(x,T)*r
+    
+    #estimate temperature
+    est = [10000.0, 1e14]
+    #fit blackbody temperature
+    if fluxerrs is not None:
+        popt, pcov = curve_fit(BBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True)
+    else:
+        popt, pcov = curve_fit(BBflux, waves, fluxes, p0=est)
+    perr = np.sqrt(np.diag(pcov))
+    T, Terr = popt[0], perr[0] #K
+    r, rerr = popt[1], perr[1] #dimensionless
+    #plot fit if given
+    if plot:
+        import matplotlib.pyplot as plt
+
+        print "Temperature [K]:", T, Terr
+        print "Received/Emitted:", r, rerr
+        if fluxerrs is not None:
+            plt.errorbar(waves, fluxes, yerr=fluxerrs, fmt='g+')
+        else:
+            plt.plot(waves, fluxes, color='g')
+        w = np.linspace(min(waves), max(waves), 100)
+        plt.plot(w, BBflux(w, T, r), c='b',
+                 label="T = {:.0f} ({:.0f}) K\nr = {:.3f} ({:.3f})".format(
+                     T, Terr, r, rerr))
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux")
+        plt.title(ptitle)
+        plt.legend(loc='lower right')
+        plt.tight_layout()
+        plt.show()
+    #return blackbody temperature
+    return T, Terr, r, rerr
+
+#function: fit Rayleigh-Jeans tail
+def fitRJtail(waves, fluxes, fluxerrs):
+
+    from scipy.optimize import curve_fit
+
+    #estimate constant in F = a(lambda)^-2
+    a, aerr = fluxes*waves**2, fluxerrs*waves**2
+    #take a weighted sum
+    w = 1/np.square(aerr)
+    a_mean = np.sum(w*a)/np.sum(w)
+    a_err = np.sqrt(1/np.sum(w))
+    return a_mean, a_err
+
+#function: flux shifted from rest frame L, T
+def BBflux(Lc,Teff,wave,z,DM):
+    #give wave in observer frame
+    
+    #luminosity distance [pc -> cm]
+    dl = 10*np.power(10, DM/5.0)*3.086*10**18
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    #kasen model in observer band
+    Lc_wave = planck(wave/(1.0+z),Teff)*Lc/Area
+    #Lc_angle_wave = np.nan_to_num(Lc_angle_wave)
+    #ergs/s/Hz/cm^2, luminosity density in observer frame
+    #return in uJy, 10**29 uJy = 1 ergs/s/Hz/cm^2
+    return Lc_wave*10**29
