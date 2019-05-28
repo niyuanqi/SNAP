@@ -413,6 +413,7 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
 
 #function: predict observations in some band
 def predNi56mod(wave, z, DM, tau, t_diff, L_diff, Mej, Ek, beta, x_2):
+    from scipy.integrate import simps
     from SEDAnalysis import BBflux
 
     t = np.arange(t_diff/1000,8,0.01)
