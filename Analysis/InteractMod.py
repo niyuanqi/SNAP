@@ -66,6 +66,7 @@ def Kasen_isocorr(theta):
 #function: Error function for multi-band early light curve leastsq fitting
 def kasenMultiErr(p, t, L, L_err, z, DM, m_c, e_51):
     from Cosmology import wave_0, bands
+    from LCFitting import earlyFit
     #Kasen component p0=epoch, p1=a13, p2=theta
     B_pred = np.array([KasenFit(ti, p[1], 1.0, wave_0[bands['B']],
                                 m_c, e_51, z, DM, p[0])
@@ -147,38 +148,40 @@ def CSMmod(t_day, Eej, Mej, Mext, Rext):
     #Mext is mass of extended material in 0.01 solar masses
     #Rext is radius of extended material in 10^13 cm
 
-    #time in seconds
-    ts = t_day*86400.0
-
-    #sB constant
-    sb_const = 5.6704e-5 #erg/cm^2/s/K^4
-    #opacity
-    k_opt = 0.1 #0.1g/cm^2
-    k034 = k_opt/0.34
-
-    #velocity imparted on extended material
-    vext = 2.0e9 * (Eej**0.5)*(Mej**-0.35)*(Mext**-0.15) #cm/s
-    #expansion timescale
-    te = Rext*1.0e13/vext #s
-    #Energy imparted on extended material
-    Eext = 4.0e49 * Eej*(Mej**-0.7)*(Mext**0.7) #erg
-
-    #peak scaling quantities
-    t_peak, L_peak, Teff_peak = CSMpeak(Eej, Mej, Mext, Rext)
-    t_peak = t_peak*86400.0 #s
-
-    #luminosity evolution of CSM interaction Piro 2015
-    Lcsm = (te*Eext/t_peak**2)*np.exp(-ts*(ts+2*te)/(2.0*t_peak**2)) #erg/s
-    #Radius evolution of CSM
-    Rcsm = Rext*1.0e13 + vext*t #cm
-    #Temperature evolution of CSM given blackbody
-    Tcsm = np.power(Lcsm/(4*sb_const*np.pi*Rcsm**2), 0.25) #K
-    
+    if t_day > 0 and Eej/Mej > 0:
+        #time in seconds
+        ts = t_day*86400.0
+        
+        #sB constant
+        sb_const = 5.6704e-5 #erg/cm^2/s/K^4
+        #opacity
+        k_opt = 0.1 #0.1g/cm^2
+        k034 = k_opt/0.34
+        
+        #velocity imparted on extended material
+        vext = 2.0e9 * (Eej**0.5)*(Mej**-0.35)*(Mext**-0.15) #cm/s
+        #expansion timescale
+        te = Rext*1.0e13/vext #s
+        #Energy imparted on extended material
+        Eext = 4.0e49 * Eej*(Mej**-0.7)*(Mext**0.7) #erg
+        
+        #peak scaling quantities
+        t_peak, L_peak, Teff_peak = CSMpeak(Eej, Mej, Mext, Rext)
+        t_peak = t_peak*86400.0 #s
+        
+        #luminosity evolution of CSM interaction Piro 2015
+        Lcsm = (te*Eext/t_peak**2)*np.exp(-ts*(ts+2*te)/(2.0*t_peak**2)) #erg/s
+        #Radius evolution of CSM
+        Rcsm = Rext*1.0e13 + vext*ts #cm
+        #Temperature evolution of CSM given blackbody
+        Tcsm = max(np.power(Lcsm/(4*sb_const*np.pi*Rcsm**2), 0.25), 100) #K
+    else:
+        Lcsm = 0
+        Tcsm = 1000
     return Lcsm, Tcsm
 
-def CSMFit(t_day, wave, z, DM, Eej, Mej, Mext, Rext, t0):
-    from LCFitting import BBflux
-
+def CSMFit(t_day, wave, z, DM, Mej, Eej, Mext, Rext, t0):
+    from SEDAnalysis import BBflux
     #shift time to rest frame
     t_rest = (t_day)/(1+z) - t0
     #calculate CSM luminosity in rest frame
@@ -187,3 +190,24 @@ def CSMFit(t_day, wave, z, DM, Eej, Mej, Mext, Rext, t0):
     Fcsm = BBflux(Lcsm,Tcsm,wave,z,DM)
     #return predicted flux in band
     return Fcsm
+
+#function: Error function for multi-band early light curve leastsq fitting
+def CSMMultiErr(p, t, L, L_err, z, DM, Mej, Eej):
+    from Cosmology import wave_0, bands
+    from LCFitting import earlyFit
+    #Kasen component p0=epoch, p1=a13, p2=theta
+    B_pred = np.array([CSMFit(ti, wave_0[bands['B']], z, DM, Mej, Eej,
+                              p[1], p[2], p[0]) for ti in t[0]])
+    V_pred = np.array([CSMFit(ti, wave_0[bands['V']], z, DM, Mej, Eej,
+                              p[1], p[2], p[0]) for ti in t[1]])
+    I_pred = np.array([CSMFit(ti, wave_0[bands['i']], z, DM, Mej, Eej,
+                              p[1], p[2], p[0]) for ti in t[2]])
+    #Power law component
+    B_pred = np.array(B_pred) + earlyFit(t[0], p[0], p[3], p[6]) 
+    V_pred = np.array(V_pred) + earlyFit(t[1], p[0], p[4], p[7])
+    I_pred = np.array(I_pred) + earlyFit(t[2], p[0], p[5], p[8]) 
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
