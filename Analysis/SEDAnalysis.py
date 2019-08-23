@@ -272,8 +272,9 @@ def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
         plt.legend(loc='lower right')
         plt.tight_layout()
         plt.show()
+    w = np.linspace(min(waves), max(waves), 100)
     #return blackbody temperature
-    return T, Terr, r, rerr
+    return T, Terr, r, rerr, w, BBflux(w, T, r)
 
 #function: fit Rayleigh-Jeans tail
 def fitRJtail(waves, fluxes, fluxerrs):
@@ -288,7 +289,7 @@ def fitRJtail(waves, fluxes, fluxerrs):
     a_err = np.sqrt(1/np.sum(w))
     return a_mean, a_err
 
-#function: flux shifted from rest frame L, T
+#function: L, T fluxes derived using blackbody spectrum
 def BBflux(Lc,Teff,wave,z,DM):
     #give wave in observer frame
     

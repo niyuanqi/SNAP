@@ -24,7 +24,7 @@ def BreakoutFlash(R8,T5,m_c=1):
 
     #Errata
     EL = 1./(7.**(4./3.))
-    ET = 1./(7.**(1./2.))
+    ET = 1./(7.**(1./3.))
 
     #constants
     G = 6.674e-8 #cm^3/g/s^2
@@ -42,7 +42,7 @@ def BreakoutFlash(R8,T5,m_c=1):
     
     #shock runaway characteristic scales
     V9 = 0.6 #x10^9 cm/s
-    rho6 = 2.0 #x10^6 g/cm^3
+    rho6 = 2.0*(g9**0.11) #x10^6 g/cm^3
     #critical density
     rho_c = 9.e3 #g/cm^3
 
@@ -58,7 +58,7 @@ def BreakoutFlash(R8,T5,m_c=1):
     return Efl, Tfl #erg, K
 
 #function: Piro, Chang, Weinberg 2010 model of shock breakout cooling
-def ShockCoolingMod(t_day,R8,T5,m_c=1):
+def ShockCoolingMod(t_day,R8,T5,m_c=1,late=True):
     """This calculates the luminosity, L, and Teff for the Piro, Chang, and Weinberg 2010 analytic shock cooling model.
     
     :param t_day: time (days since explosion in rest frame)
@@ -70,7 +70,7 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1):
 
     #Errata
     EL = 1./(7.**(4./3.))
-    ET = 1./(7.**(1./2.))
+    ET = 1./(7.**(1./3.))
     
     #constants
     G = 6.674e-8 #cm^3/g/s^2
@@ -83,12 +83,13 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1):
     #scalings
     t = t_day * 86400. #s
     t4 = t/(1.e4) #10^4 s
-    R85 = R8 / (3.) #3x10^8 cm
+    R85 = R8*1.e8 / (10**8.5) #3x10^8 cm
     g9 = g/1.e9 #x10^9 cm/s^2
     
     #shock runaway characteristic scales
-    V9 = 0.6 #x10^9 cm/s
-    rho6 = 2.0 #x10^6 g/cm^3
+    v9 = 0.6 #x10^9 cm/s
+    rho6 = 2.0*(g9**0.11) #x10^6 g/cm^3
+    #rho6 = 2.0
     #critical density
     rho_c = 9.e3 #g/cm^3
 
@@ -96,20 +97,23 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1):
     K1 = 6.1e13 * (g9**(-1./3.))*(T5**(4./3.)) #shallow depth (relativistic)
     K2 = 9.91e12 / (mu_e**(5./3.)) #deep depth (non-relativistic)
     #scalings
-    K1 = K1/(6.e13)
+    K1 = K1/(10**13.8)
     K2 = K2/(1.e13)
     
     #time to reach non-relativistic material
     t_c = (rho_c / (2.*((v9*g9/K1)**0.66)*(rho6**0.12)/(R85**1.3)))**(1./1.3)
-
+    
     #Luminosity and temperature model
-    if t < t_c:
+    if t < 0:
+        Lsh = 0
+        Tsh = 100
+    elif t < t_c and not late:
         #shallow diffusion depth (relativistic)
         Lsh = EL* (3.e41) * ((g9/K1)**-0.5) * (
             v9**1.8) * (rho6**0.42) * R85 * (t**-0.34) #erg/s 
         Tsh = ET* (1.e6) * ((g9/K1)**-0.065) * (
             v9**0.019) * (rho6**0.0035) * (R85**0.13) * (t**-0.46) #K
-    if t > t_c:
+    else:
         #deep diffusion depth (non-relativistic)
         Lsh = EL* (2.e40) * ((g9/K2)**-0.41) * (
             v9**1.9) * (rho6**0.36) * (R85**0.83) * (t4**-0.16) #erg/s
@@ -118,14 +122,14 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1):
 
     return Lsh, Tsh #erg/s, K
 
-def ShockCoolingFit(t_day, wave, z, DM, m_c, R8, T5, t0):
+def ShockCoolingFit(t_day, wave, z, DM, m_c, R8, T5, t0, late=True):
     from SEDAnalysis import BBflux
     #shift time to rest frame
     t_rest = t_day/(1+z) - t0
     #calculate shock cooling luminosity in rest frame
-    Lsh, Tsh = ShockCoolingMod(t_rest, R8, T5, m_c)
+    Lsh, Tsh = ShockCoolingMod(t_rest, R8, T5, m_c, late=late)
     #shift luminosity to observer frame flux in band
-    Fsh = BBflux(Lcsm,Tcsm,wave,z,DM)
+    Fsh = BBflux(Lsh,Tsh,wave,z,DM)
     #return predicted flux in band
     return Fsh
 
@@ -133,19 +137,23 @@ def ShockCoolingFit(t_day, wave, z, DM, m_c, R8, T5, t0):
 def ShockCoolingMultiErr(p, t, L, L_err, z, DM, Mej):
     from Cosmology import wave_0, bands
     from LCFitting import earlyFit
-    #Shock cooling component p0=epoch (in rest frame), p1=R8, p2=T5
+    #Shock cooling component p0=epoch (in rest frame), p1=R8
+    #Fix t5=0.1 temperature, because assume late time
     B_pred = np.array([ShockCoolingFit(ti, wave_0[bands['B']], z, DM, Mej,
-                              p[1], p[2], p[0]) for ti in t[0]])
+                                       p[1], 0.1, p[0], late=True)
+                       for ti in t[0]])
     V_pred = np.array([ShockCoolingFit(ti, wave_0[bands['V']], z, DM, Mej,
-                              p[1], p[2], p[0]) for ti in t[1]])
+                                       p[1], 0.1, p[0], late=True)
+                       for ti in t[1]])
     I_pred = np.array([ShockCoolingFit(ti, wave_0[bands['i']], z, DM, Mej,
-                              p[1], p[2], p[0]) for ti in t[2]])
-    #Power law component
-    B_pred = np.array(B_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[6]) 
-    V_pred = np.array(V_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[7])
-    I_pred = np.array(I_pred) + earlyFit(t[2], p[0]*(1.+z), p[5], p[8]) 
+                                       p[1], 0.1, p[0], late=True)
+                       for ti in t[2]])
+    #Power law component, p2=epoch (in rest frame)
+    B_pred = np.array(B_pred) + earlyFit(t[0], p[2]*(1.+z), p[3], p[6]) 
+    V_pred = np.array(V_pred) + earlyFit(t[1], p[2]*(1.+z), p[4], p[7])
+    I_pred = np.array(I_pred) + earlyFit(t[2], p[2]*(1.+z), p[5], p[8]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]
+    B_err = (B_pred - L[0])/L_err[0]/10.
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -154,14 +162,15 @@ def ShockCoolingMultiErr(p, t, L, L_err, z, DM, Mej):
 def ShockCoolingViErr(p, t, L, L_err, z, DM, Mej):
     from Cosmology import wave_0, bands
     from LCFitting import earlyFit
-    #Shock cooling component p0=epoch (in rest frame), p1=R8, p2=T5
+    #Shock cooling component p0=epoch (in rest frame), p1=R8
+    #Fix t5=0.1 temperature, because assume late time
     V_pred = np.array([ShockCoolingFit(ti, wave_0[bands['V']], z, DM, Mej,
-                              p[1], p[2], p[0]) for ti in t[0]])
+                              p[1], 0.1, p[0]) for ti in t[0]])
     I_pred = np.array([ShockCoolingFit(ti, wave_0[bands['i']], z, DM, Mej,
-                              p[1], p[2], p[0]) for ti in t[1]])
-    #Power law component 
-    V_pred = np.array(V_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[5])
-    I_pred = np.array(I_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[6]) 
+                              p[1], 0.1, p[0]) for ti in t[1]])
+    #Power law component, p2=epoch (in rest frame) 
+    V_pred = np.array(V_pred) + earlyFit(t[0], p[2]*(1.+z), p[3], p[5])
+    I_pred = np.array(I_pred) + earlyFit(t[1], p[2]*(1.+z), p[4], p[6]) 
     #Error
     V_err = (V_pred - L[0])/L_err[0]
     I_err = (I_pred - L[1])/L_err[1]
@@ -184,7 +193,7 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     :param kappa: opacity. default = 0.2 cm^2/g
     :return: luminosity (erg/s) (isotropic, angular), Teff (K)
     """
-
+    
     #offset t_day to account for time it takes for interaction to begin
     L_u = 1.69 # constant related to ejecta density profile.
     vt = 6.0 * 10**8 * L_u * np.sqrt(e_51/m_c) # transition velocity
@@ -192,7 +201,7 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     
     ti = (1.0e4 * a13 / v9) / 86400.0
     t_day = t_day - ti
-
+    
     #check validity of kasen
     if t_day > 0 and e_51/m_c > 0:
         # Equations for Luminosity and Teff
@@ -204,12 +213,13 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
     return Lc_iso,Teff #erg/s
 
 #function: Kasen fitting functyion
-def KasenFit(t_day,a13,kappa,wave,m_c,e_51,z,DM,t0):
+def KasenFit(t_day,a13,kappa,wave,z,m_c,e_51,DM,t0):
     #essential imports
     from SEDAnalysis import BBflux
     
     #shift time to rest frame
     t_rest = t_day/(1+z) - t0
+    
     #calculate Kasen luminosity in rest frame
     Lk, Tk = Kasen2010(t_rest,a13,m_c,e_51,kappa)
     #shift luminosity to observer frame flux in band
@@ -236,16 +246,15 @@ def kasenMultiErr(p, t, L, L_err, z, DM, m_c, e_51):
     I_pred = np.array([KasenFit(ti, p[1], 1.0, wave_0[bands['i']],
                                 m_c, e_51, z, DM, p[0])
                        for ti in t[2]])*Kasen_isocorr(p[2])
-    #Power law component
-    B_pred = np.array(B_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[6]) 
-    V_pred = np.array(V_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[7]) 
-    I_pred = np.array(I_pred) + earlyFit(t[2], p[0]*(1.+z), p[5], p[8]) 
+    #Power law component, p3=epoch
+    B_pred = np.array(B_pred) + earlyFit(t[0], p[3]*(1.+z), p[4], p[7]) 
+    V_pred = np.array(V_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[8]) 
+    I_pred = np.array(I_pred) + earlyFit(t[2], p[3]*(1.+z), p[6], p[9]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]
+    B_err = (B_pred - L[0])/L_err[0]/10.
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
-
 
 #function: Error function for multi-band early light curve leastsq fitting
 def kasenViErr(p, t, L, L_err, z, DM, m_c, e_51):
@@ -259,15 +268,15 @@ def kasenViErr(p, t, L, L_err, z, DM, m_c, e_51):
                                 m_c, e_51, z, DM, p[0])
                        for ti in t[1]])*Kasen_isocorr(p[2])
     #Power law component
-    V_pred = np.array(V_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[5]) 
-    I_pred = np.array(I_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[6]) 
+    V_pred = np.array(V_pred) + earlyFit(t[0], p[3]*(1.+z), p[4], p[6]) 
+    I_pred = np.array(I_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[7]) 
     #Error
     V_err = (V_pred - L[0])/L_err[0]
     I_err = (I_pred - L[1])/L_err[1]
     return np.concatenate([V_err, I_err],axis=0)
 
 #function: rule out Kasen model to sig at angle theta
-def ruleout(F, Ferr, Fk, Fkerr, theta, sig, lims):
+def ruleout(F, Ferr, Fk, Fkerr, theta, sig, lims=None):
     #angle corrected Kasen luminosity
     Fk_theta = Fk*Kasen_isocorr(theta)
     Fk_theta_err = Fkerr*Kasen_isocorr(theta)
@@ -275,7 +284,8 @@ def ruleout(F, Ferr, Fk, Fkerr, theta, sig, lims):
     Err = np.sqrt(np.square(Ferr)+np.square(Fk_theta_err))
     #which is more constraining? datapoint or limit?
     level = F + sig*Err
-    level[level < lims] = lims[level < lims]
+    if lims is not None:
+        level[level < lims] = lims[level < lims]
     #check if any points rule out angle with conf
     if any(Fk_theta > level):
         return True
@@ -382,11 +392,11 @@ def CSMMultiErr(p, t, L, L_err, z, DM, Mej, Eej):
     I_pred = np.array([CSMFit(ti, wave_0[bands['i']], z, DM, Mej, Eej,
                               p[1], p[2], p[0]) for ti in t[2]])
     #Power law component
-    B_pred = np.array(B_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[6]) 
-    V_pred = np.array(V_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[7])
-    I_pred = np.array(I_pred) + earlyFit(t[2], p[0]*(1.+z), p[5], p[8]) 
+    B_pred = np.array(B_pred) + earlyFit(t[0], p[3]*(1.+z), p[4], p[7]) 
+    V_pred = np.array(V_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[8])
+    I_pred = np.array(I_pred) + earlyFit(t[2], p[3]*(1.+z), p[6], p[9]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]
+    B_err = (B_pred - L[0])/L_err[0]/10.
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -401,9 +411,40 @@ def CSMViErr(p, t, L, L_err, z, DM, Mej, Eej):
     I_pred = np.array([CSMFit(ti, wave_0[bands['i']], z, DM, Mej, Eej,
                               p[1], p[2], p[0]) for ti in t[1]])
     #Power law component 
-    V_pred = np.array(V_pred) + earlyFit(t[0], p[0]*(1.+z), p[3], p[5])
-    I_pred = np.array(I_pred) + earlyFit(t[1], p[0]*(1.+z), p[4], p[6]) 
+    V_pred = np.array(V_pred) + earlyFit(t[0], p[3]*(1.+z), p[4], p[6])
+    I_pred = np.array(I_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[7]) 
     #Error
     V_err = (V_pred - L[0])/L_err[0]
     I_err = (I_pred - L[1])/L_err[1]
     return np.concatenate([V_err, I_err],axis=0)
+
+#################################################################
+# Composite models.                                             #
+#################################################################
+
+#function: Error function for multi-band early light curve leastsq fitting
+def CompMultiErr(p, t, L, L_err, z, DM, m_c, e_51, tbase, Lbase):
+    from Cosmology import wave_0, bands
+    #Kasen component p0=epoch (in rest frame), p1=a13, p2=theta
+    B_pred = np.array([KasenFit(ti, p[1], 1.0, wave_0[bands['B']],
+                                m_c, e_51, z, DM, p[0])
+                       for ti in t[0]])*Kasen_isocorr(p[2])
+    V_pred = np.array([KasenFit(ti, p[1], 1.0, wave_0[bands['V']],
+                                m_c, e_51, z, DM, p[0])
+                       for ti in t[1]])*Kasen_isocorr(p[2])
+    I_pred = np.array([KasenFit(ti, p[1], 1.0, wave_0[bands['i']],
+                                m_c, e_51, z, DM, p[0])
+                       for ti in t[2]])*Kasen_isocorr(p[2])
+    #Base component
+    B_base = np.interp(t[0], tbase[0]-p[3], Lbase[0])
+    V_base = np.interp(t[1], tbase[1]-p[3], Lbase[1])
+    I_base = np.interp(t[2], tbase[2]-p[3], Lbase[2])
+    #Add components
+    B_pred = B_pred + B_base
+    V_pred = V_pred + V_base
+    I_pred = I_pred + I_base
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)

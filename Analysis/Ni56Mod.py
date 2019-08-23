@@ -43,7 +43,7 @@ def ArnettFit(t, M_N, MejE):
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.1 #g/cm^2 optical opacity (this corresponds to electron scattering)
-
+    k_opt = 0.08
     tau_Ni=8.8*86400. #decay time of Ni56 in sec
     tau_Co=9.822e6 #decay time of Co56 in sec
 
@@ -296,11 +296,11 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
     return L_ph
 
 #function: plot Ni56 model
-def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
+def plotNi56mod(tB, tfit, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     from scipy.integrate import simps
     from scipy.special import erfc
     
-    t = np.arange(t_diff/1000,8,0.01)
+    t = np.arange(t_diff/1000,tfit,0.01)
     L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
 
     #Constants
@@ -363,28 +363,28 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     plt.rcParams.update({'axes.linewidth': 1.})
 
     plt.figure(figsize=(6,6))
-    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-    ax2 = plt.subplot2grid((4, 1), (2, 0))
-    ax3 = plt.subplot2grid((4, 1), (3, 0))
-    ax = [ax1, ax2, ax3]
+    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((3, 1), (2, 0))
+    ax = [ax1, ax2]
     
     #plot luminosity over time
     #ax[0].plot(t, L56, 'k', linestyle=':')
     ax[0].plot(t, L, 'k', label=r'L$_{\rm PN14}$')
     ax[0].errorbar(tB, LB, LBerr, fmt='ko', ms=4, mfc='k')
+    mask = tB < 5.5
     #mask = tB < 4.2
-    #ax[0].errorbar(tB[mask], LB[mask], LBerr[mask], ms=4,
-    #               fmt='ko', mfc='white')
-    ax[0].plot(t, L56, 'k', linestyle="--", label=r'L$_{56}$')
+    ax[0].errorbar(tB[mask], LB[mask], LBerr[mask], ms=4,
+                   fmt='ko', mfc='white')
+    #ax[0].plot(t, L56, 'k', linestyle="--", label=r'L$_{56}$')
     ax[0].plot(etc[0], etc[1], 'k', linestyle=":", label=r'L$_{\rm Arnett}$')
     ax[0].set_ylabel("Luminosity [erg s$^{-1}$]", fontsize=14)
-    ax[0].set_ylim([1.5e41,1e43])
+    ax[0].set_ylim([1.5e41,1.2e43])
     #ax[0].set_ylim([1.5e39,1e43])
     ax[0].set_xlim([-0.1,t[-1]])
     ax[0].set_yscale('log')
     ax[0].axes.get_xaxis().set_ticklabels([])
-    ax[0].legend(framealpha=0, fontsize=12)
-
+    ax[0].legend(framealpha=0, fontsize=12, loc='upper left')
+    """
     ax[1].plot(t, Tc, 'k')
     arrs = t[::100][1:]
     arrows = Tc[::100][1:]
@@ -397,26 +397,93 @@ def plotNi56mod(tB, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, etc):
     ax[1].set_xlim([-0.1,t[-1]])
     ax[1].axes.get_xaxis().set_ticklabels([])
     ax[1].yaxis.set_minor_formatter(NullFormatter())
-    
-    ax[2].plot(t, dM, 'k', label="M$_{diff}$")
-    ax[2].plot(t, M56, 'k--', label="M$_{56}$")
-    ax[2].set_ylabel("Mass [M$_{\odot}$]", fontsize=14)
-    ax[2].set_ylim([0.0011, 0.9])
-    ax[2].set_xlim([-0.1,t[-1]])
-    ax[2].set_yscale('log')
-    ax[2].legend(framealpha=0, fontsize=12)
+    """
+    ax[1].plot(t, dM, 'k', label="M$_{diff}$")
+    ax[1].plot(t, M56, 'k--', label="M$_{56}$")
+    ax[1].set_ylabel("Mass [M$_{\odot}$]", fontsize=14)
+    ax[1].set_ylim([0.0011, 0.9])
+    ax[1].set_xlim([-0.1,t[-1]])
+    ax[1].set_yscale('log')
+    ax[1].legend(framealpha=0, fontsize=12)
     
     ax[-1].set_xlabel("Days since explosion", fontsize=14)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.0)
     plt.show()
 
+#function: get Ni56 distributions
+def Ni56dist(t, t_diff, L_diff, Mej, Ek, beta, x_2):
+    #Inputs
+    #################################
+    #t_diff = time for diffusion wave to reach core of ejecta (day)
+    #L_diff = luminosity at t_diff (should be only L_direct), (ergs/s)
+    #MEej = optional, ejecta mass-energy parameter
+
+    #Fit parameters:
+    #Mej = Mass of ejecta (in 1.4 solar masses)
+    #Ek = Kinetic energy of ejecta (*10^51 ergs)
+    #x_2 = t/t_peak at which half of Ni56 is reached by diffusion wave
+    #beta = slope of x56 distribution
+    
+    #t = time from epoch in days
+
+    #Outputs
+    #################################
+    #array of Ni56 fraction
+
+    from scipy.integrate import simps
+    from scipy.special import erfc
+
+    #Constants
+    M_sun=2.e33
+
+    #t_diff = diff_time(Mej, Ek)
+    
+    #time axis, in days
+    t = np.array([t]) if (isinstance(t, np.float64) or
+                            isinstance(t, float)) else t
+    n = len(t)
+
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    
+    #diffusion wave depth in solar masses
+    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #diffusion wave depth at peak in solar masses
+    dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
+                                        np.exp(-t/tau_Ni))
+    #specific heating rate at peak
+    eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
+                                                  np.exp(-t_diff/tau_Ni))
+
+    #time normalized by rise time
+    x = t/t_diff
+
+    #normalize Ni56 distribution
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
+    intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
+    #Ni56 mass
+    M_ni = L_diff/eps_diff/M_sun
+    #normalization factor
+    norm = M_ni/(1.76*dM_diff)/simps(intg_x56, x_range)
+    #Ni56 mass fraction at depth
+    X56_x = norm/(1+np.exp(-beta*(x-x_2)))
+    #Ni56 distribution
+    X56 = norm/(1+np.exp(-beta*(x-x_2)))
+    return X56
+
 #function: predict observations in some band
-def predNi56mod(wave, z, DM, tau, t_diff, L_diff, Mej, Ek, beta, x_2):
+def predNi56mod(twin, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     from scipy.integrate import simps
     from SEDAnalysis import BBflux
 
-    t = np.arange(t_diff/1000,8,0.01)
+    t = np.arange(t_diff/1000,twin,0.01)
     L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
 
     #Constants
@@ -471,7 +538,7 @@ def predNi56mod(wave, z, DM, tau, t_diff, L_diff, Mej, Ek, beta, x_2):
     M56 = X56_x*dM
     L56 = M56*M_sun*eps
     #color temperature (approximate)
-    Tc = np.power(L*tau/(4.*np.pi*rph**2*sb_const), 0.25)
+    Tc = np.power(L*taus/(4.*np.pi*rph**2*sb_const), 0.25)
 
     return t, BBflux(L, Tc, wave, z, DM)
 

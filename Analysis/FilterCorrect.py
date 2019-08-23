@@ -12,9 +12,14 @@
 #essential modules
 import numpy as np
 
+def neg_log_like(params, y, gp):
+    gp.set_parameter_vector(params)
+    return -gp.log_likelihood(y)
+
 #function: return corrected B band magnitude based Spectral Corrections
 def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
-                Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0):
+                 Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0,
+                 Sinterp='GP', Scorr_err=None):
     '''
     #######################################################################
     # Input                                                               #
@@ -58,8 +63,33 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     Bout, Bout_err = magcs[Bcol], errcs[Bcol]
     #mask times over which Scorrs are valid
     mask = [ts[Bcol]>=tdiv]
-    #correct B band using Bout = Bin + Scorr
-    scorr = np.interp(tcs[Bcol][mask],tcorr,Scorr)
+
+    if Sinterp == 'GP':
+        from scipy.optimize import minimize
+        import george
+        from george import kernels
+
+        # matern kernel in time-band space
+        rt = 3.0
+        mu, sigma = np.mean(Scorr), np.sqrt(np.var(Scorr))
+        kernel = sigma*kernels.Matern32Kernel(metric=[rt], ndim=1)
+        #initialize gaussian process
+        gp = george.GP(kernel, mean=mu)
+        gp.compute(tcorr, Scorr_err)  # You always need to call compute once.
+        initial_params = gp.get_parameter_vector()
+        bounds = gp.get_parameter_bounds()
+        #train gaussian process
+        r = minimize(neg_log_like, initial_params, method="L-BFGS-B",
+                     bounds=bounds, args=(Scorr, gp))
+        gp.set_parameter_vector(r.x)
+        gp.get_parameter_dict()
+        print r.x
+        #predict using gaussian process
+        scorr, scorr_var = gp.predict(Scorr, tcs[Bcol][mask])
+    else:
+        #correct B band using Bout = Bin + Scorr
+        scorr = np.interp(tcs[Bcol][mask],tcorr,Scorr)
+    #correct B band using S correction
     Bout[mask] = Bin[mask] + scorr + SBVega - c*mBVr
     Bout_err[mask] = np.sqrt(Bin_err[mask]**2 + (c*mBVrerr)**2)
     
@@ -236,7 +266,8 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
 
 #function: return corrected B band magnitude based Spectral Corrections
 def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
-                Icol=2, Vcol=1, SIVega=0, mVIr=0, mVIrerr=0):
+                 Icol=2, Vcol=1, SIVega=0, mVIr=0, mVIrerr=0,
+                 Sinterp='GP', Scorr_err=None):
     '''
     #######################################################################
     # Input                                                               #
@@ -280,8 +311,32 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     Iout, Iout_err = magcs[Icol], errcs[Icol]
     #mask times over which Scorrs are valid
     mask = [ts[Icol]>=tdiv]
-    #correct B band using Bout = Bin + Scorr
-    scorr = np.interp(tcs[Icol][mask],tcorr,Scorr)
+    if Sinterp == 'GP':
+        from scipy.optimize import minimize
+        import george
+        from george import kernels
+
+        # matern kernel in time-band space
+        rt = 3.0
+        mu, sigma = np.mean(Scorr), np.sqrt(np.var(Scorr))
+        kernel = sigma*kernels.Matern32Kernel(metric=[rt], ndim=1)
+        #initialize gaussian process
+        gp = george.GP(kernel, mean=mu)
+        gp.compute(tcorr, Scorr_err)  # You always need to call compute once.
+        initial_params = gp.get_parameter_vector()
+        bounds = gp.get_parameter_bounds()
+        #train gaussian process
+        r = minimize(neg_log_like, initial_params, method="L-BFGS-B",
+                     bounds=bounds, args=(Scorr, gp))
+        gp.set_parameter_vector(r.x)
+        gp.get_parameter_dict()
+        print r.x
+        #predict using gaussian process
+        scorr, scorr_var = gp.predict(Scorr, tcs[Icol][mask])
+    else:
+        #correct B band using Bout = Bin + Scorr
+        scorr = np.interp(tcs[Icol][mask],tcorr,Scorr)
+    #correct I band using S correction
     Iout[mask] = Iin[mask] + scorr + SIVega - c*mVIr
     Iout_err[mask] = np.sqrt(Iin_err[mask]**2 + (c*mVIrerr)**2)
     

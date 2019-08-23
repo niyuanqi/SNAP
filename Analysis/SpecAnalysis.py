@@ -259,7 +259,8 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
 
     #fit line center
     
-    est = [-1.0, center, width/2.0, 0.0, b_est]
+    est = [-1.5, center, width/2.0, 3, b_est]
+    print est
     if spec_err is None:
         popt, pcov = curve_fit(lpNorm, spec_wave, spec_flux, p0=est,
                                maxfev=100000)
@@ -269,7 +270,7 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
                                sigma=spec_flux_err, maxfev=100000)
     perr = np.sqrt(np.diag(pcov))
     min_wave = minimize(lambda x: 1e20*lpNorm(x, *popt), [popt[1]])['x'][0]
-    
+    print popt
     #plot best fit
     if plot:
         import matplotlib.pyplot as plt
@@ -284,4 +285,143 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
     #return line center
     return min_wave, perr[1]
 
+def voigt(x, y):
+    # The Voigt function is also the real part of
+    # w(z) = exp(-z^2) erfc(iz), the complex probability function,
+    # which is also known as the Faddeeva function. Scipy has
+    # implemented this function under the name wofz()
+    from scipy.special import wofz
+    z = x + 1j * y
+    I = wofz(z).real
+    return I
 
+
+def Voigt(nu, alphaD, alphaL, nu_0, A):
+    # The Voigt line shape in terms of its physical parameters
+    # alphaD, alphaL half widths at half max for Doppler and Lorentz(not FWHM)
+    # A - scaling factor
+    f = np.sqrt(np.log(2))
+    x = (nu - nu_0) / alphaD * f
+    y = alphaL / alphaD * f
+    V = A * f / (alphaD * np.sqrt(np.pi)) * voigt(x, y)
+    return V
+
+def DVoigt(nu, aD1, aL1, nu1, A1, aD2, aL2, nu2, A2, a, b):
+    # The Voigt line shape in terms of its physical parameters
+    # aD, aL are half widths at half max for Doppler and Lorentz(not FWHM)
+    # A - scaling factor
+    #first Voigt
+    V1 = Voigt(nu, aD1, aL1, nu1, A1)
+    #second Voigt
+    V2 = Voigt(nu, aD2, aL2, nu2, A2)
+    #linear background
+    backg = b + a * nu
+    V = V1+V2+backg
+    return V
+
+#function: measure equivalent width of Na I D lines
+def fitNaID(spec, spec_err=None, r=15, z=0, plot=False):
+    #r is annulus size around lines for fitting
+    from scipy.optimize import curve_fit
+    
+    #load spectrum data
+    spec_wave = spec.waveset.value
+    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+
+    #Na I D locations
+    line2 = 5890.0*(1.+z)
+    line1 = 5896.0*(1.+z)
+
+    #crop a fitting window around the Na I D
+    mask = np.logical_and(spec_wave > line2-r, spec_wave < line1+r)
+    #estimate background level
+    b_est = 0.5*(spec_flux[mask][0] + spec_flux[mask][-1])
+
+    #fitting doublet profile
+    est = [0.4, 0.8, line2, -1.0,
+           0.4, 0.8, line1, -0.5, 0, b_est]
+    print est
+    if spec_err is None:
+        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, maxfev=1000000)
+    else:
+        spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
+        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, sigma=spec_flux_err[mask],
+                               maxfev=1000000)
+    perr = np.sqrt(np.diag(pcov))
+    print popt, perr
+
+    #calculate equivalent widths
+    wave2 = np.linspace(line2-r, line2+r, 1000)
+    V2 = Voigt(wave2, popt[0], popt[1], popt[2], popt[3])
+    backg2 = popt[9] + popt[8] * wave2
+    EW2 = np.trapz(-V2/backg2, wave2)
+    
+    wave1= np.linspace(line1-r, line1+r, 1000)
+    V1 = Voigt(wave1, popt[4], popt[5], popt[6], popt[7])
+    backg1 = popt[9] + popt[8] * wave1
+    EW1 = np.trapz(-V1/backg1, wave1)
+    print "D2: EW =",EW2
+    print "D1: EW =",EW1
+
+    #calculate galactic extinction from Poznanski et al. 2012
+    EBV2 = np.power(10, 2.16*EW2-1.91)
+    err2 = EBV2*np.log(10)*0.15
+    EBV1 = np.power(10, 2.47*EW1-1.76)
+    err1 = EBV1*np.log(10)*0.17
+    print "D2: E(B-V) =",np.power(10, 2.16*EW2-1.91),err2
+    print "D1: E(B-V) =",np.power(10, 2.47*EW1-1.76),err1
+
+    #plotting the fit
+    if plot:
+        import matplotlib.pyplot as plt
+        
+        plt.plot(spec_wave, spec_flux, c='g')
+        #plt.plot(spec_wave[mask], DVoigt(spec_wave[mask], *popt), c='r')
+        plt.plot(wave2, V2+backg2, c='r')
+        plt.plot(wave1, V1+backg1, c='b')
+        plt.title("Doublet Voigt Line Fit")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.show()
+
+#function: measure equivalent width of a line
+def EWdirect(spec, lim1, lim2, r=20, spec_err=None, plot=False):
+    #lim1 and lim2 are limits surrounding the line
+    #r is annulus size for fitting
+    
+    #load spectrum data
+    spec_wave = spec.waveset.value
+    spec_flux = spec(spec_wave, flux_unit='flam').value
+    
+    #crop a window around the line
+    lmask = np.logical_and(spec_wave > lim1, spec_wave < lim2)
+    #crop an annulus around the line
+    amask = np.logical_and(spec_wave > lim1-30, spec_wave < lim2+30)
+    amask = np.logical_and(amask, np.logical_not(lmask))
+    
+    #fit continuum emission using 2nd order polynomial
+    cont_poly = np.polyfit(spec_wave[amask], spec_flux[amask], 3)
+
+    #measure equivalent width
+    cont_flux = np.polyval(cont_poly, spec_wave[lmask])
+    ratio = (cont_flux - spec_flux[lmask])/cont_flux
+    EW = np.trapz(ratio, spec_wave[lmask])
+    print "EW:", EW
+
+    #plotting the fit
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(spec_wave[lmask], ratio)
+        plt.show()
+        
+        plt.plot(spec_wave, spec_flux, c='g')
+        plt.plot(spec_wave[amask],
+                 np.polyval(cont_poly, spec_wave[amask]),
+                 c='r')
+        plt.title("Direct Integration")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.show()

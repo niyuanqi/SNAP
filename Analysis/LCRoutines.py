@@ -344,7 +344,7 @@ def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
     return retlist
 
 #function: return first difference (color) between a set of light curves
-def LCcolors(ts, mags, errs, interp='lin', win=0.5):
+def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None):
     '''
     #######################################################################
     # Input                                                               #
@@ -368,11 +368,19 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5):
     #######################################################################
     '''
     tdiff, diffs, derrs = [], [], []
+    if tmin is None:
+        tmin = min(np.concatenate(ts))-0.01
+    if tlen is None:
+        tmax = max(np.concatenate(ts))+0.01
+    else:
+        tmax = tmin + tlen
     #for each adjacent pair of light curve in mags
     for i in range(len(ts)-1):
         if interp == 'lin':
             #create common axis (ordered union)
             tdiff.append(np.sort(np.concatenate((ts[i],ts[i+1]))))
+            mask = np.logical_and(tdiff[i]>tmin, tdiff[i]<tmax)
+            tdiff[i] = tdiff[i][mask]
             #interpolate light curves on matching axis
             interp1 = np.interp(tdiff[i],ts[i],mags[i])
             interp1_err2 = np.interp(tdiff[i],ts[i],np.square(errs[i]))
@@ -382,8 +390,6 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5):
             diffs.append(interp1 - interp2)
             derrs.append(np.sqrt(interp1_err2 + interp2_err2))
         elif interp == 'bin':
-            tmin = min(np.concatenate((ts[i],ts[i+1])))
-            tmax = max(np.concatenate((ts[i],ts[i+1])))
             tdiff.append([])
             diffs.append([])
             derrs.append([])
@@ -416,6 +422,12 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5):
             tdiff[i] = np.array(tdiff[i])
             diffs[i] = np.array(diffs[i])
             derrs[i] = np.array(derrs[i])
+            #import matplotlib.pyplot as plt
+            #plt.show()
+            #plt.scatter(ts[i], mags[i])
+            #plt.scatter(ts[i+1], mags[i+1])
+            #plt.scatter(tdiff[i], diffs[i])
+            #plt.show()
     #return first difference light curves
     return tdiff, diffs, derrs
 
@@ -752,6 +764,29 @@ def Swift_load(filename, bcol, tcol, magcol, errcol, limcol=None, bands=['UVW2',
         errs.append(err[mask])
         lims.append(lim[mask])
     return ts, mags, errs, lims
+
+#function: load light curve from ANDICAM file
+def ANDI_load(filenames, tcol, magcol, errcol, bands=['J', 'H', 'K']):
+
+    from astropy.time import Time
+
+    ts, mags, errs = [], [], []
+    for i in range(len(filenames)):
+        #load time column, convert to day of year
+        t = np.loadtxt(filenames[i],usecols=(tcol,),comments='#',unpack=True)
+        year = Time(t[0], format='jd').isot[:4]
+        year_isot = year + '-01-01T00:00:00.000'
+        year = Time(year_isot, format='isot', scale='utc').jd
+        t = t - year
+        #load magnitudes, divide into bands
+        mag = np.loadtxt(filenames[i],usecols=(magcol,),comments='#',unpack=True)
+        err = np.loadtxt(filenames[i],usecols=(errcol,),comments='#',unpack=True)
+        #filter out upper limits
+        mask = err != -99.
+        ts.append(t[mask])
+        mags.append(mag[mask])
+        errs.append(err[mask])
+    return ts, mags, errs
 
 #function: load light curve from LCOGT file
 def LCOGT_load(filename, bcol, tcol, magcol, errcol, bands=['U','B','V','g','r','i']):

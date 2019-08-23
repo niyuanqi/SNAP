@@ -335,7 +335,7 @@ def MCerr(func, ins, params, errs, nums, conf, nproc=1):
     return val, val_err
 
 #function: least chi2 fitting method
-def fit_leastchi2(p0, datax, datay, yerr, function, bounds, errfunc=False):
+def fit_leastchi2(p0, datax, datay, yerr, function, errfunc=False, bounds=None, max_nfev=900):
 
     from scipy.optimize import least_squares
     
@@ -344,10 +344,15 @@ def fit_leastchi2(p0, datax, datay, yerr, function, bounds, errfunc=False):
         errfunc = lambda p, x, y, yerr: (function(x,p) - y)/yerr
     else:
         errfunc = function
-       
-    # Fit
-    res = least_squares(errfunc, p0, args=(datax, datay, yerr),
-                        bounds=bounds, max_nfev=900, verbose=2)
+
+    if bounds is not None:
+        # Fit
+        res = least_squares(errfunc, p0, args=(datax, datay, yerr),
+                            bounds=bounds, max_nfev=max_nfev, verbose=2)
+    else:
+        # Fit
+        res = least_squares(errfunc, p0, args=(datax, datay, yerr),
+                            max_nfev=max_nfev)
     #pfit, ier = leastsq(errfunc, p0, args=(datax, datay, yerr), full_output=0, maxfev=100000)
     return res.x
 
