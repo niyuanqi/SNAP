@@ -56,8 +56,10 @@ def spec_fits(filename, get_err=False, get_meta=False):
         #calculate time observed
         if 'T' in spec_meta['DATE-OBS']:
             isot_obs = spec_meta['DATE-OBS']
-        else:
+        elif 'UT' in spec_meta:
             isot_obs = spec_meta['DATE-OBS']+'T'+spec_meta['UT']
+        else:
+            isot_obs = spec_meta['DATE-OBS']+'T'+spec_meta['UT-TIME']
         #exposure time
         exp_obs = spec_meta['EXPTIME']
         #RA, DEC observed
@@ -251,15 +253,16 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
     from scipy.optimize import curve_fit, minimize
     
     spec_wave = spec.waveset.value
-    b_est = max(spec(spec_wave, flux_unit='flam').value)
+    b_est = max(spec(spec_wave, flux_unit='flam').value*1.e14)
     mask = np.logical_and(spec_wave < center+width/2.,
                           spec_wave > center-width/2.)
     spec_wave = spec_wave[mask]
-    spec_flux = spec(spec_wave, flux_unit='flam').value
+    spec_flux = spec(spec_wave, flux_unit='flam').value*1.e14
 
     #fit line center
     
     est = [-1.5, center, width/2.0, 3, b_est]
+    est = [min(spec_flux)-b_est, center, width/2.0, 3, b_est]
     print est
     if spec_err is None:
         popt, pcov = curve_fit(lpNorm, spec_wave, spec_flux, p0=est,
