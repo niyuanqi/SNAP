@@ -80,8 +80,8 @@ def usnoB(radeg,decdeg,fovam,band,out=False): # RA/Dec in decimal degrees/J2000.
     DEcol = 2
     bands = {'B': 12}
     #banderrs = {'B': 13}
-    #null = '     '
-    #empt = ''
+    null = '     '
+    empt = ''
      
     # Make sure str2 does not have any spaces or carriage returns/line feeds when you # cut and paste into your code  
     sr = str1+str2 
