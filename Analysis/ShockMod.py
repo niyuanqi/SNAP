@@ -281,6 +281,30 @@ def kasenFixedMultiErr(p, t, L, L_err, z, DM, m_c, e_51, angle):
     return np.concatenate([B_err, V_err, I_err],axis=0)
 
 #function: Error function for multi-band early light curve leastsq fitting
+def kasenPowMultiErr(p, t, L, L_err, z, DM, m_c, e_51, sep, angle):
+    from Cosmology import wave_0, bands
+    from LCFitting import earlyFit
+    #Kasen component p0=epoch (in rest frame), p1=a13, p2=theta
+    B_pred = np.array([KasenFit(ti, sep, 1.0, wave_0[bands['B']], z,
+                                m_c, e_51, DM, p[0])
+                       for ti in t[0]])*Kasen_isocorr(angle)
+    V_pred = np.array([KasenFit(ti, sep, 1.0, wave_0[bands['V']], z,
+                                m_c, e_51, DM, p[0])
+                       for ti in t[1]])*Kasen_isocorr(angle)
+    I_pred = np.array([KasenFit(ti, sep, 1.0, wave_0[bands['i']], z,
+                                m_c, e_51, DM, p[0])
+                       for ti in t[2]])*Kasen_isocorr(angle)
+    #Power law component, p3=epoch
+    B_pred = np.array(B_pred) + earlyFit(t[0], p[1]*(1.+z), p[2], p[5]) 
+    V_pred = np.array(V_pred) + earlyFit(t[1], p[1]*(1.+z), p[3], p[6]) 
+    I_pred = np.array(I_pred) + earlyFit(t[2], p[1]*(1.+z), p[4], p[7]) 
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]/10.
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
+#function: Error function for multi-band early light curve leastsq fitting
 def kasenViErr(p, t, L, L_err, z, DM, m_c, e_51):
     from Cosmology import wave_0, bands
     from LCFitting import earlyFit

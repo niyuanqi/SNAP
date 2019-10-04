@@ -69,7 +69,7 @@ def aavso_static(lines, band):
     return name,rad,ded,rmag,rmagerr,lines
 
 #query Vizier USNO-B1 catalog
-def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV in arc min. 
+def usnoB(radeg,decdeg,fovam,band,out=False): # RA/Dec in decimal degrees/J2000.0 FOV in arc min. 
 
     import urllib as url
     
@@ -79,8 +79,9 @@ def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV
     RAcol = 1
     DEcol = 2
     bands = {'B': 12}
-    bands = {'B': 13}
-    null = '      '
+    #banderrs = {'B': 13}
+    #null = '     '
+    #empt = ''
      
     # Make sure str2 does not have any spaces or carriage returns/line feeds when you # cut and paste into your code  
     sr = str1+str2 
@@ -111,11 +112,13 @@ def usnoB(radeg,decdeg,fovam,out=False): # RA/Dec in decimal degrees/J2000.0 FOV
             rad = np.append(rad,float(kw[1])) 
             ded = np.append(ded,float(kw[2]))
             # deal with case where no mag is reported
-            if (kw[bands[band]] != null) and (kw[banderrs[band]]) != null:
+            #if (kw[bands[band]] != null) and (kw[banderrs[band]]) != null:
+            if (kw[bands[band]] != null) and (kw[bands[band]] != empt):
+                print "Mag", kw[bands[band]], "len", len(kw[bands[band]])
                 rmag = np.append(rmag,float(kw[bands[band]]))
-                rmagerr = np.append(rmag,float(kw[banderrs[band]]))
+                #rmagerr = np.append(rmag,float(kw[banderrs[band]]))
             else:
                 rmag = np.append(rmag,np.nan)
-                rmagerr = np.append(rmagerr,np.nan)
+                #rmagerr = np.append(rmagerr,np.nan)
         
-    return name,rad,ded,rmag,rmagerr,s
+    return name,rad,ded,rmag,s
