@@ -60,7 +60,7 @@ def intDM(z):
     return 5.*np.log10(intDl(z)/10)
 
 #function: bootstrap DM error
-def MCDM(z, n=1000):
+def MCDM(z, zerr, n=1000):
     dzs = np.random.normal(0,zerr,n)
     DMs = []
     for i in range(n):

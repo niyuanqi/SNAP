@@ -43,7 +43,7 @@ def ArnettFit(t, M_N, MejE):
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.1 #g/cm^2 optical opacity (this corresponds to electron scattering)
-    #k_opt = 0.08
+    k_opt = 0.08
     tau_Ni=8.8*86400. #decay time of Ni56 in sec
     tau_Co=9.822e6 #decay time of Co56 in sec
 
