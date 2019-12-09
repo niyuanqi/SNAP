@@ -122,6 +122,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     #  aperture; float aperture around object in which to integrate     #
     #            light. If None; PSF is integrated. If not a positive   #
     #            number; then PSF is used to get Kron aperture.         #
+    #       psf; string selects what parameters to fit the source with. #
+    #            (e.g., '1' fits PSF central position only,             #
+    #                   '2' fits PSF central position and height,       #
+    #                   '3' fits PSF central position, height, shape.)  #
     #      name; str name of object.                                    #
     #      band; char observational filter of data.                     #
     #      fwhm; float estimate of FWHM on image.                       #
@@ -129,6 +133,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     #            if 0.0, then no detection limits are calculated.       #
     #    satmag; float magnitude below which reference stars are        #
     #            considered to be saturated and hence not used.         #
+    #    refmag; float magnitude above which reference stars are        #
+    #            considered to be reliable, and therefore used.         #
     #    fitsky; boolean, if True; fit for planar sky around source to  #
     #            be subtracted from image before fitting/integrating.   #
     # verbosity; int counts verbosity level.                            #
@@ -202,7 +208,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         else:
             ID, RA, DEC, catM, catMerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,band,out=catname)
     
-    #convert position of catalog stars to world coordinates
+    #convert position of catalog stars to pixels
     catX, catY = wcs.all_world2pix(RA, DEC, 0)
     catX, catY = catX.astype(float), catY.astype(float)
     #select catalog stars within some radius of object
@@ -412,6 +418,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '3':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+        else:
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         
         PSFpopt, PSFperr = [PSFpopt], [PSFperr]
         #check preferred intensity calculation method
@@ -449,7 +457,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         if verbosity > 0:
             print "No source selected."
             Io, SNo, skyNo = [0]*Nobj, [0]*Nobj, 0
-
+    
     #Process each source
     I,RAo,DECo,mo,mo_err = np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj)
     for i in range(Nobj):
