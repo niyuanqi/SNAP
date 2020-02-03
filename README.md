@@ -46,7 +46,7 @@ Basic usage in python routine (sample)
 
 *% from SNAP.MagCalc import magnitude*
 
-*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, wcs_fromfits, 'dprs', '../N2784-7.Q1.DPRS.cat', (140.92247,-21.969278), radius=1000.0, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=14.0, refMag=16.0, verbosity=0)*
+*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, image_fromfits, wcs_fromfits, 'aavso', '../N2784-7.Q1.AAVSO.cat', (140.92247,-21.969278), radius=1000.0, aperture=15, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=15.0, refMag=16.0, verbosity=0)*
 
 Try in python shell on any imported modules from SNAP
 

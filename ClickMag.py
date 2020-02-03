@@ -249,6 +249,7 @@ def ClickMag(image, wcs, cat, catname, radius=500, band='V', fwhm=5.0, limsnr=3.
         plt.scatter(x_cens, y_cens, marker='+', c='r', s=80, label="centroids")
         x_meas, y_meas = wcs.all_world2pix(RAs, DECs, 0)
         plt.scatter(x_meas, y_meas, marker='+', c='g', s=80, label="measured")
+        print len(x_cens), len(x_meas)
         plt.tight_layout()
         plt.show()
 

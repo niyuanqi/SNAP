@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -119,6 +119,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
     #   catname: str catalog name.                                      #
     # RAo, DECo: float equatorial coordinate of object in degrees.      #
     #    radius; float radius around object in which to take ref stars. #
+    #   over_in; float intensity calculation override. If given,        #
+    #            this value will be used for the source intensity.      #
+    #            is performed on the source.                            #
     #  aperture; float aperture around object in which to integrate     #
     #            light. If None; PSF is integrated. If not a positive   #
     #            number; then PSF is used to get Kron aperture.         #
@@ -404,7 +407,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
         print ""
-
+        
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source
     if Nobj == 1 or aperture is not None:
@@ -412,7 +415,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         if verbosity > 0:
             print "Computing photometry of source "+name[0]
 
-        if psf[0] == '1':
+        if aperture is not None:
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+        elif psf[0] == '1':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '2':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
@@ -457,6 +462,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, apertu
         if verbosity > 0:
             print "No source selected."
             Io, SNo, skyNo = [0]*Nobj, [0]*Nobj, 0
+    #Override intensity value using other calculation
+    if over_intens is not None:
+        Io = over_intens
     
     #Process each source
     I,RAo,DECo,mo,mo_err = np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj),np.zeros(Nobj)
