@@ -165,6 +165,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         DECo = [DECo]
         psf = [psf]
         fitsky = [fitsky]
+        if over_intens is not None:
+            over_intens = [over_intens]
     #number of sources to perform photometry on
     Nobj = len(name)
     
