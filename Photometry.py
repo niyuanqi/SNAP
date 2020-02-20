@@ -909,7 +909,10 @@ def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=Tr
         b = PSF[2]
         theta = PSF[3]
         radius = 0.5*(ax+ay)*np.sqrt(np.power(1 - frac,1/(1-b)) - 1)
-    elif radius != 0:
+    elif radius is None:
+        radius = 0
+
+    if radius != 0:
         #extract PSF aperture
         PSF_extract, x, y = ap_get(image, x0, y0, 0, radius)
         if fitsky:
