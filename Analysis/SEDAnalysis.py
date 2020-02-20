@@ -302,3 +302,46 @@ def BBflux(Lc,Teff,wave,z,DM):
     #ergs/s/Hz/cm^2, luminosity density in observer frame
     #return in uJy, 10**29 uJy = 1 ergs/s/Hz/cm^2
     return Lc_wave*10**29
+
+#function: color temperature
+def colorT(color, band1, band2, z=0):
+
+    from SNAP.Analysis.Cosmology import wave_0, bands, Flux_toMag
+
+    #trial temperatures
+    N = 1000
+    Ts = np.logspace(3, 5, N) #K
+    Ls = np.ones(N)
+    #1-2 color for each temperature
+    Tflux1 = BBflux(Ls, Ts, wave_0[bands[band1]], z, 1) #uJy
+    Tflux2 = BBflux(Ls, Ts, wave_0[bands[band2]], z, 1) #uJy
+    Tmag1 = Flux_toMag(band1, Tflux1*1e-6) #mag
+    Tmag2 = Flux_toMag(band2, Tflux2*1e-6) #mag
+    Tcolors = Tmag1-Tmag2
+    #closest color
+    i_min = np.argmin(np.abs(Tcolors-color))
+    return Ts[i_min]
+
+#function: color temperature and radius
+def colorTR(mag1, mag2, band1, band2, z, DM):
+    
+    from SNAP.Analysis.Cosmology import wave_0, bands, Mag_toFlux
+    
+    #luminosity distance [pc -> cm]
+    dl = 10*np.power(10, DM/5.0)*3.086*10**18
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    #calculate luminosity density in band1
+    flux_den1 = Mag_toFlux(band1, mag1) #Jy <-> 1e-23 ergs/s/Hz/cm^2
+    lum_den1 = flux_den1*Area*1e-23 #ergs/s/Hz
+    
+    #calculate color temperature
+    color = mag1 - mag2
+    T = colorT(color, band1, band2, z)
+    #predicted flux density in band1
+    flux_den1 = blackbod(wave_0[bands[band1]],T) #erg/s/cm2/Hz 
+    #calculate radius
+    area = lum_den1/flux_den1 #cm^2
+    R = np.sqrt(area/(4*np.pi)) #cm
+
+    #return color temperature and radius
+    return T, R

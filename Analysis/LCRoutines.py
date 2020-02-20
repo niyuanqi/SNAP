@@ -344,7 +344,7 @@ def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
     return retlist
 
 #function: return first difference (color) between a set of light curves
-def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None):
+def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retinterps=False):
     '''
     #######################################################################
     # Input                                                               #
@@ -367,7 +367,7 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None):
     #  derrs: list of float errors color curves.                          #
     #######################################################################
     '''
-    tdiff, diffs, derrs = [], [], []
+    tdiff, mag_diffs, mag_derrs, diffs, derrs = [], [], [], [], []
     if tmin is None:
         tmin = min(np.concatenate(ts))-0.01
     if tlen is None:
@@ -387,6 +387,8 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None):
             interp2 = np.interp(tdiff[i],ts[i+1],mags[i+1])
             interp2_err2 = np.interp(tdiff[i],ts[i+1],np.square(errs[i+1]))
             #take first difference with light curves
+            mag_diffs.append([interp1, interp2])
+            mag_derrs.append([np.sqrt(interp1_err2), np.sqrt(interp2_err2)])
             diffs.append(interp1 - interp2)
             derrs.append(np.sqrt(interp1_err2 + interp2_err2))
         elif interp == 'bin':
@@ -428,8 +430,12 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None):
             #plt.scatter(ts[i+1], mags[i+1])
             #plt.scatter(tdiff[i], diffs[i])
             #plt.show()
-    #return first difference light curves
-    return tdiff, diffs, derrs
+    if retinterps:
+        #return interpolated light curves
+        return tdiff, diffs, derrs, mag_diffs, mag_derrs
+    else:
+        #return first difference light curves
+        return tdiff, diffs, derrs
 
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):

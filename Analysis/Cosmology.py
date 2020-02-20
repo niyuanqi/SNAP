@@ -125,7 +125,7 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
         #don't calculate errors
         return Fabs
 
-#function: calculate mag from flux [Jy]
+#function: calculate flux [Jy] from mag
 def Mag_toFlux(band, mag, mag_err=None):
     flux = flux_0[bands[band]]*np.power(10,mag/-2.5)
     if mag_err is not None:
@@ -135,7 +135,7 @@ def Mag_toFlux(band, mag, mag_err=None):
     else:
         #don't calculate errors
         return flux
-#function: calculate flux [Jy] from mag
+#function: calculate mag from flux [Jy]
 def Flux_toMag(band, flux, flux_err=None):
     mod = flux/flux_0[bands[band]]
     mag =  -2.5 * np.array([np.log10(m) for m in mod])
