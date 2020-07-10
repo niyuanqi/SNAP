@@ -48,7 +48,7 @@ def run_wcsremap(ref_name, src_name, outdir):
     return outname
 
 #use hotpants to match images photometrically and subtract
-def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None):
+def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None):
 
     import numpy as np
     import subprocess
@@ -77,14 +77,17 @@ def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imsize=3692
         flags += ['-r', str(2.5*fwhm/2.0)]
         flags += ['-rss', str(3.0*fwhm)]
     #make sure each stamp is ~2.5', imsize given in arcsec
-    flags += ['-nsx', str(np.floor(imsize/(2.5*60)))]
-    flags += ['-nsy', str(np.floor(imsize/(2.5*60)))]
+    flags += ['-nsx', str(np.floor(imx/(2.5*60)))]
+    flags += ['-nsy', str(np.floor(imy/(2.5*60)))]
+    #new200625: make sure each stamp is ~30 fwhm. imsize in pixels. unstable.
+    #flags += ['-nsx', str(round(imx/(33.0*fwhm)))]
+    #flags += ['-nsy', str(round(imy/(33.0*fwhm)))]
     #gaussians with which to compose kernel
     if fwhm is not None:
         flags += ['-ng','3','6',str(fwhm/2.0),'4',str(fwhm),'2',str(2*fwhm)]
     else:
         flags += ['-ng','3','6','3.00','4','6.00','2','12.0']
-        
+    
     #call hotpants
     subprocess.call(['hotpants'] + flags)
 
@@ -128,7 +131,7 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
             shutil.rmtree(tmpdir)
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imsize=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, tmpdir="DITemp", delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
@@ -147,7 +150,7 @@ def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imsize=3
         args = [src_name, remaped_ref, out_name, conv_name]
         if fwhm is not None:
             args += [fwhm]
-        args += [imsize, tmp_sat, src_sat, tmp_neg, src_neg]
+        args += [imx, imy, tmp_sat, src_sat, tmp_neg, src_neg]
         if tmp_mask is not None:
             args += [tmp_mask]
         if src_mask is not None:
