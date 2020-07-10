@@ -225,6 +225,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
     index = np.logical_and(index, catM < refmag)
+    #remove commented catalog stars
+    index = np.logical_and(index, ID.astype('<U1') != '#')
     #crop values to mask
     ID, catX, catY, catRA, catDEC, catM, catMerr = ID[index], catX[index], catY[index], RA[index], DEC[index], catM[index], catMerr[index]
     if len(ID) == 0:
