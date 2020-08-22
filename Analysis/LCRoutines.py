@@ -437,6 +437,24 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retint
         #return first difference light curves
         return tdiff, diffs, derrs
 
+#function: bin light curves on time intervals
+def LCbin(t, mag, err, winlength):
+    tfilt = np.arange(t[0], t[-1]+winlength, winlength)
+    Nfilt = len(tfilt)
+    tb, magb, errb = [], [], []
+    for i in range(Nfilt):
+        mask = np.logical_and(t>tfilt[i], t<tfilt[i]+winlength)
+        if any(mask): #there are points in this bin
+            #weighted binning of epochs
+            winsum = np.sum(t[mask]/np.square(err[mask]))
+            winnorm = np.sum(1/np.square(err[mask]))
+            tb.append(winsum/winnorm)
+            #weighted binning of values
+            winsum = np.sum(mag[mask]/np.square(err[mask]))
+            magb.append(winsum/winnorm)
+            errb.append(np.sqrt(1/winnorm))
+    return np.array(tb), np.array(magb), np.array(errb)
+
 #function: load light curve from text file
 def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, SNthres=None, limcols=None, fcols=None, racols=None, deccols=None, terrcols=None, scols=None, flags=None, aflag=None, mode='single'):
     '''

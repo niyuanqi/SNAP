@@ -43,7 +43,7 @@ def ArnettFit(t, M_N, MejE):
 
     beta=13.8 #constant of integration (Arnett 1982)
     k_opt=0.1 #g/cm^2 optical opacity (this corresponds to electron scattering)
-    k_opt = 0.08
+    #k_opt = 0.08 #as in Arnett et al. or Li et al. 2019
     tau_Ni=8.8*86400. #decay time of Ni56 in sec
     tau_Co=9.822e6 #decay time of Co56 in sec
 
@@ -479,12 +479,13 @@ def Ni56dist(t, t_diff, L_diff, Mej, Ek, beta, x_2):
     return X56
 
 #function: predict observations in some band
-def predNi56mod(twin, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
+def predNi56mod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     from scipy.integrate import simps
     from SEDAnalysis import BBflux
 
-    t = np.arange(t_diff/1000,twin,0.01)
-    L = PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2)
+    #t = np.arange(t_diff/1000,twin,0.01)
+    tr = t/(1.+z)
+    L = PN13Fit(tr, t_diff, L_diff, Mej, Ek, beta, x_2)
 
     #Constants
     M_sun=2.e33
@@ -492,26 +493,26 @@ def predNi56mod(twin, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     sb_const = 5.6704e-5 #erg/cm^2/s/K^4
 
     #diffusion wave depth in solar masses
-    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    dM = tr**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
     #diffusion wave depth at peak in solar masses
     dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
 
     #photospheric radius for calculating temperature [cm]
-    rph = 3.0e14 * (t**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
+    rph = 3.0e14 * (tr**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
 
     tau_Ni=8.8 #decay time of Ni56 in day
     tau_Co=9.822e6/86400. #decay time of Co56 in day
     e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
     e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
     #specific heating rate from Ni56 decay in erg/s/g
-    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
-                                        np.exp(-t/tau_Ni))
+    eps = e_Ni*np.exp(-tr/tau_Ni) +e_Co*(np.exp(-tr/tau_Co) - 
+                                         np.exp(-tr/tau_Ni))
     #specific heating rate at peak
     eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
                                                   np.exp(-t_diff/tau_Ni))
 
     #time normalized by rise time
-    x = t/t_diff
+    x = tr/t_diff
 
     #normalize Ni56 distribution
     x_range=np.linspace(0.0005,1,2000, endpoint=True)
@@ -540,6 +541,451 @@ def predNi56mod(twin, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     #color temperature (approximate)
     Tc = np.power(L*taus/(4.*np.pi*rph**2*sb_const), 0.25)
 
-    return t, BBflux(L, Tc, wave, z, DM)
+    return BBflux(L, Tc, wave, z, DM) #uJy
 
+#function: error function for multi-band fitting of shallow Ni model
+def Ni56Err(ts, Ls, L_errs, waves, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
+    n_bands = len(waves)
+    #Compute error in each band
+    chi2err = 0
+    for i in range(n_bands):
+        #mask out positive time
+        tmask =  ts[i] > 0
+        #predict Ni model luminosity
+        L_pred_neg = np.zeros(len(ts[i][np.logical_not(tmask)]))
+        L_pred_pos = predNi56mod(ts[i][tmask], waves[i], z, DM, taus[i], 
+                                      t_diff, L_diff, Mej, Ek, beta, x_2)
+        L_pred = np.concatenate([L_pred_neg, L_pred_pos])
+        chi2err += np.sum(np.square((Ls[i] - L_pred*1e-6)/L_errs[i]))
+    return chi2err
 
+#function: plot multiband shallow Ni model
+def Ni56Plot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff, 
+                  Mej, Ek, beta, x_2, rest=True):
+    #essential import
+    import matplotlib.pyplot as plt
+    from SNAP.Analysis.Cosmology import Flux_toMag, bands, wave_0
+    
+    nbands = len(bs)
+    #create Figure
+    fig, ax = plt.subplots(nbands, sharex=True)
+    
+    #plot observations and model fits
+    for i in range(nbands):
+        L_pred = predNi56mod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                             t_diff, L_diff, Mej, Ek, beta, x_2)
+        M_pred = Flux_toMag(bs[i], L_pred*1e-6)
+        if rest:
+            #plot model in SN restframe
+            ax[i].errorbar(ts[i]/(1.+z), Ms[i] - DM, M_errs[i], fmt='k+')
+            ax[i].plot(t_pred/(1.+z), M_pred - DM, color='r')
+            ax[i].set_ylim([max(Ms[i]-DM)+1.0, min(Ms[i]-DM)])
+            if i == np.ceil(nbands/2):
+                ax[i].set_ylabel("Absolute Magnitude")
+        else:
+            #plot model in observer frame
+            ax[i].errorbar(ts[i], Ms[i], M_errs[i], fmt='k+')
+            ax[i].plot(t_pred, M_pred, color='r')
+            ax[i].set_ylim([max(Ms[i])+0.2, min(Ms[i])])
+            if i == np.ceil(nbands/2):
+                ax[i].set_ylabel("Apparent Magnitude")
+        ax[i].set_xlim([-1, max(t_pred)])
+        ax[i].set_xlabel("Days since explosion.")
+            
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+
+#################################################################
+# Shallow layer Ni56 model.                                     #
+#################################################################
+
+#function: Piro and Nakar model
+def ShallowNiFit(t, t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s, plot=False):
+    #Inputs
+    #################################
+    #t_diff = time for diffusion wave to reach core of ejecta (day)
+    #L_diff = luminosity at t_diff (should be only L_direct), (ergs/s)
+    #MEej = optional, ejecta mass-energy parameter
+
+    #Fit parameters:
+    #Mej = Mass of ejecta (in 1.4 solar masses)
+    #Ek = Kinetic energy of ejecta (*10^51 ergs)
+    #x_2 = t/t_peak at which half of Ni56 is reached by diffusion wave
+    #beta = slope of x56 distribution
+    
+    #t = time from epoch in days
+
+    #Outputs
+    #################################
+    #array of luminosity (erg/s)
+
+    from scipy.integrate import simps
+    from scipy.special import erfc
+
+    #Constants
+    M_sun=2.e33
+
+    #t_diff = diff_time(Mej, Ek)
+    
+    #time axis, in days
+    t = np.array([t]) if (isinstance(t, np.float64) or
+                            isinstance(t, float)) else t
+    n = len(t)
+
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    
+    #diffusion wave depth in solar masses
+    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #diffusion wave depth at peak in solar masses
+    dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
+                                        np.exp(-t/tau_Ni))
+    #specific heating rate at peak
+    eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
+                                                  np.exp(-t_diff/tau_Ni))
+
+    #time normalized by rise time
+    x = t/t_diff
+
+    #normalize Ni56 distribution
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
+    intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
+    #Ni56 mass
+    M_ni = L_diff/eps_diff/M_sun
+    #normalization factor
+    norm = M_ni/(1.76*dM_diff)/simps(intg_x56, x_range)
+    #Ni56 mass fraction at depth
+    X56_x = norm/(1+np.exp(-beta*(x-x_2)))
+    #X56_x[x < x_s] = a_s*X56_x[x < x_s]
+    X56_x[x < x_s] = a_s
+    #total Ni56 distribution
+    X56_range = norm/(1+np.exp(-beta*(x_range-x_2)))
+    #X56_range[x_range < x_s] = a_s*X56_range[x_range < x_s]
+    X56_range[x_range < x_s] = a_s
+    #import matplotlib.pyplot as plt
+    #plt.plot(x, X56_x)
+    #plt.show()
+    
+    #approx. local heating from Ni56 in erg/s
+    L56 = X56_x*dM*M_sun*eps
+    
+    #integrate lambda function
+    intg_lambd = simps(X56_range*x_range**0.76, x_range)
+    lambd = (eps/eps_diff)/(intg_lambd/(X56_x*x**1.76))
+    #integrate from 0 to t at each epoch
+    L_direct = np.zeros(n)
+    L_tail = np.zeros(n)
+    L_ph = np.zeros(n)
+    for i in range(n):
+        #before diffusion time is reached
+        if x[i] < 1: #there is Ni56 deeper than diffusion depth
+            #luminosity due to Ni56 shallower than diffusion depth.
+            mask_direct = x_range<=x[i]
+            x_direct = x_range[mask_direct]
+            X56_direct = X56_range[mask_direct]
+            intg_direct = (X56_direct/X56_x[i])*(x_direct/x[i])**1.76/x_direct
+            L_direct[i] = L_diff * lambd[i] * simps(intg_direct, x_direct)
+            
+            #luminosity due to Ni56 deeper than diffusion depth.
+            mask_tail = x_range>=x[i]
+            x_tail = x_range[mask_tail]
+            X56_tail = X56_range[mask_tail]
+            intg_tail =  (X56_tail/X56_x[i])*(x_tail/x[i])**1.76/x_tail
+            diff_corr = erfc(x_tail/x[i]/np.sqrt(2.))/erfc(1./np.sqrt(2.))
+            L_tail[i] = L_diff * lambd[i] * simps(intg_tail*diff_corr, x_tail)
+        else: #diffusion depth has exposed all nickel
+            #L_direct[i] = 0.35*M_sun*eps[i]
+            
+            #luminosity due to Ni56 shallower than diffusion depth.
+            x_direct = x_range
+            X56_direct = X56_range
+            intg_direct = (X56_direct/X56_x[i])*(x_direct/x[i])**1.76/x_direct
+            L_direct[i] = L_diff * lambd[i] * simps(intg_direct, x_direct)
+            
+            #no Ni56 is deeper than diffusion depth
+            L_tail[i] = 0
+        
+        #total luminosity
+        L_ph[i] = L_direct[i] + L_tail[i]
+        
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(6,6))
+        ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
+        ax2 = plt.subplot2grid((4, 1), (2, 0))
+        ax3 = plt.subplot2grid((4, 1), (3, 0))
+        ax = [ax1, ax2, ax3]
+        
+        #plot luminosity over time
+        ax[0].plot(x, L_tail/L_diff, 'k', linestyle='--', label="$L_{tail}$")
+        ax[0].plot(x, L_direct/L_diff, 'k', linestyle=':', label="$L_{direct}$")
+        ax[0].plot(x, L_ph/L_diff, 'k', label="$L = L_d + L_t$")
+        ax[0].set_ylabel("$L/L_{peak}$")
+        ax[0].set_ylim([0.0011,2])
+        ax[0].set_xlim([-0.05,1])
+        ax[0].set_yscale('log')
+        ax[0].axes.get_xaxis().set_ticklabels([])
+
+        ax[1].plot(x, L56/L_ph, 'k')
+        ax[1].set_ylabel("$L_{56}/L$")
+        ax[1].set_ylim([0.0011, 3])
+        ax[1].set_xlim([-0.05,1])
+        ax[1].set_yscale('log')
+        ax[1].axes.get_xaxis().set_ticklabels([])
+
+        X56_diff = norm/(1.+np.exp(-beta*(1.-x_2)))
+        print "Ni56 mass:", M_ni
+        ax[2].plot(x, X56_x/X56_diff, 'k')
+        ax[2].set_yscale('log')
+        ax[2].set_ylim([0.001,2.0])
+        ax[2].set_ylabel("$X_{56}/X_{56, peak}$")
+        
+        ax[-1].set_xlabel("$x=t/t_{peak}$")
+        ax[-1].set_xlim([-0.05,1])
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=0.0)
+        plt.show()
+    
+    #return results
+    return L_ph
+
+#function: predict observations in some band
+def predShallowNimod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s, prnt=False):
+    from scipy.integrate import simps
+    from SEDAnalysis import BBflux
+    
+    #t = np.arange(t_diff/1000,twin,0.01)
+    tr = t/(1.+z)
+    L = ShallowNiFit(tr, t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s)
+    
+    #Constants
+    M_sun=2.e33
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    sb_const = 5.6704e-5 #erg/cm^2/s/K^4
+    
+    #diffusion wave depth in solar masses
+    dM = tr**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #diffusion wave depth at peak in solar masses
+    dM_diff = t_diff**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    if prnt:
+        print "Time when clump exposed", tr[tr<x_s*t_diff][-1]
+        print "Mass in clump", dM[tr<x_s*t_diff][-1]
+    
+    #photospheric radius for calculating temperature [cm]
+    rph = 3.0e14 * (tr**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
+    if prnt:
+        print "tau when clump exposed", taus[tr<x_s*t_diff][-1]
+        print "Rphot when clump exposed", rph[tr<x_s*t_diff][-1]
+    
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-tr/tau_Ni) +e_Co*(np.exp(-tr/tau_Co) - 
+                                         np.exp(-tr/tau_Ni))
+    #specific heating rate at peak
+    eps_diff = e_Ni*np.exp(-t_diff/tau_Ni) +e_Co*(np.exp(-t_diff/tau_Co) - 
+                                                  np.exp(-t_diff/tau_Ni))
+    
+    #time normalized by rise time
+    x = tr/t_diff
+    
+    #normalize Ni56 distribution
+    x_range=np.linspace(0.0005,1,2000, endpoint=True)
+    intg_x56 = x_range**0.76/(1.+np.exp(-beta*(x_range-x_2)))
+    #Ni56 mass
+    M_ni = L_diff/eps_diff/M_sun
+    #normalization factor
+    norm = M_ni/(1.76*dM_diff)/simps(intg_x56, x_range)
+    #Ni56 mass fraction at depth
+    X56_x = norm/(1+np.exp(-beta*(x-x_2)))
+    #X56_x[x < x_s] = a_s*X56_x[x < x_s]
+    X56_x[x < x_s] = a_s
+    #total Ni56 distribution
+    X56_range = norm/(1+np.exp(-beta*(x_range-x_2)))
+    #X56_range[x_range < x_s] = a_s*X56_range[x_range < x_s]
+    X56_range[x_range < x_s] = a_s
+    
+    #quantity of nickel above diffusion depth
+    M_ni = np.zeros(len(tr))
+    for i in range(len(tr)):
+        mask_ni = x_range<=x[i]
+        x_ni = x_range[mask_ni]
+        X56_ni = X56_range[mask_ni]
+        intg_ni = X56_ni*x_ni**0.76
+        M_ni[i] = 1.76*dM[i]*simps(intg_ni, x_ni)
+    
+    #approx. local heating from Ni56 in erg/s
+    M56 = X56_x*dM
+    if prnt:
+        print "Ni56 in clump", M56[x<x_s][-1]
+    L56 = M56*M_sun*eps
+    #color temperature (approximate)
+    Tc = np.power(L*taus/(4.*np.pi*rph**2*sb_const), 0.25)
+    
+    return BBflux(L, Tc, wave, z, DM) #uJy
+
+#function: error function for multi-band fitting of shallow Ni model
+def ShallowNiErr(ts, Ls, L_errs, waves, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s):
+    n_bands = len(waves)
+    #Compute error in each band
+    chi2err = 0
+    for i in range(n_bands):
+        #mask out positive time
+        tmask =  ts[i] > 0
+        #predict Ni model luminosity
+        L_pred_neg = np.zeros(len(ts[i][np.logical_not(tmask)]))
+        L_pred_pos = predShallowNimod(ts[i][tmask], waves[i], z, DM, taus[i], 
+                                      t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s)
+        L_pred = np.concatenate([L_pred_neg, L_pred_pos])
+        chi2err += np.sum(np.square((Ls[i] - L_pred*1e-6)/L_errs[i]))
+    return chi2err
+
+#function: plot multiband shallow Ni model
+def ShallowNiPlot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff, 
+                  Mej, Ek, beta, x_2, x_s, a_s, rest=True, flux=False):
+    #essential import
+    import matplotlib.pyplot as plt
+    from SNAP.Analysis.Cosmology import Flux_toMag, Mag_toFlux, bands, wave_0
+    
+    nbands = len(bs)
+    #create Figure
+    fig, ax = plt.subplots(nbands, sharex=True)
+    
+    #plot observations and model fits
+    for i in range(nbands):
+        L_pn14 = predNi56mod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                             t_diff, L_diff, Mej, Ek, beta, x_2)
+        M_pn14 = Flux_toMag(bs[i], L_pn14*1e-6)
+        L_pred = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                                  t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s)
+        M_pred = Flux_toMag(bs[i], L_pred*1e-6)
+
+        L_pred2 = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                                   t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s/2)
+        M_pred2 = Flux_toMag(bs[i], L_pred2*1e-6)
+        L_pred3 = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                                   t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s*2)
+        M_pred3 = Flux_toMag(bs[i], L_pred3*1e-6)
+        if not flux:
+            #plot magnitudes
+            if rest:
+                #plot model in SN restframe
+                ax[i].errorbar(ts[i]/(1.+z), Ms[i] - DM, M_errs[i], fmt='k+')
+                ax[i].plot(t_pred/(1.+z), M_pn14 - DM, color='b', linestyle='--')
+                ax[i].plot(t_pred/(1.+z), M_pred - DM, color='r')
+                ax[i].plot(t_pred/(1.+z), M_pred2 - DM, color='g')
+                ax[i].plot(t_pred/(1.+z), M_pred3 - DM, color='m')
+                ax[i].set_ylim([max(Ms[i]-DM)+1.0, min(Ms[i]-DM)])
+                if i == np.ceil(nbands/2):
+                    ax[i].set_ylabel("Absolute Magnitude")
+            else:
+                #plot model in observer frame
+                ax[i].errorbar(ts[i], Ms[i], M_errs[i], fmt='k+')
+                ax[i].plot(t_pred, M_pn14, color='b', linestyle='--')
+                ax[i].plot(t_pred, M_pred, color='r')
+                ax[i].set_ylim([max(Ms[i])+0.2, min(Ms[i])])
+                if i == np.ceil(nbands/2): 
+                    ax[i].set_ylabel("Apparent Magnitude")
+        else:
+            if not rest: 
+                Ls, L_errs = Mag_toFlux(bs[i], Ms[i], M_errs[i])
+                #plot janskies in observer frame
+                ax[i].errorbar(ts[i], Ls*1e6, L_errs*1e6, fmt='k+')
+                ax[i].plot(t_pred, L_pn14, color='b', linestyle='--')
+                ax[i].plot(t_pred, L_pred, color='r')
+                ax[i].plot(t_pred, L_pred2, color='g')
+                ax[i].plot(t_pred, L_pred3, color='m')
+                #ax[i].set_ylim([max(Ms[i]-DM)+1.0, min(Ms[i]-DM)])
+                ax[i].set_yscale('log')
+                if i == np.ceil(nbands/2):
+                    ax[i].set_ylabel("Flux [uJy]")
+            else:
+                if isinstance(rest, bool):
+                    DM2 = 0
+                else:
+                    DM2 = 5*np.log10(rest/3.086e19)
+                Ls, L_errs = Mag_toFlux(bs[i], Ms[i] - DM + DM2, M_errs[i])
+                L_pn14 = Mag_toFlux(bs[i], M_pn14 - DM + DM2)
+                L_pred = Mag_toFlux(bs[i], M_pred - DM + DM2)
+                L_pred2 = Mag_toFlux(bs[i], M_pred2 - DM + DM2)
+                L_pred3 = Mag_toFlux(bs[i], M_pred3 - DM + DM2)
+                
+                #get suppression (errors) by Janskies
+                masko = np.logical_and(ts[i]>0.4, ts[i]<0.7)
+                maski = np.logical_and(t_pred>ts[i][masko][0], t_pred<ts[i][masko][-1])
+                print bs[i]
+                print np.mean(L_pred[maski]) - np.mean(Ls[masko])
+                print np.mean(L_pred2[maski]) - np.mean(Ls[masko])
+                print np.mean(L_pred3[maski]) - np.mean(Ls[masko])
+                
+                #plot janskies in rest frame (or certain radius)
+                ax[i].errorbar(ts[i], Ls, L_errs, fmt='k+')
+                ax[i].plot(t_pred/(1.+z), L_pn14, color='b', linestyle='--')
+                ax[i].plot(t_pred/(1.+z), L_pred, color='r')
+                ax[i].plot(t_pred/(1.+z), L_pred2, color='g')
+                ax[i].plot(t_pred/(1.+z), L_pred3, color='m')
+                #ax[i].set_ylim([max(Ms[i]-DM)+1.0, min(Ms[i]-DM)])
+                ax[i].set_yscale('log')
+                if i == np.ceil(nbands/2):
+                    ax[i].set_ylabel("Flux [Jy]")
+                    
+        ax[i].set_xlim([-1, max(t_pred)])
+        ax[i].set_xlabel("Days since explosion.")
+        
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+
+#function: plot multiband shallow Ni model
+def ShallowNiColorPlot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff, 
+                       Mej, Ek, beta, x_2, x_s, a_s):
+    #essential import
+    import matplotlib.pyplot as plt
+    from SNAP.Analysis.Cosmology import Flux_toMag, bands, wave_0
+    from SNAP.Analysis.LCRoutines import LCcolors
+
+    tc, C, C_err = LCcolors(ts, Ms, M_errs)
+    
+    nbands = len(bs)
+    #create Figure
+    fig, ax = plt.subplots(nbands-1, sharex=True)
+    
+    M_14s = []
+    M_preds = []
+    #plot observations and model fits
+    for i in range(nbands):
+        L_pn14 = predNi56mod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                             t_diff, L_diff, Mej, Ek, beta, x_2)
+        M_pn14 = Flux_toMag(bs[i], L_pn14*1e-6)
+        L_pred = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
+                                  t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s)
+        M_pred = Flux_toMag(bs[i], L_pred*1e-6)
+        M_14s.append(M_pn14)
+        M_preds.append(M_pred)
+    
+    C_14s = [M_14s[0]-M_14s[1], M_14s[1]-M_14s[2]]
+    C_preds = [M_preds[0]-M_preds[1], M_preds[1]-M_preds[2]]
+
+    ax[0].errorbar(tc[0]/(1.+z), C[0], C_err[0], fmt='k+')
+    ax[0].plot(t_pred/(1.+z), C_14s[0], color='b')
+    ax[0].plot(t_pred/(1.+z), C_preds[0], color='r')
+    ax[0].set_ylabel("B-V")
+    ax[1].errorbar(tc[1]/(1.+z), C[1], C_err[1], fmt='k+')
+    ax[1].plot(t_pred/(1.+z), C_14s[1], color='b')
+    ax[1].plot(t_pred/(1.+z), C_preds[1], color='r')
+    ax[1].set_ylabel("V-I")
+    ax[1].set_xlim([-1, max(t_pred)])
+    ax[1].set_xlabel("Days since explosion")
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.show()
