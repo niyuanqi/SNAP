@@ -204,6 +204,31 @@ def SEDcalib(p0, spec, SED_filts, SED_flux, SED_flux_err):
 # Blackbody SED template                                        #
 #################################################################
 
+#function: jy to flam (erg/s/cm2/AA)
+def Jy_toFLAM(x, flux_jy):
+    #constants
+    wave = x*1e-8 #angstrom to cm
+    c = 2.99792458e10 #cm/s
+    flux_flam = flux_jy*1e-23*c/wave**2/1e8
+    return flux_flam
+
+#function: flam to jy (1e-23 erg/s/cm2/Hz)
+def FLAM_toJy(x, flux_flam):
+    #constants
+    wave = x*1e-8 #angstrom to cm
+    c = 2.99792458e10 #cm/s
+    flux_jy = flux_flam*1e8*wave**2/c/1e-23
+    return flux_jy
+
+#function: photlam to flam (erg/s/cm2/AA)
+def PHOTLAM_toFLAM(x, flux_phot):
+    #constants
+    wave = x*1e-8 #angstrom to cm
+    h = 6.6260755e-27 #erg*s
+    c = 2.99792458e10 #cm/s
+    flux_flam = flux_phot*h*c/wave
+    return flux_flam
+    
 #function: stefan Boltzmann's law
 def SBlaw(T):
     sb = 5.67051e-5 #erg/s/cm2/K4
@@ -244,11 +269,12 @@ def fitBlackbod(waves, fluxes, fluxerrs=None, plot=False, ptitle=""):
     
     #estimate temperature
     est = [10000.0, 1e14]
+    est = [10000.0, 1e20]
     #fit blackbody temperature
     if fluxerrs is not None:
         popt, pcov = curve_fit(BBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True)
     else:
-        popt, pcov = curve_fit(BBflux, waves, fluxes, p0=est)
+        popt, pcov = curve_fit(BBflux, waves, fluxes, p0=est, maxfev=10000000)
     perr = np.sqrt(np.diag(pcov))
     T, Terr = popt[0], perr[0] #K
     r, rerr = popt[1], perr[1] #dimensionless

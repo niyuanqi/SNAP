@@ -137,9 +137,13 @@ def filter_flux(filterfile, syn_spec, syn_err=None, wrange=None):
         fwave = filt.waveset
         swave = syn_spec.waveset
         wrange = (max(fwave[0],swave[0]),min(fwave[-1],swave[-1]))
+        wlengths = fwave[np.logical_and(fwave>wrange[0], fwave<wrange[1])]
+    else:
+        wlengths = fwave[np.logical_and(fwave>wrange[0], fwave<wrange[1])]
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
-    flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    #flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    flux = obs.effstim(flux_unit='jy', wavelengths=wlengths).value
     #Synthetic observation of error spectrum
     if syn_err is not None:
         #square filter and error spectrum
@@ -241,6 +245,16 @@ def Scorr(filt1,filt2, zerof1,zerof2, syn_spec, syn_err=None, wrange1=None,wrang
 #################################################################
 # Spectral Line Fitting                                         #
 #################################################################
+
+#function: bin spectrum to resolution
+def bin_spec(wave, spec, R=400):
+    spec_filt = np.zeros(len(spec))
+    #bin resolved intervals
+    for i in range(len(spec)):
+        dw = wave[i]/R
+        mask = np.logical_and(wave >= wave[i]-dw/2., wave < wave[i]+dw/2)
+        spec_filt[i] = np.mean(spec[mask])
+    return spec_filt
 
 #function: Skewed Gaussian line profile
 def lpNorm(x, A, mu, sig, skew, b):

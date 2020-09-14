@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, rp17=False, satpix=40000.0, verbosity=0, diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -140,8 +140,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     #            considered to be reliable, and therefore used.         #
     #    fitsky; boolean, if True; fit for planar sky around source to  #
     #            be subtracted from image before fitting/integrating.   #
-    #      rp17; boolean, if True; compute mean reference star color    #
-    #            in B-V and correct B-band following Park et al. 2017.  #
     # verbosity; int counts verbosity level.                            #
     # ----------------------------------------------------------------- #
     # Output                                                            #
@@ -157,7 +155,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     import Catalog as ctlg
     import PSFlib as plib
     import Photometry as pht
-    import ColorCorr as ccor
     from Analysis.Cosmology import bands, flux_0
 
     #Single object? Generalize to multiple object. (Compatibility)
@@ -179,7 +176,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         Xo[i], Yo[i] = wcs.all_world2pix(RAo[i], DECo[i], 0)
         if verbosity > 0:
             print "Source "+str(i+1)+" located at: "+str(Xo[i])+", "+str(Yo[i])
-        
+    
     #load photometric reference stars catalog
     if verbosity > 0:
         print "loading catalog"
@@ -221,9 +218,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     catX, catY = catX.astype(float), catY.astype(float)
     #select catalog stars within some radius of object
     index = pht.dist(catX,catY,np.mean(Xo),np.mean(Yo)) < radius
+    if np.array_equal(image,catimage):
+        edgetol = 15
+    else:
+        edgetol = 15
     #select catalog stars within edges
-    index = np.logical_and(index, np.logical_and(catX > 15, catimage.shape[1]-catX > 15))
-    index = np.logical_and(index, np.logical_and(catY > 15, catimage.shape[0]-catY > 15))
+    index = np.logical_and(index, np.logical_and(catX > edgetol, catimage.shape[1]-catX > edgetol))
+    index = np.logical_and(index, np.logical_and(catY > edgetol, catimage.shape[0]-catY > edgetol))
     #select unsaturated catalog stars
     index = np.logical_and(index, catM > satmag)
     #select bright enough catalog stars
@@ -392,7 +393,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         print "Mean SN of reference stars:",np.mean(catSNs)
         print "Mean background noise:", np.mean(skyNs), np.std(skyNs)
         print ""
-    ccor_plot = False #suppress color correlation plot below
     if verbosity > 1:
         #essential extra import
         import MagPlot as magplt
@@ -408,16 +408,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         magplt.noise_corr_plot(insMags, catNs)
         #photometric solution between instrumental magnitudes vs catalog
         magplt.phot_sol(insMags, insMagerrs, catMags, catMagerrs)
-        #unsuppress color correlation plot below
-        ccor_plot = True
+        if band == 'B':
+            magplt.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+        elif band == 'I':
+            magplt.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
         print ""
-    #compute mean reference star colors for Park et al. 2017 color correction
-    if band == 'B':
-        mref, eref = ccor.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs, plot=ccor_plot)
-    elif band == 'I':
-        mref, eref = ccor.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs, plot=ccor_plot)
         
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source
@@ -427,7 +424,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
             print "Computing photometry of source "+name[0]
 
         if aperture is not None:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            #PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            if psf[0] == '1':
+                PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            elif psf[0] == '2':
+                PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFfit(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            elif psf[0] == '3':
+                PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '1':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         elif psf[0] == '2':
@@ -676,7 +679,6 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--refMag", type=float, default=19.0, help="Reliable lower bound for reference star brightness")
     parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs and psf must match original image. If not, matching is required in preprocessing.")
     parser.add_argument("--fit_sky", action='store_const', const=True, default=False, help="Give this flag if it is desirable to fit for and subtract planar sky around the source.")
-    parser.add_argument("--rp17", action='store_const', const=True, default=False, help="Give this flag if it is desirable to correct for Park et al. 2017 B-band color correlation of reference stars.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
     
