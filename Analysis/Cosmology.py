@@ -160,9 +160,16 @@ def Mag_subMag(mag1, err1, mag2, err2):
     mag_sub = -2.5*np.log10(relflux_sub)
     err_sub = np.sqrt(np.square(err1*flux1/relflux_sub) + np.square(err2*flux2/relflux_sub))
     return mag_sub, err_sub
+#function: add a constant magnitude object to limiting mags
+def Mag_addMag(mag1, mag2):
+    flux1 = np.power(10,mag1/-2.5)
+    flux2 = np.power(10,mag2/-2.5)
+    relflux_sub = flux1+flux2
+    mag_add = -2.5*np.log10(relflux_sub)
+    return mag_add
 #function: subtract a constant magnitude object from fluxes
 def Flux_subMag(flux1, err1, mag2, err2, band='i'):
     flux2 = flux_0[bands[band]]*np.power(10,mag2/-2.5)
-    flux_sub = flux1 - flux2
+    flux_sub = flux1 - flux2*1e6
     err_sub = np.sqrt(np.square(err1) + np.square(err2*flux2*np.log10(10)/(-2.5)))
     return flux_sub, err_sub
