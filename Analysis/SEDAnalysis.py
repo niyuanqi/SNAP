@@ -335,15 +335,18 @@ def colorT(color, band1, band2, z=0):
     from SNAP.Analysis.Cosmology import wave_0, bands, Flux_toMag
 
     #trial temperatures
-    N = 1000
+    N = 10000
     Ts = np.logspace(3, 5, N) #K
     Ls = np.ones(N)
     #1-2 color for each temperature
-    Tflux1 = BBflux(Ls, Ts, wave_0[bands[band1]], z, 1) #uJy
-    Tflux2 = BBflux(Ls, Ts, wave_0[bands[band2]], z, 1) #uJy
-    Tmag1 = Flux_toMag(band1, Tflux1*1e-6) #mag
-    Tmag2 = Flux_toMag(band2, Tflux2*1e-6) #mag
-    Tcolors = Tmag1-Tmag2
+    Tflux1 = blackbod(wave_0[bands[band1]]/(1.0+z),Ts)
+    Tflux2 = blackbod(wave_0[bands[band2]]/(1.0+z),Ts)
+    Tcolors = -2.5*np.log10(Tflux1/Tflux2)
+    #Tflux1 = BBflux(Ls, Ts, wave_0[bands[band1]], z, 1) #uJy
+    #Tflux2 = BBflux(Ls, Ts, wave_0[bands[band2]], z, 1) #uJy
+    #Tmag1 = Flux_toMag(band1, Tflux1*1e-6) #mag
+    #Tmag2 = Flux_toMag(band2, Tflux2*1e-6) #mag
+    #Tcolors = Tmag1-Tmag2
     #closest color
     i_min = np.argmin(np.abs(Tcolors-color))
     return Ts[i_min]
@@ -359,15 +362,93 @@ def colorTR(mag1, mag2, band1, band2, z, DM):
     #calculate luminosity density in band1
     flux_den1 = Mag_toFlux(band1, mag1) #Jy <-> 1e-23 ergs/s/Hz/cm^2
     lum_den1 = flux_den1*Area*1e-23 #ergs/s/Hz
+    flux_den2 = Mag_toFlux(band2, mag2) #Jy <-> 1e-23 ergs/s/Hz/cm^2
+    lum_den2 = flux_den2*Area*1e-23 #ergs/s/Hz
+
     
     #calculate color temperature
     color = mag1 - mag2
     T = colorT(color, band1, band2, z)
     #predicted flux density in band1
-    flux_den1 = blackbod(wave_0[bands[band1]],T) #erg/s/cm2/Hz 
+    flux_den1 = blackbod(wave_0[bands[band1]]/(1.+z),T) #erg/s/cm2/Hz 
+    flux_den2 = blackbod(wave_0[bands[band2]]/(1.+z),T) #erg/s/cm2/Hz 
     #calculate radius
-    area = lum_den1/flux_den1 #cm^2
+    area1 = lum_den1/flux_den1 #cm^2
+    area2 = lum_den2/flux_den2 #cm^2
+    area = 0.5*(area1+area2)
+    area = area2
     R = np.sqrt(area/(4*np.pi)) #cm
 
     #return color temperature and radius
     return T, R
+#function: get blackbody function from temperature and radius
+def TRblackbod(T, R, z, DM, EBV=0):
+    
+    from SNAP.Analysis.Cosmology import wave_0, bands, Mag_toFlux
+    import extinction as extn
+    import astropy.units as u
+
+    #luminosity distance [pc -> cm]
+    dl = 10*np.power(10, DM/5.0)*3.086*10**18
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    area = 4.0*np.pi*R**2
+    #predicted flux density at wave
+    flux_obs = lambda wave: extn.apply(extn.fm07(wave*u.AA, EBV*3.1), 
+                                       blackbod(wave/(1.+z),T)*1e23*area/Area) #Jy
+    #flux_obs = lambda wave: blackbod(wave/(1.+z),T)*1e23*area/Area #Jy
+    return flux_obs
+
+#function: fit blackbody with extinction
+def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""):
+
+    import extinction as extn
+    from scipy.optimize import curve_fit
+    import astropy.units as u
+
+    if EBV is None:
+        #blackbody+extinction(Rv=3.1) flux function
+        exBBflux = lambda x, T, r, EBV: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        #estimate temperature
+        est = [10000.0, 1e20, 10]
+    else:
+        exBBflux = lambda x, T, r: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        est = [10000.0, 1e25]
+
+    #fit blackbody temperature
+    if fluxerrs is not None:
+        popt, pcov = curve_fit(exBBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True, maxfev=1000000)
+    else:
+        popt, pcov = curve_fit(exBBflux, waves, fluxes, p0=est, maxfev=10000000)
+    perr = np.sqrt(np.diag(pcov))
+    T, Terr = popt[0], perr[0] #K
+    r, rerr = popt[1], perr[1] #dimensionless
+    if EBV is None:
+        EBV, EBVerr = popt[2], perr[2] #mag
+        print "E(B-V) for Rv=3.1:", EBV, EBVerr
+    else:
+        EBVerr = 0
+    #plot fit if given
+    if plot:
+        import matplotlib.pyplot as plt
+
+        print "Temperature [K]:", T, Terr
+        print "Received/Emitted:", r, rerr
+        if fluxerrs is not None:
+            plt.errorbar(waves, fluxes, yerr=fluxerrs, fmt='g+')
+        else:
+            plt.plot(waves, fluxes, color='g')
+        w = np.linspace(min(waves), max(waves), 100)
+        plt.plot(w, exBBflux(w, *popt), c='r',
+                 label="T = {:.0f} ({:.0f}) K\nr = {:.3f} ({:.3f})\nEBV = {:.3f} ({:.3f})".format(
+                     T, Terr, r, rerr, EBV, EBVerr))
+        #plt.plot(w, extn.remove(extn.fm07(w*u.AA, EBV*3.1), exBBflux(w, *popt)), c='b',
+        #         label="dereddened")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux")
+        plt.title(ptitle)
+        plt.legend(loc='lower right')
+        plt.tight_layout()
+        plt.show()
+    w = np.linspace(min(waves), max(waves), 100)
+    #return blackbody temperature
+    return T, Terr, r, rerr, EBV, EBVerr, w, exBBflux(w, *popt)

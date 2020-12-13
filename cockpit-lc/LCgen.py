@@ -27,6 +27,7 @@ bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 #observatory positions
 observatories = {'A':[210.9383,-31.2712,1143.0], 'S':[339.8104,-32.3789,1762.0], 'C':[70.8040,-30.1672,2167.0]}
+observatories = {'A':[149.0587,-31.2712,1143.0], 'S':[18.4769,-32.3789,1762.0], 'C':[-70.8040,-30.1672,2167.0]}
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so):
