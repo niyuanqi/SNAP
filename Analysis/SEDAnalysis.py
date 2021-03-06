@@ -39,9 +39,9 @@ def SEDinterp(t, bands, SED_ts, SED_lcs, SED_errs=None,
         return
     if bandmask is None:
         bandmask = np.ones(Nw).astype(bool)
-    #check coverage
+        #check coverage
     for i in range(Nw):
-        if t > max(SED_ts[i]) or t < min(SED_ts[i]):
+        if bandmask[i] and (t > max(SED_ts[i]) or t < min(SED_ts[i])):
             print "Incomplete coverage in lc "+str(i)+", masking..."
             bandmask[i] = False
     #check if some bands are masked
@@ -376,11 +376,37 @@ def colorTR(mag1, mag2, band1, band2, z, DM):
     area1 = lum_den1/flux_den1 #cm^2
     area2 = lum_den2/flux_den2 #cm^2
     area = 0.5*(area1+area2)
-    area = area2
+    #area = area2
     R = np.sqrt(area/(4*np.pi)) #cm
 
     #return color temperature and radius
     return T, R
+#function: color radius
+def colorR(T, mag1, mag2, band1, band2, z, DM):
+    
+    from SNAP.Analysis.Cosmology import wave_0, bands, Mag_toFlux
+    
+    #luminosity distance [pc -> cm]
+    dl = 10*np.power(10, DM/5.0)*3.086*10**18
+    Area = 4.0*np.pi*np.square(dl) #cm^2
+    #calculate luminosity density in band1
+    flux_den1 = Mag_toFlux(band1, mag1) #Jy <-> 1e-23 ergs/s/Hz/cm^2
+    lum_den1 = flux_den1*Area*1e-23 #ergs/s/Hz
+    flux_den2 = Mag_toFlux(band2, mag2) #Jy <-> 1e-23 ergs/s/Hz/cm^2
+    lum_den2 = flux_den2*Area*1e-23 #ergs/s/Hz
+    
+    #predicted flux density in band1
+    flux_den1 = blackbod(wave_0[bands[band1]]/(1.+z),T) #erg/s/cm2/Hz 
+    flux_den2 = blackbod(wave_0[bands[band2]]/(1.+z),T) #erg/s/cm2/Hz 
+    #calculate radius
+    area1 = lum_den1/flux_den1 #cm^2
+    area2 = lum_den2/flux_den2 #cm^2
+    area = 0.5*(area1+area2)
+    #area = area2
+    R = np.sqrt(area/(4*np.pi)) #cm
+
+    #return color temperature and radius
+    return R
 #function: get blackbody function from temperature and radius
 def TRblackbod(T, R, z, DM, EBV=0):
     
@@ -413,6 +439,10 @@ def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""
     else:
         exBBflux = lambda x, T, r: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
         est = [10000.0, 1e25]
+        if EBV < 0:
+            est = [1000.0, 1e18]
+        else:
+            est = [10000.0, 1e20]
 
     #fit blackbody temperature
     if fluxerrs is not None:

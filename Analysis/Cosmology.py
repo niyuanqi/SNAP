@@ -21,13 +21,13 @@ Wl = 0.73 #vacuum density parameter
 Tcmb=2.725 #CMB current temperature
 
 #calibration information
-#band zero fluxes [Jy] from Bessel 1998 (outdated)
+#band zero fluxes [Jy] from Bessell 1998 (outdated)
 #flux_0 = [1790, 4063, 3636, 3064, 2416]
 #band zero fluxes [Jy] in UBVri with mix from AB system
 flux_0 = [1790, 4063, 3636, 3631, 3631]
 
 #telescope information
-#band isophotal wavelengths [Angstrom] from Bessel 2005
+#band isophotal wavelengths [Angstrom] from Bessell 2005
 wave_0 = [3663, 4361, 5448, 6407, 7980]
 #band widths [Angstrom] from Bessel 2005
 widths = [650, 890, 840, 1580, 1540]
@@ -127,7 +127,10 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
 
 #function: calculate flux [Jy] from mag
 def Mag_toFlux(band, mag, mag_err=None):
-    flux = flux_0[bands[band]]*np.power(10,mag/-2.5)
+    if isinstance(band, str):
+        flux = flux_0[bands[band]]*np.power(10,mag/-2.5)
+    else:
+        flux = band*np.power(10,mag/-2.5)
     if mag_err is not None:
         #calculate errors
         flux_err = flux*np.log(10)*mag_err/2.5
@@ -137,8 +140,14 @@ def Mag_toFlux(band, mag, mag_err=None):
         return flux
 #function: calculate mag from flux [Jy]
 def Flux_toMag(band, flux, flux_err=None):
-    mod = flux/flux_0[bands[band]]
-    mag =  -2.5 * np.array([np.log10(m) for m in mod])
+    if isinstance(band, str):
+        mod = flux/flux_0[bands[band]]
+    else:
+        mod = flux/band
+    if hasattr(mod, '__iter__'):
+        mag =  -2.5 * np.array([np.log10(m) for m in mod])
+    else:
+        mag =  -2.5 * np.log10(mod)
     if flux_err is not None:
         #calculate errors
         mag_err = 2.5*flux_err/(np.log(10)*flux)
@@ -146,6 +155,17 @@ def Flux_toMag(band, flux, flux_err=None):
     else:
         #don't calculate errors
         return mag
+
+#function: transform magnitude to AB system
+def Mag_toAB(band, mag):
+    flux = Mag_toFlux(band, mag) #Jy
+    mag_AB = Flux_toMag(3631, flux)
+    return mag_AB
+#function: transform AB magnitude to other system
+def AB_toMag(band, mag):
+    flux = Mag_toFlux(3631, mag) #Jy
+    mag_AB = Flux_toMag(band, flux)
+    return mag_AB
 
 #function: calculate absolute time at redshift z
 def absTime(appTime, z):

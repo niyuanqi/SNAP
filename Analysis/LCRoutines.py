@@ -742,7 +742,7 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
     return retlist
 
 #function: load light curve from dlt file
-def DLT_load(filename, tcol, magcol, errcol):
+def DLT_load(filename, tcol, magcol, errcol, syscol=None):
     
     from SNAP.Astrometry import isot_day
 
@@ -760,8 +760,14 @@ def DLT_load(filename, tcol, magcol, errcol):
     detmask = np.invert(limmask)
     tlim, lim = t[limmask], mag[limmask]
     t, mag, err = t[detmask], mag[detmask], err[detmask]
+    retlist  = [t, mag, err, tlim, lim]
+    #load systematics
+    if syscol is not None:
+        sys = np.loadtxt(filename,usecols=(syscol,),comments='#',unpack=True)
+        sys = sys[mask][detmask]
+        retlist += [sys]
     #return detections and limits
-    return t, mag, err, tlim, lim
+    return retlist
 
 #function: load light curve from swift file
 def Swift_load(filename, bcol, tcol, magcol, errcol, limcol=None, bands=['UVW2','UVM2','UVW1','U','B','V']):

@@ -408,10 +408,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         magplt.noise_corr_plot(insMags, catNs)
         #photometric solution between instrumental magnitudes vs catalog
         magplt.phot_sol(insMags, insMagerrs, catMags, catMagerrs)
-        if band == 'B':
-            magplt.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
-        elif band == 'I':
-            magplt.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+        #if band == 'B':
+        #    magplt.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+        #elif band == 'I':
+        #    magplt.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
         print ""

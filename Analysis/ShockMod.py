@@ -102,7 +102,8 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1,late=True):
     
     #time to reach non-relativistic material
     t_c = (rho_c / (2.*((v9*g9/K1)**0.66)*(rho6**0.12)/(R85**1.3)))**(1./1.3)
-    
+
+    #late, t_c =False, 100000000
     #Luminosity and temperature model
     if t < 0:
         Lsh = 0
@@ -119,7 +120,7 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1,late=True):
             v9**1.9) * (rho6**0.36) * (R85**0.83) * (t4**-0.16) #erg/s
         Tsh = ET* (2.e4) * ((g9/K2)**-0.058) * (
             v9**0.030) * (rho6**0.0058) * (R85**0.11) * (t4**-0.44) #K
-
+        
     return Lsh, Tsh #erg/s, K
 
 def ShockCoolingFit(t_day, wave, z, DM, m_c, R8, T5, t0, late=True):

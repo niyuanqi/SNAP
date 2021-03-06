@@ -48,7 +48,7 @@ def run_wcsremap(ref_name, src_name, outdir):
     return outname
 
 #use hotpants to match images photometrically and subtract
-def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None):
+def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None, sigma_match=None):
 
     import numpy as np
     import subprocess
@@ -88,8 +88,9 @@ def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imx=3692.8,
     flags += ['-nsx', str(round(imx/(30.0*fwhm)))]
     flags += ['-nsy', str(round(imy/(30.0*fwhm)))]
     #gaussians with which to compose kernel
-    if fwhm is not None:
-        flags += ['-ng','3','6',str(fwhm/2.0),'4',str(fwhm),'2',str(2*fwhm)]
+    if sigma_match is not None:
+        #flags += ['-ng','3','6',str(fwhm/2.0),'4',str(fwhm),'2',str(2*fwhm)]
+        flags += ['-ng','3','6',str(sigma_match/2.0),'4',str(sigma_match),'2',str(2*sigma_match)] #210306 according to A. Becker github
     else:
         flags += ['-ng','3','6','3.00','4','6.00','2','12.0']
     
@@ -136,7 +137,7 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
             shutil.rmtree(tmpdir)
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None, tmpdir="DITemp", delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None, sigma_match=None, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
@@ -150,21 +151,11 @@ def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imx=3692
         
         #remap reference file to source file coordinates
         remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
-
-        #hotpants arguments
-        args = [src_name, remaped_ref, out_name, conv_name]
-        if fwhm is not None:
-            args += [fwhm]
-        args += [imx, imy, tmp_sat, src_sat, tmp_neg, src_neg]
-        if tmp_mask is not None:
-            args += [tmp_mask]
-        if src_mask is not None:
-            args += [src_mask]
-        if better is not None:
-            args += [better]
             
         #subtract remapped reference file from source file
-        run_hotpants(*args)
+        run_hotpants(src_name, remaped_ref, out_name, conv_name, fwhm,
+                     imx, imy, tmp_sat, src_sat, tmp_neg, src_neg,
+                     tmp_mask, src_mask, better, sigma_match)
 
         print "SUBTRACTION COMPLETE"
         print "output:",out_name

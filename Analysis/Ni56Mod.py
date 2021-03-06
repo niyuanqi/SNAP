@@ -540,6 +540,9 @@ def predNi56mod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     L56 = M56*M_sun*eps
     #color temperature (approximate)
     Tc = np.power(L*taus/(4.*np.pi*rph**2*sb_const), 0.25)
+    #mask = t>0.5
+    #print t[mask][::5]
+    #print Tc[mask][::5]
 
     return BBflux(L, Tc, wave, z, DM) #uJy
 
