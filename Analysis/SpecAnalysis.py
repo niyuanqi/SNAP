@@ -302,6 +302,9 @@ def fitLine(center, width, spec, spec_err=None, plot=False):
     #return line center
     return min_wave, perr[1]
 
+def lin(x, a, b):
+    return a*x + b
+
 def voigt(x, y):
     # The Voigt function is also the real part of
     # w(z) = exp(-z^2) erfc(iz), the complex probability function,
@@ -337,7 +340,7 @@ def DVoigt(nu, aD1, aL1, nu1, A1, aD2, aL2, nu2, A2, a, b):
     return V
 
 #function: measure equivalent width of Na I D lines
-def fitNaID(spec, spec_err=None, r=15, z=0, plot=False):
+def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
     #r is annulus size around lines for fitting
     from scipy.optimize import curve_fit
     
@@ -356,7 +359,8 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False):
 
     #fitting doublet profile
     est = [0.4, 0.8, line2, -1.0,
-           0.4, 0.8, line1, -0.5, 0, b_est]
+           0.4, 0.8, line1, -0.5,
+           0, b_est]
     print est
     if spec_err is None:
         popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
@@ -397,6 +401,94 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False):
         
         plt.plot(spec_wave, spec_flux, c='g')
         #plt.plot(spec_wave[mask], DVoigt(spec_wave[mask], *popt), c='r')
+        plt.plot(wave2, V2+backg2, c='r')
+        plt.plot(wave1, V1+backg1, c='b')
+        plt.title("Doublet Voigt Line Fit")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.show()
+
+    if params:
+        return popt, perr
+
+#function: Na I D upper limit
+def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
+    #r is annulus size around lines for fitting
+    from scipy.optimize import curve_fit
+        
+    #load spectrum data
+    spec_wave = spec.waveset.value
+    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+
+    #Na I D locations
+    line2 = 5890.0*(1.+z)
+    line1 = 5896.0*(1.+z)
+
+    #crop a fitting window around the Na I D
+    mask = np.logical_and(spec_wave > line2-r, spec_wave < line1+r)
+    #estimate background level
+    b_est = 0.5*(spec_flux[mask][0] + spec_flux[mask][-1])
+
+    #fit a line to determine background level in spectrum
+    plin, pcov = curve_fit(lin, spec_wave[mask], spec_flux[mask], p0=[0, b_est], maxfev=1000000)
+    perr = np.sqrt(np.diag(pcov))
+    lin_flux = lin(spec_wave[mask], *plin)
+    #determine noise level per pixel in spectrum
+    noise = np.std(spec_flux[mask] - lin_flux)
+
+    #generate Voigt profiles until S/N = 3
+    n = 500
+    A = np.linspace(-0.1, -1, n)
+    
+    SNR1 = np.zeros(n)
+    wave1= np.linspace(line1-r, line1+r, 1000)
+    backg1 = lin(wave1, *plin)
+    for i in range(n):
+        V1 = Voigt(wave1, popt[0], popt[1], line1, A[i])
+        EW1 = np.trapz(-V1/backg1, wave1)
+        #signal to noise ratio
+        EWmask1 = np.logical_and(wave1>=line1-0.5*EW1, wave1<=line1+0.5*EW1)
+        SNR1[i] = np.mean(V1[EWmask1]/noise)
+    i1 = np.argmin(np.absolute(SNR1 + sn))
+    A1 = A[i1]
+    SNR1 = SNR1[i1]
+    V1 = Voigt(wave1, popt[0], popt[1], line1, A1)
+    EW1 = np.trapz(-V1/backg1, wave1)
+        
+    SNR2 = np.zeros(n)
+    wave2= np.linspace(line2-r, line2+r, 1000)
+    backg2 = lin(wave2, *plin)
+    for i in range(n):
+        V2 = Voigt(wave2, popt[4], popt[5], line2, A[i])
+        EW2 = np.trapz(-V2/backg2, wave2)
+        #signal to noise ratio
+        EWmask2 = np.logical_and(wave2>=line2-0.5*EW2, wave2<=line2+0.5*EW2)
+        SNR2[i] = np.mean(V2[EWmask2]/noise)
+    i2 = np.argmin(np.absolute(SNR2 + sn))
+    A2 = A[i2]
+    SNR2 = SNR2[i2]
+    V2 = Voigt(wave1, popt[4], popt[5], line2, A2)
+    EW2 = np.trapz(-V2/backg2, wave2)
+
+    #convert EW to galactic extinction from Poznanski et al. 2012
+    print "SNR2=", SNR2
+    print "SNR1=", SNR1
+    print "D2: EW =",EW2
+    print "D1: EW =",EW1
+    EBV2 = np.power(10, 2.16*EW2-1.91)
+    err2 = EBV2*np.log(10)*0.15
+    EBV1 = np.power(10, 2.47*EW1-1.76)
+    err1 = EBV1*np.log(10)*0.17
+    #SFD 1998 extinction
+    print "D2: E(B-V) =",np.power(10, 2.16*EW2-1.91),err2
+    print "D1: E(B-V) =",np.power(10, 2.47*EW1-1.76),err1
+
+    #plotting the fit
+    if plot:
+        import matplotlib.pyplot as plt
+        
+        plt.plot(spec_wave, spec_flux, c='g')
+        plt.plot(spec_wave[mask], lin_flux, c='k')
         plt.plot(wave2, V2+backg2, c='r')
         plt.plot(wave1, V1+backg1, c='b')
         plt.title("Doublet Voigt Line Fit")

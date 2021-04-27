@@ -1,10 +1,8 @@
 #################################################################
-# Name:     Diffgen.py                                          #
+# Name:     DiffFits.py                                         #
 # Author:   Yuan Qi Ni                                          #
-# Date:     June 21, 2018                                       #
-# Function: Program uses DiffIm routine to subtract images      #
-#           after using MagCalc to measure important data       #
-#           and after creating masks using Astroscrappy.        #
+# Date:     July 14, 2017                                       #
+# Function: Program uses DiffIm routine to subtract images.     #
 #           Update /raw files and ObjData.py before running.    #
 #################################################################
 
@@ -49,6 +47,7 @@ for i in range(len(bands)):
     files = sorted(glob('../raw/'+prefix+bands[i]+'*.fits'))
     N = len(files)
     for n, filename in enumerate(files):
+        print ""
         print "Performing image subtraction on file "+str(n+1)+"/"+str(N)
         print filename
         #output filename
@@ -59,8 +58,6 @@ for i in range(len(bands)):
         #mask image
         maskname='.'.join(filename.split('.')[:-1])+".mask.fits"
         maskname='../mask/'+'/'.join(maskname.split('/')[2:])
-        #cleanname='.'.join(filename.split('.')[:-1])+".clean.fits"
-        #cleanname='../clean/'+'/'.join(maskname.split('/')[2:])
         #other parameters
         fo = filename.split('/')[2]
         fo = '.'.join(fo.split('.')[2:5])
@@ -85,16 +82,19 @@ for i in range(len(bands)):
             if Mtest:
                 try:
                     print "Extracting psf"
-                    PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0, diagnosis=True)
-                    #image fwhm
+                    PSF, PSFerr, Med, Noise = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=satpix, verbosity=0, diagnosis=True)
+                    #print image fwhm
                     fwhm = np.mean(E2moff_toFWHM(*PSF[:-1]))
+                    print "Image fwhm", fwhm
                     if fwhm == 0:
                         raise PSFError('Unable to perform photometry on reference stars.')
                     print ""
-                    #image size
-                    imsize = np.mean(image.shape)
+                    #get image size
+                    imx = image.shape[1]
+                    imy = image.shape[0]
                     #image negative limit
                     ilim = Med - 10*Noise
+                    
                     #check if mask already created
                     if os.path.exists(maskname):
                         print "Already created mask for: "+filename
@@ -104,18 +104,31 @@ for i in range(len(bands)):
                         maskim = crmask.astype('uint8')
                         hdu = fits.PrimaryHDU(data=maskim, header=hdr)
                         hdu.writeto(maskname)
-                        #hdu = fits.PrimaryHDU(cleanarr)
-                        #hdu.header = hdr
-                        #hdu.writeto(cleanname)
-                    #subtract reference image
+                    
+                    #determine which image is worse.
+                    if fwhm < ref_fwhms[i]:
+                        print "Image is better than template"
+                        sigma_match = ref_fwhms[i]/2
+                        fwhm_c = ref_fwhms[i]
+                        better = 'i'
+                        print "sigma_match", sigma_match
+                    else:
+                        print "Template is better than image"
+                        sigma_match = fwhm/2
+                        fwhm_c = fwhm
+                        better = 't'
+                        print "sigma_match", sigma_match
+
+                    #worse image - convolved better image
                     print ""
                     print "Performing subtraction, generating files"
                     print diffname, convname
                     make_diff_image(filename, refs[i], diffname, convname,
-                                    fwhm=fwhm, imsize=imsize,
+                                    fwhm=fwhm_c, imx=imx, imy=imy,
                                     tmp_sat=reflims[i][0], src_sat=satpix,
                                     tmp_neg=reflims[i][1], src_neg=ilim,
                                     tmp_mask=refmasks[i], src_mask=maskname,
+                                    better=better, sigma_match=sigma_match,
                                     tmpdir="DITemp"+str(n))
                 
                 except PSFError:

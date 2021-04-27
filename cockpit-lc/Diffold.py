@@ -52,7 +52,7 @@ for i in range(len(band)):
             print "subtracting "+filename
             #subtract reference image
             args = [filename, refs[i], diffname, convname, "DITemp"+str(n)]
-            queue.append(pool.apply_async(make_diff_image, args))
+            queue.append(pool.apply_async(basic_diff_image, args))
 
 #retrieve results
 results = [proc.get() for proc in queue]

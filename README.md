@@ -1,5 +1,5 @@
 # SNAP
-SuperNova Analysis Package
+(SuperNova Analysis Package)
 
 Performs data analysis and processing on images containing transient sources.
 Implements python routines for performing photometry, astrometry, etc. Also can analyse supernova type 1a light curves.
@@ -25,22 +25,23 @@ Automatically performs differential photometry on given fits image files. It use
 
 Basic usage in command line (some samples)
 
-*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky conv_image.fits catalog.csv -d diff_image.fits*
+*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 15.0 -f 16.0 --fit_sky conv_image.fits catalog.csv -d diff_image.fits*
 
-*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 0 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits catalog.csv*
+*% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 0 -fwhm 5 -vvv -n 3.0 -s 15.0 -f 16.0 --fit_sky example_image.fits catalog.csv*
 
-*% python -m SNAP.MagCalc -c aavso -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 10 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky example_image.fits -d example_diffIm.fits my_aavso_catalog_name.cat*
+*% python -m SNAP.MagCalc -c aavso -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -a 10 -fwhm 5 -vvv -n 3.0 -s 15.0 -f 16.0 --fit_sky example_image.fits -d example_diffIm.fits my_aavso_catalog_name.cat*
 
-*% python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -psf 1 -fwhm 5 -vvv -n 3.0 -s 14.0 -f 16.0 --fit_sky N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv*
+*% python -m SNAP.MagCalc -c phot -o N300-1.Q0.SN -b 'B' -p 14.263303:-37.039900 -r 1000 -psf 1 -fwhm 5 -vvv -n 3.0 -s 15.0 -f 16.0 --fit_sky N300-1.Q0.B.151010_1604.A.033278.005604N3646.0060.nh.crop.fits N300_1_Q0_SN.csv*
 
-*% python -m SNAP.MagCalc -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -psf 1 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
+*% python -m SNAP.MagCalc -c diff -o KSP-N300-Nova -b 'B' -p 13.789218:-37.704572 -r 1000 -psf 1 -fwhm 5 -n 3.0 -s 15.0 -f 16.0 --fit_sky -vv N300-1.Q2.B.151009_0015.S.000859.005606N3754.0060.nh.fits N300-1.Q2.diff.cat*
 
-*% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm -psf 2 -fwhm 5 -n 3.0 -s 14.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
+*% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm -psf 2 -fwhm 5 -n 3.0 -s 15.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
 Try in terminal
 
 *% python -m SNAP.MagCalc -h*
-for explanation of flags and inputs
+
+for explanation of flags and inputs.
 
 Basic usage in python routine (sample)
 

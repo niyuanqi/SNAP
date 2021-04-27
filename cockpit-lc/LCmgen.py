@@ -36,7 +36,7 @@ Nobj = len(name)
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 #observatory positions
-observatories = {'A':[210.9383,-31.2712,1143.0], 'S':[339.8104,-32.3789,1762.0], 'C':[70.8040,-30.1672,2167.0]}
+observatories = {'A':[149.0587,-31.2712,1143.0], 'S':[18.4769,-32.3789,1762.0], 'C':[-70.8040,-30.1672,2167.0]}
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so):
@@ -155,7 +155,8 @@ for i in range(len(files)):
 
         if Mtest:
             try:
-                
+                # Photometry Sequence
+                #################################
                 RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
                     
                 """
@@ -169,6 +170,7 @@ for i in range(len(files)):
                     print "Source is bright, get a fix on centroid. psf=2"
                     RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
                 """
+                #################################
             
                 #check if MagCalc returns nonsense
                 for j in range(Nobj):

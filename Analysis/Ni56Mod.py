@@ -781,12 +781,15 @@ def predShallowNimod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2, x
     if prnt:
         print "Time when clump exposed", tr[tr<x_s*t_diff][-1]
         print "Mass in clump", dM[tr<x_s*t_diff][-1]
+        tspec = 0.9
+        print "Diffusion mass depth when t=0.9", tspec**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
     
     #photospheric radius for calculating temperature [cm]
     rph = 3.0e14 * (tr**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
     if prnt:
         print "tau when clump exposed", taus[tr<x_s*t_diff][-1]
         print "Rphot when clump exposed", rph[tr<x_s*t_diff][-1]
+        print "Rphot when t=0.9", 3.0e14*(tspec**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
     
     tau_Ni=8.8 #decay time of Ni56 in day
     tau_Co=9.822e6/86400. #decay time of Co56 in day
@@ -855,7 +858,7 @@ def ShallowNiErr(ts, Ls, L_errs, waves, z, DM, taus, t_diff, L_diff, Mej, Ek, be
 
 #function: plot multiband shallow Ni model
 def ShallowNiPlot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff, 
-                  Mej, Ek, beta, x_2, x_s, a_s, rest=True, flux=False):
+                  Mej, Ek, beta, x_2, x_s, a_s, rest=True, flux=False, prnt=False):
     #essential import
     import matplotlib.pyplot as plt
     from SNAP.Analysis.Cosmology import Flux_toMag, Mag_toFlux, bands, wave_0
@@ -870,7 +873,7 @@ def ShallowNiPlot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff,
                              t_diff, L_diff, Mej, Ek, beta, x_2)
         M_pn14 = Flux_toMag(bs[i], L_pn14*1e-6)
         L_pred = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 
-                                  t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s)
+                                  t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s, prnt=prnt)
         M_pred = Flux_toMag(bs[i], L_pred*1e-6)
 
         L_pred2 = predShallowNimod(t_pred, wave_0[bands[bs[i]]], z, DM, taus[i], 

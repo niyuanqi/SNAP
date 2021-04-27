@@ -166,7 +166,15 @@ for i in range(len(bands)):
 
             if Mtest:
                 try:
+                    # Photometry Sequence
+                    #################################
+                    #This performs fixed, auto-aperture photometry
+                    
                     RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, aperture=0, psf=1, name=name, band=bands[i], fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=True, satpix=1000000000.0, verbosity=0)
+
+                    #################################
+
+                    RAo, DECo, Io, SNo, Mo, Mo_err = RAo[0], DECo[0], Io[0], SNo[0], Mo[0], Mo_err[0]
                 
                     #check if MagCalc returns nonsense
                     if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):

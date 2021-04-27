@@ -26,15 +26,14 @@ from ObjData import *
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 #observatory positions
-observatories = {'A':[210.9383,-31.2712,1143.0], 'S':[339.8104,-32.3789,1762.0], 'C':[70.8040,-30.1672,2167.0]}
 observatories = {'A':[149.0587,-31.2712,1143.0], 'S':[18.4769,-32.3789,1762.0], 'C':[-70.8040,-30.1672,2167.0]}
 
 #function which fills a row with column entries
 def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so):
     sto = padstr("%.5f"%to,10)
     sfo = padstr(fo,27)
-    sRAo = padstr("%.1f"%RAo,10)
-    sDECo = padstr("%.1f"%DECo,10)
+    sRAo = padstr("%.7f"%RAo,10)
+    sDECo = padstr("%.7f"%DECo,10)
     sIo = padstr(str(Io)[:9],10)
     sSNo = padstr(str(SNo)[:5],10)
     sMo = padstr("%.3f"%Mo,10)
@@ -47,8 +46,8 @@ def rowGen(to,fo,RAo,DECo,Io,SNo,Mo,Mo_err,Mlimo,so):
 def headGen():
     sto = padstr("OBSDAY"+str(year),10)
     sfo = padstr("STRTXT",27)
-    sRAo = padstr("RA_MC(\")",10)
-    sDECo = padstr("DEC_MC(\")",10)
+    sRAo = padstr("RA_MC(\")",13)
+    sDECo = padstr("DEC_MC(\")",13)
     sIo = padstr("Flux(uJy)",10)
     sSNo = padstr("SNR",10)
     sMo = padstr("MAG_MC",10)
@@ -138,12 +137,22 @@ for i in range(len(files)):
 
         if Mtest:
             try:
-
+                # Photometry Sequence
+                #################################
+                #This sequence performs fixed PSF photometry for all images,
+                #then followed by psftype-defined PSF photometry if SNR > 3 detected
                 print "Try photometry with fixed centroid."
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=1, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
-                if SNo>SNRnoise:
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf='1', name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
+                if SNo[0]>SNRnoise:
                     print "Source is bright, get a better fix on centroid."
-                    RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=fitsky, satpix=satpix, verbosity=0)
+                    RAo1, DECo1, Io1, SNo1, Mo1, Mo_err1, Mlimo1 = magnitude(image, image, wcs, cattype, catname, (ra,dec), radius=size, psf=psftype, name=name, band=band, fwhm=5.0, limsnr=SNRnoise, satmag=satlvl, refmag=rellvl, fitsky=1, satpix=satpix, verbosity=0)
+                    if not any([math.isnan(Io1[0]),math.isinf(Io1[0]),math.isnan(SNo1[0]),math.isinf(SNo1[0])]):
+                        #take these if useable
+                        RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo = RAo1, DECo1, Io1, SNo1, Mo1, Mo_err1, Mlimo1
+
+                #################################
+
+                RAo, DECo, Io, SNo, Mo, Mo_err = RAo[0], DECo[0], Io[0], SNo[0], Mo[0], Mo_err[0]
             
                 #check if MagCalc returns nonsense
                 if any([math.isnan(Mo),math.isinf(Mo),math.isnan(Mo_err),math.isinf(Mo_err)]):
@@ -153,41 +162,41 @@ for i in range(len(files)):
                     Io, SNo = -99.99999, -99.99
                     if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
                         Mlimo = -99.999
-                        RAo, DECo = -99.9, -99.9
+                        RAo, DECo = -99.9999999, -99.9999999
                         Mtest = False
             
                 if any([math.isnan(Mlimo),math.isinf(Mlimo)]):
                     Mlimo = -99.999
                     if any([math.isnan(Io),math.isinf(Io),math.isnan(SNo),math.isinf(SNo)]):
                         Io, SNo = -99.99999, -99.99
-                        RAo, DECo = -99.9, -99.9
+                        RAo, DECo = -99.9999999, -99.9999999
                         Mtest = False
                     else:
-                        RAo = RAo - ra
-                        DECo = DECo - dec
+                        RAo = RAo 
+                        DECo = DECo
                 else:
-                    RAo = RAo - ra
-                    DECo = DECo - dec
+                    RAo = RAo
+                    DECo = DECo
 
             except PSFError: #if image PSF cant be extracted
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9999999, -99.9999999, -99.99999, -99.99, -99.999, -99.999, -99.999
                 so = "PSF_ERROR"
                 Mtest = False
                 print "PSF can't be extracted!"
             except: #General catastrophic failure
-                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+                RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9999999, -99.9999999, -99.99999, -99.99, -99.999, -99.999, -99.999
                 Mtest = False
                 print "Unknown catastrophic failure!"
 
         else:
-            RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9, -99.9, -99.99999, -99.99, -99.999, -99.999, -99.999
+            RAo, DECo, Io, SNo, Mo, Mo_err, Mlimo  = -99.9999999, -99.9999999, -99.99999, -99.99, -99.999, -99.999, -99.999
 
         #check for total failure
         if not Mtest:
             so = so + "_BAD_IMAGE"
         else:
             if any([math.isnan(RAo),math.isinf(RAo),math.isnan(DECo),math.isinf(DECo)]):
-                RAo, DECo = 0.0, 0.0
+                RAo, DECo = -99.9999999, -99.9999999
             if Mlimo < 0:
                 so = "INCONV"
 

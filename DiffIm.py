@@ -186,5 +186,6 @@ if __name__ == "__main__":
     delete_temp = not args.debug
 
     #create difference image
-    make_diff_image(args.src_name, args.ref_name, args.out_name, args.conv_name,
-                    delete_temp=delete_temp)
+    basic_diff_image(args.src_name, args.ref_name,
+                     args.out_name, args.conv_name,
+                     delete_temp=delete_temp)

@@ -699,7 +699,7 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
                 terrs.append(terr)
         else: #no strings given
             terrs = [np.array([0]*len(t)) for t in ts]
-    
+
     #check if SN filter is applied
     if SNthres is not None:
         #filter out bad data with all information
