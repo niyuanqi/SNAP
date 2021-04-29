@@ -1,8 +1,8 @@
 # SuperNova Analysis Package (SNAP)
 
-Contains routines for image manipulation (cropping, stacking, subtracting), photometry (PSF photometry, aperture photometry, estimating detection limits), and calibration (querying reference stars, differential photometry), as well as routines for transforming light curves between the KMTNet $BVI$ filter system and standard Johnson/SDSS filters.
-The main program is MagCalc.py.
-There are also many supernova-specific programs for analysing their light curves and fitting them with models in the Analysis folder.
+Contains routines for image manipulation (cropping, stacking, subtracting), photometry (PSF photometry, aperture photometry, estimating detection limits), and calibration (querying reference stars, differential photometry).
+The main photometry program is MagCalc.py.
+There are also many supernova-specific programs for analysing their light curves and fitting them with models as well as routines for transforming light curves between the KMTNet BVI filter system and standard Johnson/SDSS filters in the Analysis folder.
 
 The manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
 
