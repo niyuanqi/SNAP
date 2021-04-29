@@ -4,7 +4,7 @@ Contains routines for image manipulation (cropping, stacking, subtracting), phot
 The main photometry program is MagCalc.py.
 There are also many supernova-specific programs for analysing their light curves and fitting them with models as well as routines for transforming light curves between the KMTNet BVI filter system and standard Johnson/SDSS filters in the Analysis folder.
 
-The manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
+The latest manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
 
 It explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them. It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes. Unfortunately, you need to download the pdf for the embedded hyperlinks to work.
 
@@ -106,7 +106,7 @@ Contains functions for creating stamp png images and stamp collages from fits fi
 
 **AutoSEx.py :**
 
-Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create catalog files.
+Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create a photometry catalog.
 
 Try the following line in terminal for an explanation of flags and inputs.
 
@@ -136,55 +136,55 @@ Example usage:
 
 **Vizier.py :**
 
-Contains python functions for querying/parsing vizier catalogs and currently supports USNO-B1, AAVSO-APASS-DR9.
+Contains functions for querying/parsing vizier catalogs and currently supports USNO-B1, AAVSO-APASS-DR9.
 
 ---
 
 **Astrometry.py :**
 
-Contains python functions for computing astrometric quantities, like angles and lunar position.
+Contains functions for computing astrometric quantities, like angles and lunar position.
 
 ---
 
 **Catalog.py :**
 
-Contains python functions for parsing various differential photometric reference star catalogs. Can automatically query aavso for a catalog, given catalog name will be name of saved file. Can also use a custom catalog given in "diff" format with columns ID,RA,DEC,B,Berr,V,Verr,i,ierr with 'NA' string denoting missing values.
+Contains functions for parsing various differential photometric reference star catalogs. Can automatically query aavso for a catalog, given catalog name will be name of saved file. Can also use a custom catalog given in "diff" format with columns ID,RA,DEC,B,Berr,V,Verr,i,ierr with 'NA' string denoting missing values.
 
 ---
 
 **Photometry.py :**
 
-Contains python functions for PSF fitting, extraction, integration, etc.
+Contains functions for PSF fitting, extraction, integration, etc.
 
 ---
 
 ## Analysis
-Contains routines for analysing light curves, and miscellaneous tools.
+Code for analysing light curves, and miscellaneous tools.
 
 **Cosmology.py :**
 
-Contains python functions for computing cosmological distances and other quantities.
+Contains functions for computing cosmological distances and other quantities.
 
 **FitsSandbox.py :**
 
-Contains python functions for making fits test images.
+Contains functions for making fits test images.
 
 **LCFitting.py :**
 
-Contains python functions for fitting polynomials, supernova templates, etc to light curves of transients.
+Contains functions for fitting polynomials, supernova templates, etc to light curves of transients.
 
 **LCRoutines.py :**
 
-Contains python functions for reading and writing light curve files.
+Contains functions for reading and writing light curve files.
 
 ## Examples
 
-Examples directory contains miscellaneous programs that do various useful things such as make image histogram (for finding saturation limit), making image mask using Astroscrappy, testing multi-object photometry on single files, etc.
+Miscellaneous programs that do useful things such as make image histogram (for finding saturation limit), making image mask using Astroscrappy, testing multi-object photometry on single files, etc.
 
 ## cockpit-lc
 
-cockpit-lc contains a compact set of routines which one may use to generate light curves from MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available). Copy the whole thing into an empty directory, and everything should work. As of July 2018, you can also perform multi-object psf photometry in cockpit-lc. Simply replace the corresponding parameters in ObjData.py with lists, and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object inputs, hence it is supposed to be a replacement for LCgen.py. Advanced image subtraction is also possible in cockpit-lc using Diffgen.py. It uses MagCalc to retrieve PSF from image for calibration, uses Astroscrappy package (Curtis McCully) to create artifact masks, and then uses DiffIm.py to subtract reference image from image. Note, this is quite slow, and you can speed this up substatially by cropping both the science image and the reference image using CropIm.py to the same subsection of sky.
+Set of routines which one may use to generate light curves using MagCalc. Keep the format of ObjData.py and replace values therein with your own. Then, run routines as outlined in README to generate a quick light curve. DataSetup.py synchronizes files from remote server, and generates file structure needed for cockpit-lc to work. CropFits.py crops raw files. LCgen.py generates light curve from cropped files using MagCalc.py. Can update light curve dynamically (picks up analysis where you left off, or when new data is available). Copy the whole thing into an empty directory, and everything should work. As of July 2018, you can also perform multi-object psf photometry in cockpit-lc. Simply replace the corresponding parameters in ObjData.py with lists, and it will work out of the box if you use LCmgen.py. In fact, LCmgen.py also works on your old ObjData.py with single object inputs, hence it is supposed to be a replacement for LCgen.py. Advanced image subtraction is also possible in cockpit-lc using Diffgen.py. It uses MagCalc to retrieve PSF from image for calibration, uses Astroscrappy package (Curtis McCully) to create artifact masks, and then uses DiffIm.py to subtract reference image from image. Note, this is quite slow, and you can speed this up substatially by cropping both the science image and the reference image using CropIm.py to the same subsection of sky.
 
 ## cockpit-sn1a
 
-cockpit-sn1a uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models. The subdirectory kasen-mc also contains routines for extensive early light curve analysis using Kasen models.
+Set of code that uses the Analysis subpackage to analyse SN1a data. SNphillip.py can use SNooPy to fit for Phillips parameters (for fit for redshift using SNMCcalib.py), EarlyFit.py can fit power law to early light curve, ArnettFit.py can perform Arnett modelling, KasenCompare.py can compare early light curve to Kasen interaction models. The subdirectory kasen-mc also contains routines for extensive early light curve analysis using Kasen models.
