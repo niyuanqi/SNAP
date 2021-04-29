@@ -160,7 +160,7 @@ def BVcorrectMag(ts, mags, errs, interp='GP', Bcol=0, Vcol=1, mBVr=0, mBVrerr=0)
                        [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
         Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
         Vin_err = np.sqrt(np.diag(Vin_var))
-    elif :
+    else:
         #Interpolate linearly
         Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
         Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])    
