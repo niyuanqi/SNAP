@@ -26,7 +26,7 @@ To use any SNAP modules from command line, add SNAP to your PYTHONPATH as follow
 
 Alternatively, run the following to figure out where your python site-packages directory is.
 
-*% python -m site --user-site
+*% python -m site --user-site*
 
 In the site-packages, make a *.pth file and drop the path containing the SNAP directort.
 
