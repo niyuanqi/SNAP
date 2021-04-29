@@ -1,7 +1,8 @@
 # SuperNova Analysis Package (SNAP)
 
 Contains routines for image manipulation (cropping, stacking, subtracting), photometry (PSF photometry, aperture photometry, estimating detection limits), and calibration (querying reference stars, differential photometry), as well as routines for transforming light curves between the KMTNet $BVI$ filter system and standard Johnson/SDSS filters.
-There are also many supernova-specific programs for analysing their light curves and fitting them with models.
+The main program is MagCalc.py.
+There are also many supernova-specific programs for analysing their light curves and fitting them with models in the Analysis folder.
 
 The manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
 
@@ -11,11 +12,7 @@ You can also read below for some command line examples with a few programs.
 
 ---
 
-The flagship program is MagCalc.py.
-
-The subpackage Analysis contains tools for dealing with such light curves.
-
-To use any of these modules, add SNAP to your PYTHONPATH
+To use any of these modules, add SNAP to your PYTHONPATH as follows.
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
@@ -27,6 +24,7 @@ Requires dill to use certain monte carlo intensive routines.
 
 Requires SNooPy (Burns 2011) to analyse type 1a supernovae.
 
+---
 
 **MagCalc.py :**
 
@@ -37,8 +35,6 @@ The command line application of MagCalc has been preserved, and any old usage of
 To use the new multi-object photometry, one need only replace the input parameters source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
 Each item in the list corresponds to each object's name, ra, dec, and psf to be used for source. Each object's fitsky parameter (boolean) indicates whether its annulus with participate in sky background fitting. Example: to have an annulus taken around every source, simply give a list of ones.
 At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including plot of annulus used). This is in addition to the old plots of fit cross-section (for each object).
-
----
 
 Try the following line in terminal for an explanation of flags and inputs.
 
@@ -60,13 +56,11 @@ Some examples of command line usage:
 
 ---
 
-Try in python shell on any imported modules from SNAP
+In python shell, you can try the following on any imported modules from SNAP for an explanation of functions and inputs.
 
 *% from SNAP.MagCalc import \<module\>*
 
 *% help(\<module\>)*
-
-for explanation of functions and inputs
 
 Some examples of MagCalc usage in python:
 
