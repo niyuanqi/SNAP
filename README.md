@@ -72,15 +72,15 @@ Some examples of MagCalc usage in python:
 
 **DiffIm.py :**
 
-Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements. 
-
-Example usage:
-
-*% python -m SNAP.DiffIm srcfile_name reffile_name difffile_name convfile_name*
+Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements.
 
 Try the following line in terminal for an explanation of flags and inputs:
 
 *% python -m SNAP.DiffIm -h*
+
+Example usage:
+
+*% python -m SNAP.DiffIm srcfile_name reffile_name difffile_name convfile_name*
 
 ---
 
