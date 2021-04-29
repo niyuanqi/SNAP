@@ -2,8 +2,10 @@
 
 Contains routines for image manipulation (cropping, stacking, subtracting), photometry (PSF photometry, aperture photometry, estimating detection limits), and calibration (querying reference stars, differential photometry), as well as routines for transforming light curves between the KMTNet $BVI$ filter system and standard Johnson/SDSS filters.
 There are also many supernova-specific programs for analysing their light curves and fitting them with models.
-[KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf) explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them.
-It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes.
+
+The manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
+
+The manual explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them. It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes.
 
 You can also read below for some command line examples with a few programs.
 
@@ -28,9 +30,21 @@ Requires SNooPy (Burns 2011) to analyse type 1a supernovae.
 
 **MagCalc.py :**
 
-Automatically performs differential photometry on given fits image files. It uses functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. Operating conditions can be manipulated by a highly customizable set of flags. Can use provided reference star catalogs or can automatically query AAVSO (example given below). Can use a science image to perform reference star photometry while performing source photometry on a difference image with the same wcs and gain preferably constructed using DiffIm.py (example given below). Can perform either PSF photometry, automatic aperture photometry, or fixed aperture photometry. Can select how many degrees of freedom with which to fit source PSF. Can fit for background sky. Can handle multiple PSF fitting, when input name, psf, RAo, DECo are lists (aperture must be None, multiple aperture photometry is still under construction).
+Automatically performs differential photometry on given fits image files. It executes functions for automatic PSF fitting, planar background fitting, Kron aperture selection, photometric calibration using reference stars, and monte carlo limiting magnitude calculation. Agrees very well with Bertin and Arnout's SExtractor routine on uncrowded field point source photometry, but is superior at crowded field point source photometry. Operating conditions can be manipulated by a very customizable set of flags. Can use provided reference star catalogs or can automatically query AAVSO (example given below). Can use a science image to perform reference star photometry while performing source photometry on a difference image with the same wcs and gain, preferably constructed using DiffIm.py (example given below). Can perform either PSF photometry, automatic aperture photometry, or fixed aperture photometry. Can select how many degrees of freedom with which to fit source PSF. Can fit for background sky. Can handle multiple PSF fitting, when input name, psf, RAo, DECo are lists (aperture must be None, multiple aperture photometry is still under construction).
 
-Basic usage in command line (some samples)
+As of July 2018, MagCalc is able to perform multi-object PSF photometry.
+The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
+To use the new multi-object photometry, one need only replace the input parameters source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
+Each item in the list corresponds to each object's name, ra, dec, and psf to be used for source. Each object's fitsky parameter (boolean) indicates whether its annulus with participate in sky background fitting. Example: to have an annulus taken around every source, simply give a list of ones.
+At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including plot of annulus used). This is in addition to the old plots of fit cross-section (for each object).
+
+---
+
+Try the following line in terminal for an explanation of flags and inputs.
+
+*% python -m SNAP.MagCalc -h*
+
+Some examples of command line usage:
 
 *% python -m SNAP.MagCalc -c phot -o SOURCE_NAME -b 'B' -p 14.263303:-37.039900 -r 1000 -fwhm 5 -vvv -n 3.0 -s 15.0 -f 16.0 --fit_sky conv_image.fits catalog.csv -d diff_image.fits*
 
@@ -44,108 +58,111 @@ Basic usage in command line (some samples)
 
 *% python -m SNAP.MagCalc -c dprs -o KSP-OT-1 -b 'B' -p 140.92247:-21.969278 -r 1000 -fwhm -psf 2 -fwhm 5 -n 3.0 -s 15.0 -f 16.0 --fit_sky -vv N2784-7.Q1.B.150402_2125.S.015081.092205N2208.0060.nh.fits N2784-7.Q1.DPRS.cat*
 
-Try in terminal
-
-*% python -m SNAP.MagCalc -h*
-
-for explanation of flags and inputs.
-
-Basic usage in python routine (sample)
-
-*% from SNAP.MagCalc import magnitude*
-
-*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, image_fromfits, wcs_fromfits, 'aavso', '../N2784-7.Q1.AAVSO.cat', (140.92247,-21.969278), radius=1000.0, aperture=15, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=15.0, refMag=16.0, verbosity=0)*
+---
 
 Try in python shell on any imported modules from SNAP
 
 *% from SNAP.MagCalc import \<module\>*
 
 *% help(\<module\>)*
+
 for explanation of functions and inputs
 
-As of July 2018, MagCalc is able to perform multi-object PSF photometry.
-The command line application of MagCalc has been preserved, and any old usage of MagCalc has been preserved (MagCalc will revert to single object photometry).
-To use the new multi-object photometry, one need only replace the input parameters source name, ra, dec, psf, fitsky with python lists (not applicable to command line).
-Each item in the list corresponds to each object's name, ra, dec, and psf to be used for source. Each object's fitsky parameter (boolean) indicates whether its annulus with participate in sky background fitting. Example: to have an annulus taken around every source, simply give a list of ones.
-At sufficient verbosity, MagCalc will provide new plots. These are image plots of residuals of multi fit, and residuals of sky fit (including plot of annulus used). This is in addition to the old plots of fit cross-section (for each object).
+Some examples of MagCalc usage in python:
+
+*% from SNAP.MagCalc import magnitude*
+
+*% RAo, DECo, Io, SNo, Mo, Mo_err, Mlim = magnitude(image_fromfits, image_fromfits, wcs_fromfits, 'aavso', '../N2784-7.Q1.AAVSO.cat', (140.92247,-21.969278), radius=1000.0, aperture=15, name='KSP-OT-1', band='B', fwhm=5.0, limsnr=3.0, satmag=15.0, refMag=16.0, verbosity=0)*
+
+---
 
 **DiffIm.py :**
 
 Uses WCSremap and HOTPANTS routines (Andrew Becker) to subtract fits files and create image difference files. WCSremap matches images astrometrically, while HOTPANTS matches images photometrically (using convolution) for subtraction. Outputs a difference image, and a convolved image which is the science image photometrically matched to the difference image. When performing photometry, use convolved image for reference stars measurements and difference image for source measurements. 
 
-Basic usage (sample)
+Example usage:
 
 *% python -m SNAP.DiffIm srcfile_name reffile_name difffile_name convfile_name*
 
-Try in terminal
+Try the following line in terminal for an explanation of flags and inputs:
 
 *% python -m SNAP.DiffIm -h*
 
-for explanation of flags and inputs
+---
 
 **BinIm.py :**
 
 Uses SWarp routine (Emmanuel Bertin) to create binned files with matched wcs.
 
-Basic usage (sample)
-
-*% python -m SNAP.BinIm t1 t2 outfile_name*
-
-Try in terminal
+Try the following line in terminal for an explanation of flags and inputs.
 
 *% python -m SNAP.BinIm -h*
 
-for explanation of flags and inputs
+Example usage:
+
+*% python -m SNAP.BinIm t1 t2 outfile_name*
+
+---
 
 **StampIm.py :**
 
 Contains functions for creating stamp png images and stamp collages from fits files.
 
+---
+
 **AutoSEx.py :**
 
 Uses SExtractor routine (Bertin and Arnout) to detect objects in fits images and create catalog files.
 
-Basic usage (sample)
+Try the following line in terminal for an explanation of flags and inputs.
+
+*% python -m SNAP.AutoSEx -h*
+
+Example usage:
 
 *% python -m SNAP.AutoSEX srcfile_name*
 
 *% python -m SNAP.AutoSEX srcfile_name --config_name myconfig.sex --xml_out --check_out OBJECTS*
 
-Try in terminal
-
-*% python -m SNAP.AutoSEx -h*
-
-for explanation of flags and inputs
+---
 
 **MatchPhot.py :**
 
 Operates on the output of SExtractor (Emmanuel Bertin) which takes in a fits image and compiles catalog file with fluxes of objects detected in the image. MatchPhot uses a list reference stars in the same field of view from AAVSO's APASS-DR9 catalog and extracts a photometric solution mapping SExtractor fluxes to their apparent magnitudes by matching bright reference stars from SExtractor catalog to their counterpart in APASS-DR9 catalog.
 
-Basic usage (sample)
-
-*% python -m SNAP.MatchPhot SExtractor_catname band -ref AAVSO_catname
-
-Try in terminal
+Try the following line in terminal for an explanation of flags and inputs.
 
 *% python -m SNAP.MatchPhot -h*
 
-for explanation of flags and inputs
+Example usage:
+
+*% python -m SNAP.MatchPhot SExtractor_catname band -ref AAVSO_catname
+
+---
 
 **Vizier.py :**
 
 Contains python functions for querying/parsing vizier catalogs and currently supports USNO-B1, AAVSO-APASS-DR9.
 
+---
+
 **Astrometry.py :**
 
 Contains python functions for computing astrometric quantities, like angles and lunar position.
+
+---
 
 **Catalog.py :**
 
 Contains python functions for parsing various differential photometric reference star catalogs. Can automatically query aavso for a catalog, given catalog name will be name of saved file. Can also use a custom catalog given in "diff" format with columns ID,RA,DEC,B,Berr,V,Verr,i,ierr with 'NA' string denoting missing values.
 
+---
+
 **Photometry.py :**
 
 Contains python functions for PSF fitting, extraction, integration, etc.
+
+---
 
 ## Analysis
 Contains routines for analysing light curves, and miscellaneous tools.
