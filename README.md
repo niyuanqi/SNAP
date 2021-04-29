@@ -20,6 +20,8 @@ Requires installing dill to use certain monte carlo intensive routines.
 
 Requires installing SNooPy (Burns 2011) to analyse type 1a supernovae.
 
+---
+
 To use any SNAP modules from command line, add SNAP to your PYTHONPATH as follows.
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
