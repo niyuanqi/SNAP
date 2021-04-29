@@ -1,10 +1,15 @@
-# SNAP
-(SuperNova Analysis Package)
+# SuperNova Analysis Package (SNAP)
 
-Performs data analysis and processing on images containing transient sources.
-Implements python routines for performing photometry, astrometry, etc. Also can analyse supernova type 1a light curves.
+Contains routines for image manipulation (cropping, stacking, subtracting), photometry (PSF photometry, aperture photometry, estimating detection limits), and calibration (querying reference stars, differential photometry), as well as routines for transforming light curves between the KMTNet $BVI$ filter system and standard Johnson/SDSS filters.
+There are also many supernova-specific programs for analysing their light curves and fitting them with models.
+[KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf) explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them.
+It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes.
 
-The flagship program is MagCalc.py. This [document](KMTNet_Photometry.pdf) contains some explanation of how its photometry works.
+You can also read below for some command line examples with a few programs.
+
+---
+
+The flagship program is MagCalc.py.
 
 The subpackage Analysis contains tools for dealing with such light curves.
 
@@ -12,7 +17,9 @@ To use any of these modules, add SNAP to your PYTHONPATH
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
 
-Requires latest astropy to function properly.
+Requires latest astropy for most things.
+
+Requires synphot for synthetic photometry.
 
 Requires dill to use certain monte carlo intensive routines.
 
