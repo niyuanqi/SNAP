@@ -6,23 +6,23 @@ There are also many supernova-specific programs for analysing their light curves
 
 The manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
 
-The manual explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them. It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes.
+It explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them. It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes. Unfortunately, you need to download the pdf for the embedded hyperlinks to work.
 
-You can also read below for some command line examples with a few programs.
+You can also read below for some usage examples with a few programs.
 
 ---
 
-To use any of these modules, add SNAP to your PYTHONPATH as follows.
+Requires installing latest astropy for most things.
+
+Requires installing synphot for synthetic photometry.
+
+Requires installing dill to use certain monte carlo intensive routines.
+
+Requires installing SNooPy (Burns 2011) to analyse type 1a supernovae.
+
+To use any SNAP modules from command line, add SNAP to your PYTHONPATH as follows.
 
 *% PYTHONPATH=$PYTHONPATH:\<path containing SNAP directory\>*
-
-Requires latest astropy for most things.
-
-Requires synphot for synthetic photometry.
-
-Requires dill to use certain monte carlo intensive routines.
-
-Requires SNooPy (Burns 2011) to analyse type 1a supernovae.
 
 ---
 
