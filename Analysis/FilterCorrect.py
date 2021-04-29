@@ -90,7 +90,7 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
         #correct B band using Bout = Bin + Scorr
         scorr = np.interp(tcs[Bcol][mask],tcorr,Scorr)
     #correct B band using S correction
-    Bout[mask] = Bin[mask] + scorr + SBVega - c*mBVr
+    Bout[mask] = Bin[mask] + scorr - SBVega - c*mBVr
     Bout_err[mask] = np.sqrt(Bin_err[mask]**2 + (c*mBVrerr)**2)
     
     #mask times over which Scorrs are invalid
@@ -118,7 +118,7 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     return tcs, magcs, errcs
 
 #function: return corrected B band magnitude based on V band correlation
-def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
+def BVcorrectMag(ts, mags, errs, interp='GP', Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     '''
     #######################################################################
     # Input                                                               #
@@ -153,8 +153,17 @@ def BVcorrectMag(ts, mags, errs, Bcol=0, Vcol=1, mBVr=0, mBVrerr=0):
     c = 0.27
     #correct B band using Bout = (Bout-Vin)*c + Bin
     Bin, Bin_err = mags[Bcol], errs[Bcol]
-    Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
-    Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])
+    if Sinterp == 'GP':
+        from SEDAnalysis import SEDinterp
+        #Construct V band Gaussian Process interpolator
+        gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
+                       [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
+        Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
+        Vin_err = np.sqrt(np.diag(Vin_var))
+    elif :
+        #Interpolate linearly
+        Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
+        Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])    
     Bout = (Bin - c*Vin - c*mBVr)/(1.-c)
     Bout_err = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err)
                        +np.square(c*mBVrerr))/(1.-c)
@@ -337,7 +346,7 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
         #correct B band using Bout = Bin + Scorr
         scorr = np.interp(tcs[Icol][mask],tcorr,Scorr)
     #correct I band using S correction
-    Iout[mask] = Iin[mask] + scorr + SIVega - c*mVIr
+    Iout[mask] = Iin[mask] + scorr - SIVega - c*mVIr
     Iout_err[mask] = np.sqrt(Iin_err[mask]**2 + (c*mVIrerr)**2)
     
     #mask times over which Scorrs are invalid
