@@ -30,7 +30,7 @@ Alternatively, run the following to figure out where your python site-packages d
 
 *% python -m site --user-site*
 
-In the site-packages, make a *.pth file and drop the path containing the SNAP directort.
+In the site-packages, make a *.pth file and drop the path containing the SNAP directory.
 
 ---
 
