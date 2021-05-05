@@ -187,9 +187,11 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
         fwave = filt.waveset
         swave = syn_spec.waveset
         wrange = (max(fwave[0],swave[0]),min(fwave[-1],swave[-1]))
+    waves = np.linspace(wrange[0], wrange[-1], 10000)
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
-    flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    #flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    flux = obs.effstim(flux_unit='jy', wavelengths=waves).value
     #Calibrate magnitude with zero point
     mag = -2.512*np.log10(flux/filterzero)
     #Synthetic observation of error spectrum
@@ -202,7 +204,8 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
                                    lookup_table=pseudo_flux)
         #sum errors in quadrature
         obs = Observation(syn_err2, filt2, force='extrap')
-        flux_err = np.sqrt(obs.effstim(waverange=wrange).value)
+        #flux_err = np.sqrt(obs.effstim(waverange=wrange).value)
+        flux_err = np.sqrt(obs.effstim(wavelengths=waves).value)
         #convert to magnitude error
         mag_err = (2.5/np.log(10))*(flux_err/flux)
         return mag, mag_err

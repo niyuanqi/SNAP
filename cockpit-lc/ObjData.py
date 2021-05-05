@@ -34,14 +34,11 @@ size = 2000.0
 
 """
 #Uncomment this section if you want to perform image subtraction
-#reference files (keep masks in /ref/)
+#reference files
 Brefname = 'N2292-1.Q1.B.161023_1631-161025_0722.XCXA.064318N2550.00005.00005.FM48.BS0512.coadd.REF.fits'
 Vrefname = 'N2292-1.Q1.V.161024_1637-161025_1638.XCXA.064318N2550.00005.00005.FM42.BS0512.coadd.REF.fits'
 Irefname = 'N2292-1.Q1.I.161023_1745-161025_0835.XCXA.064317N2550.00005.00005.FM37.BS0512.coadd.REF.fits'
-#reference images [saturation levels, lower limits]
-reflims = [[40000, -36.1005803567],
-           [40000, -52.6813824473],
-           [40000, -106.147897866]]
+#reference image fwhm (measure using MagCalc and flag diagnosis=True)
 ref_fwhms = [3.325, 3.215, 2.266]
 """
 

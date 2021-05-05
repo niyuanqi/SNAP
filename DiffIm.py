@@ -47,56 +47,6 @@ def run_wcsremap(ref_name, src_name, outdir):
 
     return outname
 
-#use hotpants to match images photometrically and subtract
-def run_hotpants(src_name, tmp_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None, sigma_match=None):
-
-    import numpy as np
-    import subprocess
-
-    #default_flags = ['hotpants', '-inim', src_name, '-tmplim',
-    #                 tmp_name, '-outim', out_name, '-oci',
-    #                 conv_name, '-tl', '-100', '-il', '-100',
-    #                 '-nrx', '2', '-nry', '2',
-    #                 '-nsx', '15', '-nsy', '15',
-    #                 '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
-
-    #filenames, normalize to src and force convolution on tmp
-    flags = ['-n', 'i', '-inim', src_name, '-tmplim', tmp_name, '-outim',
-             out_name, '-oci', conv_name, '-ko', '2']
-    #check which image is better
-    if better is not None:
-        flags += ['-c', better]
-    else:
-        flags += ['-c', 't']
-    #artifact mask files
-    if tmp_mask is not None:
-        flags += ['-tmi', tmp_mask]
-    if src_mask is not None:
-        flags += ['-imi', src_mask]
-    flags += ['-mins', '1']
-    #negative and saturation limits
-    flags += ['-tl', str(tmp_neg), '-il', str(src_neg)]
-    flags += ['-tu', str(tmp_sat), '-iu', str(src_sat)]
-    #seeing based convolution kernels
-    if fwhm is not None:
-        flags += ['-r', str(2.5*fwhm/2.0)]
-        flags += ['-rss', str(3.0*fwhm)]
-    #make sure each stamp is ~2.5', imsize given in arcsec
-    #flags += ['-nsx', str(np.floor(imx/(2.5*60)))]
-    #flags += ['-nsy', str(np.floor(imy/(2.5*60)))]
-    #new200625: make sure each stamp is ~33 fwhm. imsize in pixels. unstable.
-    flags += ['-nsx', str(round(imx/(30.0*fwhm)))]
-    flags += ['-nsy', str(round(imy/(30.0*fwhm)))]
-    #gaussians with which to compose kernel
-    if sigma_match is not None:
-        #flags += ['-ng','3','6',str(fwhm/2.0),'4',str(fwhm),'2',str(2*fwhm)]
-        flags += ['-ng','3','6',str(sigma_match/2.0),'4',str(sigma_match),'2',str(2*sigma_match)] #210306 according to A. Becker github
-    else:
-        flags += ['-ng','3','6','3.00','4','6.00','2','12.0']
-    
-    #call hotpants
-    subprocess.call(['hotpants'] + flags)
-
 #make difference image
 def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", delete_temp=True):
     try:
@@ -112,11 +62,11 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
         src_name2 = remove_tan_from_header(src_name, tmpdir)
         
         #remap reference file to source file coordinates
-        remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
-
+        remapped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
+        
         #hotpants arguments
         default_flags = ['hotpants', '-inim', src_name, '-tmplim',
-                         ref_name, '-outim', out_name, '-oci',
+                         remapped_ref, '-outim', out_name, '-oci',
                          conv_name, '-tl', '-100', '-il', '-100',
                          '-n', 'i', '-c', 't', '-ko', '2',
                          '-nrx', '2', '-nry', '2',
@@ -137,25 +87,48 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
             shutil.rmtree(tmpdir)
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, fwhm=None, imx=3692.8, imy=3692.8, tmp_sat=40000, src_sat=45000, tmp_neg=-100, src_neg=-100, tmp_mask=None, src_mask=None, better=None, sigma_match=None, tmpdir="DITemp", delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, tmp_fwhm=None, src_fwhm=None, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
-        
+        import subprocess
+
+        #check which image is better
+        if src_fwhm is not None and tmp_fwhm is not None:
+            if src_fwhm < tmp_fwhm:
+                print "Image is better than template."
+                better = 'i'
+            else:
+                print "Template is better than image."
+                better = 't'
+        else:
+            print "Assuming template is better."
+            better = None
+
         #make temporary directory
         if not os.path.exists(tmpdir):
             os.makedirs(tmpdir)
-            
+
         #fix header info
         src_name2 = remove_tan_from_header(src_name, tmpdir)
         
         #remap reference file to source file coordinates
-        remaped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
-            
-        #subtract remapped reference file from source file
-        run_hotpants(src_name, remaped_ref, out_name, conv_name, fwhm,
-                     imx, imy, tmp_sat, src_sat, tmp_neg, src_neg,
-                     tmp_mask, src_mask, better, sigma_match)
+        remapped_ref = run_wcsremap(ref_name, src_name2, tmpdir)
+
+        #set hotpants flags depending on which is better
+        flags = ['-inim', src_name, '-tmplim',
+                 remapped_ref, '-outim', out_name, '-oci',
+                 conv_name, '-tl', '-100', '-il', '-100',
+                 '-n', 'i', '-ko', '2',
+                 '-nsx', '30', '-nsy', '30',
+                 '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
+        if better is not None:
+            flags += ['-c', better]
+        else:
+            flags += ['-c', 't']
+    
+        #call hotpants
+        subprocess.call(['hotpants'] + flags)
 
         print "SUBTRACTION COMPLETE"
         print "output:",out_name

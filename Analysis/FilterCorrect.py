@@ -313,9 +313,9 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     '''
     import copy
     tcs, magcs, errcs = copy.deepcopy(ts), copy.deepcopy(mags), copy.deepcopy(errs)
-    #B band correlation with B-V
+    #I band correlation with V-I
     c = 0.0
-    #B band to be corrected
+    #I band to be corrected
     Iin, Iin_err = mags[Icol], errs[Icol]
     Iout, Iout_err = magcs[Icol], errcs[Icol]
     #mask times over which Scorrs are valid
@@ -343,7 +343,7 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
         #predict using gaussian process
         scorr, scorr_var = gp.predict(Scorr, tcs[Icol][mask])
     else:
-        #correct B band using Bout = Bin + Scorr
+        #correct I band using Iout = Iin + Scorr
         scorr = np.interp(tcs[Icol][mask],tcorr,Scorr)
     #correct I band using S correction
     Iout[mask] = Iin[mask] + scorr - SIVega - c*mVIr
@@ -351,7 +351,7 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     
     #mask times over which Scorrs are invalid
     mask = [ts[Icol]<tdiv]
-    #correct B band using Bout = (Bout-Vin)*c + Bin
+    #correct I band using Iout = (Vin-Iout)*c + Iin
     if interp == 'GP':
         from SEDAnalysis import SEDinterp
         #Construct V band Gaussian Process interpolator

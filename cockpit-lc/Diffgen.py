@@ -12,7 +12,6 @@ import os
 from glob import glob
 import math
 from astropy.io import fits
-from astroscrappy import detect_cosmics
 
 #essential files from SNAP
 from SNAP.DiffIm import make_diff_image
@@ -20,7 +19,6 @@ from SNAP.Analysis.LCRoutines import*
 from SNAP.MagCalc import*
 from SNAP.Catalog import*
 from SNAP.Photometry import*
-from SNAP.Astrometry import*
 from SNAP.PSFlib import*
 #essential imports
 from ContextManager import cd
@@ -31,7 +29,6 @@ from ObjData import *
 bands = ['B','V','I']
 bindex = {'B':0, 'V':1, 'I':2}
 refs = ['../ref/'+Brefname, '../ref/'+Vrefname, '../ref/'+Irefname]
-refmasks = ['.'.join(ref.split('.')[:-1])+".mask.fits" for ref in refs]
 
 #current working directory
 wd = os.getcwd()
@@ -39,7 +36,6 @@ wd = os.getcwd()
 with cd(wd+"/../"):
     if not os.path.isdir("diff"): os.mkdir('diff')
     if not os.path.isdir("conv"): os.mkdir('conv')
-    if not os.path.isdir("mask"): os.mkdir('mask')
 
 #for each band
 for i in range(len(bands)):
@@ -55,9 +51,6 @@ for i in range(len(bands)):
         diffname = '../diff/'+'/'.join(diffname.split('/')[2:])
         convname = '.'.join(filename.split('.')[:-1])+".conv.fits"
         convname = '../conv/'+'/'.join(convname.split('/')[2:])
-        #mask image
-        maskname='.'.join(filename.split('.')[:-1])+".mask.fits"
-        maskname='../mask/'+'/'.join(maskname.split('/')[2:])
         #other parameters
         fo = filename.split('/')[2]
         fo = '.'.join(fo.split('.')[2:5])
@@ -89,46 +82,10 @@ for i in range(len(bands)):
                     if fwhm == 0:
                         raise PSFError('Unable to perform photometry on reference stars.')
                     print ""
-                    #get image size
-                    imx = image.shape[1]
-                    imy = image.shape[0]
-                    #image negative limit
-                    ilim = Med - 10*Noise
-                    
-                    #check if mask already created
-                    if os.path.exists(maskname):
-                        print "Already created mask for: "+filename
-                    else:
-                        print "Creating mask for: "+filename
-                        crmask, cleanarr = detect_cosmics(image, sigclip=4.0, readnoise=Noise, satlevel=satpix, psffwhm=fwhm, psfsize=2.5*fwhm)
-                        maskim = crmask.astype('uint8')
-                        hdu = fits.PrimaryHDU(data=maskim, header=hdr)
-                        hdu.writeto(maskname)
-                    
-                    #determine which image is worse.
-                    if fwhm < ref_fwhms[i]:
-                        print "Image is better than template"
-                        sigma_match = ref_fwhms[i]/2
-                        fwhm_c = ref_fwhms[i]
-                        better = 'i'
-                        print "sigma_match", sigma_match
-                    else:
-                        print "Template is better than image"
-                        sigma_match = fwhm/2
-                        fwhm_c = fwhm
-                        better = 't'
-                        print "sigma_match", sigma_match
-
-                    #worse image - convolved better image
-                    print ""
                     print "Performing subtraction, generating files"
                     print diffname, convname
                     make_diff_image(filename, refs[i], diffname, convname,
-                                    fwhm=fwhm_c, imx=imx, imy=imy,
-                                    tmp_sat=reflims[i][0], src_sat=satpix,
-                                    tmp_neg=reflims[i][1], src_neg=ilim,
-                                    tmp_mask=refmasks[i], src_mask=maskname,
-                                    better=better, sigma_match=sigma_match,
+                                    tmp_fwhm=ref_fwhms[i], src_fwhm=fwhm,
                                     tmpdir="DITemp"+str(n))
                 
                 except PSFError:
