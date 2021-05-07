@@ -87,23 +87,41 @@ def basic_diff_image(src_name, ref_name, out_name, conv_name, tmpdir="DITemp", d
             shutil.rmtree(tmpdir)
 
 #make difference image
-def make_diff_image(src_name, ref_name, out_name, conv_name, tmp_fwhm=None, src_fwhm=None, tmpdir="DITemp", delete_temp=True):
+def make_diff_image(src_name, ref_name, out_name, conv_name, tmp_fwhm=None, src_fwhm=None, imx=9216, imy=9232, tmpdir="DITemp", delete_temp=True):
     try:
         
         import os
         import subprocess
+        import numpy as np
+
+        #figure out band
+        fo = src_name.split('/')[2]
+        fo = '.'.join(fo.split('.')[2:5])
+        band = fo[0]
+        print ""
+        print "Band =", band
 
         #check which image is better
         if src_fwhm is not None and tmp_fwhm is not None:
             if src_fwhm < tmp_fwhm:
                 print "Image is better than template."
+                sigma_match = np.sqrt(tmp_fwhm**2 - src_fwhm**2)/2.
+                fwhm_c = tmp_fwhm
+                fwhm_f = src_fwhm
                 better = 'i'
             else:
                 print "Template is better than image."
+                sigma_match = np.sqrt(src_fwhm**2 - tmp_fwhm**2)/2.
+                fwhm_c = src_fwhm
+                fwhm_f = tmp_fwhm
                 better = 't'
         else:
             print "Assuming template is better."
-            better = None
+            sigma_match = None
+            fwhm_c = None
+            fwhm_f = None
+            better = 't'
+        print ""
 
         #make temporary directory
         if not os.path.exists(tmpdir):
@@ -119,13 +137,20 @@ def make_diff_image(src_name, ref_name, out_name, conv_name, tmp_fwhm=None, src_
         flags = ['-inim', src_name, '-tmplim',
                  remapped_ref, '-outim', out_name, '-oci',
                  conv_name, '-tl', '-100', '-il', '-100',
-                 '-n', 'i', '-ko', '2',
-                 '-nsx', '30', '-nsy', '30',
-                 '-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
-        if better is not None:
-            flags += ['-c', better]
+                 '-n', 'i', '-ko', '2', '-c', better]
+        
+        #set kernel extraction depending on fwhm
+        if (src_fwhm > 0.95*tmp_fwhm) and fwhm_c is not None:
+            #parameters that work well for poor science images
+            flags += ['-r', str(2.5*fwhm_c/2.0)]
+            flags += ['-rss', str(3.0*fwhm_c)]
+            flags += ['-nsx', str(round(imx/(30.0*fwhm_c)))]
+            flags += ['-nsy', str(round(imy/(30.0*fwhm_c)))]
+            flags += ['-ng','3','6',str(fwhm_f/4.0),'4',str(fwhm_f/2.0),'2',str(fwhm_f)]    
         else:
-            flags += ['-c', 't']
+            #parameters that work well for excellent science images
+            flags += ['-nsx', '30', '-nsy', '30']
+            flags += ['-ng','4','7','0.70','6','1.50','4','3.00','3','6.0']
     
         #call hotpants
         subprocess.call(['hotpants'] + flags)

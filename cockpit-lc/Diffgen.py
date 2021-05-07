@@ -81,12 +81,16 @@ for i in range(len(bands)):
                     print "Image fwhm", fwhm
                     if fwhm == 0:
                         raise PSFError('Unable to perform photometry on reference stars.')
+                    #image size
+                    imx = image.shape[1]
+                    imy = image.shape[0]
                     print ""
                     print "Performing subtraction, generating files"
-                    print diffname, convname
+                    print diffname
+                    print convname
                     make_diff_image(filename, refs[i], diffname, convname,
                                     tmp_fwhm=ref_fwhms[i], src_fwhm=fwhm,
-                                    tmpdir="DITemp"+str(n))
+                                    imx=imx, imy=imy, tmpdir="DITemp"+str(n))
                 
                 except PSFError:
                     Mtest = False
