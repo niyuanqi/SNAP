@@ -4,7 +4,7 @@ Contains routines for image manipulation (cropping, stacking, subtracting), phot
 The main photometry program is MagCalc.py.
 There are also many supernova-specific programs for analysing their light curves and fitting them with models as well as routines for transforming light curves between the KMTNet BVI filter system and standard Johnson/SDSS filters in the Analysis folder.
 
-The latest manual is here -> ([KSPPhotManual_210429.pdf](KSPPhotManual_210429.pdf)).
+The latest manual is here -> ([KSPPhotManual_210507.pdf](KSPPhotManual_210507.pdf)).
 
 It explains the standard workflow for how to use SNAP to process KSP images and extract light curves from them. It also provides detailed descriptions of how individual routines work, tests them on KMTNet data to establish behavioral benchmarks, and instructions on how you can setup or modify these routines/workflows for your purposes. Unfortunately, you need to download the pdf for the embedded hyperlinks to work.
 
