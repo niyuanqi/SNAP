@@ -187,7 +187,7 @@ Contains functions for reading and writing light curve files.
 
 ## Examples
 
-Miscellaneous programs that do useful things such as make image histogram (for finding saturation limit), making image mask using Astroscrappy, testing multi-object photometry on single files, etc.
+Miscellaneous programs that do useful things such as make image histogram (for finding saturation limit), making cosmic ray mask using Astroscrappy, testing multi-object photometry on single files, etc.
 
 ## cockpit-lc
 
