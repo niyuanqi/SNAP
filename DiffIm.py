@@ -95,9 +95,7 @@ def make_diff_image(src_name, ref_name, out_name, conv_name, tmp_fwhm=None, src_
         import numpy as np
 
         #figure out band
-        fo = src_name.split('/')[2]
-        fo = '.'.join(fo.split('.')[2:5])
-        band = fo[0]
+        band = src_name.split('.')[2]
         print ""
         print "Band =", band
 
