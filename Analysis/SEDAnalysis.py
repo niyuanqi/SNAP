@@ -425,7 +425,7 @@ def TRblackbod(T, R, z, DM, EBV=0):
     return flux_obs
 
 #function: fit blackbody with extinction
-def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""):
+def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, Rv=3.1, plot=False, ptitle=""):
 
     import extinction as extn
     from scipy.optimize import curve_fit
@@ -433,11 +433,13 @@ def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""
 
     if EBV is None:
         #blackbody+extinction(Rv=3.1) flux function
-        exBBflux = lambda x, T, r, EBV: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        #exBBflux = lambda x, T, r, EBV: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        exBBflux = lambda x, T, r, EBV: extn.apply(extn.Fitzpatrick99(Rv)(x*u.AA, Rv*EBV), planck(x,T)*r)
         #estimate temperature
         est = [10000.0, 1e20, 10]
     else:
-        exBBflux = lambda x, T, r: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        #exBBflux = lambda x, T, r: extn.apply(extn.fm07(x*u.AA, EBV*3.1), planck(x,T)*r)
+        exBBflux = lambda x, T, r: extn.apply(extn.Fitzpatrick99(Rv)(x*u.AA, Rv*EBV), planck(x,T)*r)
         est = [10000.0, 1e25]
         if EBV < 0:
             est = [1000.0, 1e18]
@@ -454,7 +456,8 @@ def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""
     r, rerr = popt[1], perr[1] #dimensionless
     if EBV is None:
         EBV, EBVerr = popt[2], perr[2] #mag
-        print "E(B-V) for Rv=3.1:", EBV, EBVerr
+        print "E(B-V) for Rv="+str(Rv)+":", EBV, EBVerr
+        print "T=", T, Terr
     else:
         EBVerr = 0
     #plot fit if given
@@ -482,3 +485,69 @@ def fitExtBlackbod(waves, fluxes, fluxerrs=None, EBV=None, plot=False, ptitle=""
     w = np.linspace(min(waves), max(waves), 100)
     #return blackbody temperature
     return T, Terr, r, rerr, EBV, EBVerr, w, exBBflux(w, *popt)
+
+def G8extn(x, Ava, p):
+    from SNAP.Analysis.Cosmology import wave_0, bands
+    xB = wave_0[bands['B']]
+    xV = wave_0[bands['V']]
+    dAx = Ava*(np.power(xB/xV, -p) - np.power(x/xV, -p))
+    #return differential extinction [mag] in each band (dAx = Ax - Av)
+    return dAx
+
+#function: fit blackbody with extinction using Goobar 2008 CSM-based extinction law
+def fitG8Blackbod(waves, fluxes, fluxerrs=None, Ava=None, p=-1.5, plot=False, ptitle=""):
+    #based on the methods of Burns et al. 2014
+    from scipy.optimize import curve_fit
+
+    if Ava is None:
+        #blackbody+extinction function
+        exBBflux = lambda x, T, r, Ava: planck(x,T)*r*np.power(10, (G8extn(x,Ava,p)+Ava/0.8)/-2.5)
+        #estimate temperature
+        est = [10000.0, 1e20, 10]
+    else:
+        exBBflux = lambda x, T, r: planck(x,T)*r*np.power(10, (G8extn(x,Ava,p)+Ava/0.8)/-2.5)
+        est = [10000.0, 1e25]
+        if Ava < 0:
+            est = [1000.0, 1e18]
+        else:
+            est = [10000.0, 1e20]
+
+    #fit blackbody temperature
+    if fluxerrs is not None:
+        popt, pcov = curve_fit(exBBflux, waves, fluxes, sigma=fluxerrs, p0=est, absolute_sigma=True, maxfev=1000000)
+    else:
+        popt, pcov = curve_fit(exBBflux, waves, fluxes, p0=est, maxfev=10000000)
+    perr = np.sqrt(np.diag(pcov))
+    T, Terr = popt[0], perr[0] #K
+    r, rerr = popt[1], perr[1] #dimensionless
+    if Ava is None:
+        Ava, Avaerr = popt[2], perr[2] #mag
+        print "Av*a for p="+str(p)+":", Ava, Avaerr
+        print "T=", T, Terr
+    else:
+        Avaerr = 0
+    #plot fit if given
+    if plot:
+        import matplotlib.pyplot as plt
+
+        print "Temperature [K]:", T, Terr
+        print "Received/Emitted:", r, rerr
+        if fluxerrs is not None:
+            plt.errorbar(waves, fluxes, yerr=fluxerrs, fmt='g+')
+        else:
+            plt.plot(waves, fluxes, color='g')
+        w = np.linspace(min(waves), max(waves), 100)
+        plt.plot(w, exBBflux(w, *popt), c='r',
+                 label="T = {:.0f} ({:.0f}) K\nr = {:.3f} ({:.3f})\nAva = {:.3f} ({:.3f})".format(
+                     T, Terr, r, rerr, Ava, Avaerr))
+        #plt.plot(w, extn.remove(extn.fm07(w*u.AA, EBV*3.1), exBBflux(w, *popt)), c='b',
+        #         label="dereddened")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux")
+        plt.title(ptitle)
+        plt.legend(loc='lower right')
+        plt.tight_layout()
+        plt.show()
+    w = np.linspace(min(waves), max(waves), 100)
+    #return blackbody temperature
+    return T, Terr, r, rerr, Ava, Avaerr, w, exBBflux(w, *popt)

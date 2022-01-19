@@ -82,6 +82,17 @@ def ap_multi(image, x0, y0, fitsky, r1, r2):
 def PSFclean(x,y,psf,ref,skyN=None,sat=40000,fu=10,fl=10):
     #remove saturated pixels
     mask = psf<sat
+    #if the source is saturated, remove bleeding
+    satmask = np.logical_not(mask)
+    if np.sum(satmask) > 5:
+        #find centroid of saturation
+        x_sat = np.mean(x[satmask])
+        y_sat = np.mean(y[satmask])
+        #remove vertical bleeding within 3 pixels
+        x_mask = np.logical_or(x<x_sat-3.0, x>x_sat+3.0)
+        xy_mask = np.logical_or(x_mask, y<y_sat-3.0)
+        mask = np.logical_and(mask, xy_mask)
+    #discard pixels based on fit noise
     if skyN is not None:
         #remove pixels that are 10sigma below or above fit (dead? hot?)
         mask1 = psf-ref<fu*np.sqrt(np.absolute(ref)+skyN**2)

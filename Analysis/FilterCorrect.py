@@ -19,7 +19,7 @@ def neg_log_like(params, y, gp):
 #function: return corrected B band magnitude based Spectral Corrections
 def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
                  Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0,
-                 Sinterp='GP', Scorr_err=None):
+                 Sinterp='GP', Scorr_err=None, Slinext=False):
     '''
     #######################################################################
     # Input                                                               #
@@ -64,6 +64,10 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     #mask times over which Scorrs are valid
     mask = [ts[Bcol]>=tdiv]
 
+    #interpolate S-correction
+    scorr = np.zeros(len(ts[Bcol][mask]))
+    intmask = [ts[Bcol][mask]<=tcorr[-1]]
+    extmask = [ts[Bcol][mask]>tcorr[-1]]
     if Sinterp == 'GP':
         from scipy.optimize import minimize
         import george
@@ -85,31 +89,41 @@ def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
         gp.get_parameter_dict()
         print r.x
         #predict using gaussian process
-        scorr, scorr_var = gp.predict(Scorr, tcs[Bcol][mask])
+        scorr_gp, scorr_var = gp.predict(Scorr, tcs[Bcol][mask][intmask])
+        scorr[intmask] = scorr_gp
     else:
         #correct B band using Bout = Bin + Scorr
-        scorr = np.interp(tcs[Bcol][mask],tcorr,Scorr)
+        scorr[intmask] = np.interp(tcs[Bcol][mask][intmask],tcorr,Scorr)
+        
+    #extrapolate S-correction
+    if Slinext:
+        slope = (Scorr[-1]-Scorr[-2])/(tcorr[-1]-tcorr[-2])
+        scorr[extmask] = slope*(tcs[Bcol][mask][extmask]-tcorr[-1]) + Scorr[-1]
+    else:
+        scorr[extmask] = Scorr[-1]
+        
     #correct B band using S correction
     Bout[mask] = Bin[mask] + scorr - SBVega - c*mBVr
     Bout_err[mask] = np.sqrt(Bin_err[mask]**2 + (c*mBVrerr)**2)
     
     #mask times over which Scorrs are invalid
     mask = [ts[Bcol]<tdiv]
-    #correct B band using Bout = (Bout-Vin)*c + Bin
-    if interp == 'GP':
-        from SEDAnalysis import SEDinterp
-        #Construct V band Gaussian Process interpolator
-        gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
-                       [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
-        Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
-        Vin_err = np.sqrt(np.diag(Vin_var))
-    else:
-        #Interpolate linearly
-        Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
-        Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])
-    Bout[mask] = (Bin[mask] - c*Vin - c*mBVr)/(1.-c)
-    Bout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err[mask])
-                             +np.square(c*mBVrerr))/(1.-c)
+    if len(ts[Bcol][mask]) > 0:
+        #correct B band using Bout = (Bout-Vin)*c + Bin
+        if interp == 'GP':
+            from SEDAnalysis import SEDinterp
+            #Construct V band Gaussian Process interpolator
+            gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
+                           [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
+            Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
+            Vin_err = np.sqrt(np.diag(Vin_var))
+        else:
+            #Interpolate linearly
+            Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
+            Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])
+        Bout[mask] = (Bin[mask] - c*Vin - c*mBVr)/(1.-c)
+        Bout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err[mask])
+                                 +np.square(c*mBVrerr))/(1.-c)
 
     #return corrected magnitudes
     magcs[Bcol] = Bout
@@ -153,17 +167,17 @@ def BVcorrectMag(ts, mags, errs, interp='GP', Bcol=0, Vcol=1, mBVr=0, mBVrerr=0)
     c = 0.27
     #correct B band using Bout = (Bout-Vin)*c + Bin
     Bin, Bin_err = mags[Bcol], errs[Bcol]
-    if Sinterp == 'GP':
+    if interp == 'GP':
         from SEDAnalysis import SEDinterp
         #Construct V band Gaussian Process interpolator
         gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
                        [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
-        Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol][mask])
+        Vin, Vin_var = gp.predict(mags[Vcol], ts[Bcol])
         Vin_err = np.sqrt(np.diag(Vin_var))
     else:
         #Interpolate linearly
-        Vin = np.interp(ts[Bcol][mask], ts[Vcol], mags[Vcol])
-        Vin_err = np.interp(ts[Bcol][mask], ts[Vcol], errs[Vcol])    
+        Vin = np.interp(ts[Bcol], ts[Vcol], mags[Vcol])
+        Vin_err = np.interp(ts[Bcol], ts[Vcol], errs[Vcol])    
     Bout = (Bin - c*Vin - c*mBVr)/(1.-c)
     Bout_err = np.sqrt(np.square(c*Vin_err)+np.square(Bin_err)
                        +np.square(c*mBVrerr))/(1.-c)
@@ -276,7 +290,7 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
 #function: return corrected B band magnitude based Spectral Corrections
 def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
                  Icol=2, Vcol=1, SIVega=0, mVIr=0, mVIrerr=0,
-                 Sinterp='GP', Scorr_err=None):
+                 Sinterp='GP', Scorr_err=None, Slinext=False):
     '''
     #######################################################################
     # Input                                                               #
@@ -320,6 +334,11 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
     Iout, Iout_err = magcs[Icol], errcs[Icol]
     #mask times over which Scorrs are valid
     mask = [ts[Icol]>=tdiv]
+
+    #interpolate S-correction
+    scorr = np.zeros(len(ts[Icol][mask]))
+    intmask = [ts[Icol][mask]<=tcorr[-1]]
+    extmask = [ts[Icol][mask]>tcorr[-1]]
     if Sinterp == 'GP':
         from scipy.optimize import minimize
         import george
@@ -341,31 +360,41 @@ def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
         gp.get_parameter_dict()
         print r.x
         #predict using gaussian process
-        scorr, scorr_var = gp.predict(Scorr, tcs[Icol][mask])
+        scorr_gp, scorr_var = gp.predict(Scorr, tcs[Icol][mask][intmask])
+        scorr[intmask] = scorr_gp
     else:
         #correct I band using Iout = Iin + Scorr
-        scorr = np.interp(tcs[Icol][mask],tcorr,Scorr)
+        scorr[intmask] = np.interp(tcs[Icol][mask][intmask],tcorr,Scorr)
+
+    #extrapolate S-correction
+    if Slinext:
+        slope = (Scorr[-1]-Scorr[-2])/(tcorr[-1]-tcorr[-2])
+        scorr[extmask] = slope*(tcs[Icol][mask][extmask]-tcorr[-1]) + Scorr[-1]
+    else:
+        scorr[extmask] = Scorr[-1]    
+        
     #correct I band using S correction
     Iout[mask] = Iin[mask] + scorr - SIVega - c*mVIr
     Iout_err[mask] = np.sqrt(Iin_err[mask]**2 + (c*mVIrerr)**2)
     
     #mask times over which Scorrs are invalid
     mask = [ts[Icol]<tdiv]
-    #correct I band using Iout = (Vin-Iout)*c + Iin
-    if interp == 'GP':
-        from SEDAnalysis import SEDinterp
-        #Construct V band Gaussian Process interpolator
-        gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
-                       [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
-        Vin, Vin_var = gp.predict(mags[Vcol], ts[Icol][mask])
-        Vin_err = np.sqrt(np.diag(Vin_var))
-    else:
-        #Interpolate linearly
-        Vin = np.interp(ts[Icol][mask], ts[Vcol], mags[Vcol])
-        Vin_err = np.interp(ts[Icol][mask], ts[Vcol], errs[Vcol])
-    Iout[mask] = (Iin[mask] + c*Vin - c*mVIr)/(1.+c)
-    Iout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Iin_err[mask])
-                             +np.square(c*mVIrerr))/(1.-c)
+    if len(ts[Icol][mask]) > 0:
+        #correct I band using Iout = (Vin-Iout)*c + Iin
+        if interp == 'GP':
+            from SEDAnalysis import SEDinterp
+            #Construct V band Gaussian Process interpolator
+            gp = SEDinterp(ts[Vcol][0], ['V'], [ts[Vcol]],
+                           [mags[Vcol]], [errs[Vcol]], retGP=True)[0]
+            Vin, Vin_var = gp.predict(mags[Vcol], ts[Icol][mask])
+            Vin_err = np.sqrt(np.diag(Vin_var))
+        else:
+            #Interpolate linearly
+            Vin = np.interp(ts[Icol][mask], ts[Vcol], mags[Vcol])
+            Vin_err = np.interp(ts[Icol][mask], ts[Vcol], errs[Vcol])
+        Iout[mask] = (Iin[mask] + c*Vin - c*mVIr)/(1.+c)
+        Iout_err[mask] = np.sqrt(np.square(c*Vin_err)+np.square(Iin_err[mask])
+                                 +np.square(c*mVIrerr))/(1.-c)
 
     #return corrected magnitudes
     magcs[Icol] = Iout

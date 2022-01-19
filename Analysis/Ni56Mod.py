@@ -53,6 +53,7 @@ def ArnettFit(t, M_N, MejE):
     #tau_m is the timescale of the light-curve
     #tau_m=((k_opt/(beta*c))**0.5)*((10./3.)**(0.25))*M_ejE_K
     tau_m=((k_opt/(beta*c))**0.5)*((6./5.)**(0.25))*M_ejE_K
+    #print "tau_m=", tau_m
 
     #integrate up the A(z) factor where z goes from 0 to x
     int_A=np.zeros(n) 
@@ -81,7 +82,7 @@ def ArnettMejE(MejE, MejEerr, vej, vejerr):
     #convert to cgs
     MejEK = MejE*((M_sun)**3/(1.e51))**(0.25)
     MejEKerr = MejEerr*((M_sun)**3/(1.e51))**(0.25)
-    #calculate ejecta mass, kinetric energy
+    #calculate ejecta mass, kinetic energy
     Mej = (3.0/10.0)**0.5*MejEK**2*vej
     Kej = (3.0/10.0)*Mej*vej**2
     #calculate errors
@@ -179,6 +180,7 @@ def PN13Fit(t, t_diff, L_diff, Mej, Ek, beta, x_2, plot=False):
     n = len(t)
 
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     
     #diffusion wave depth in solar masses
     dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
@@ -306,6 +308,7 @@ def plotNi56mod(tB, tfit, LB, LBerr, t_diff, L_diff, Mni, Mej, Ek, beta, x_2, et
     #Constants
     M_sun=2.e33
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     sb_const = 5.6704e-5 #erg/cm^2/s/K^4
     
     #diffusion wave depth in solar masses
@@ -445,6 +448,7 @@ def Ni56dist(t, t_diff, L_diff, Mej, Ek, beta, x_2):
     n = len(t)
 
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     
     #diffusion wave depth in solar masses
     dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
@@ -490,6 +494,7 @@ def predNi56mod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2):
     #Constants
     M_sun=2.e33
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     sb_const = 5.6704e-5 #erg/cm^2/s/K^4
 
     #diffusion wave depth in solar masses
@@ -637,6 +642,7 @@ def ShallowNiFit(t, t_diff, L_diff, Mej, Ek, beta, x_2, x_s, a_s, plot=False):
     n = len(t)
 
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     
     #diffusion wave depth in solar masses
     dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
@@ -772,6 +778,7 @@ def predShallowNimod(t, wave, z, DM, taus, t_diff, L_diff, Mej, Ek, beta, x_2, x
     #Constants
     M_sun=2.e33
     k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    #k_opt=0.8
     sb_const = 5.6704e-5 #erg/cm^2/s/K^4
     
     #diffusion wave depth in solar masses
@@ -995,3 +1002,212 @@ def ShallowNiColorPlot(ts, Ms, M_errs, bs, z, DM, t_pred, taus, t_diff, L_diff,
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     plt.show()
+
+#################################################################
+# Ni56 pure-shell model.                                        #
+#################################################################
+
+#function: Piro and Nakar model
+def NiSFit(t, Mej, Ek, t_s, a_s, plot=False):
+    #Inputs
+    #################################
+    #Parameters:
+    #Mej = Mass of ejecta (in 1.4 solar masses)
+    #Ek = Kinetic energy of ejecta (*10^51 ergs)
+    
+    #t = time from epoch in days
+
+    #Outputs
+    #################################
+    #array of luminosity (erg/s)
+
+    from scipy.integrate import simps
+    from scipy.special import erfc
+
+    #Constants
+    M_sun=2.e33
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    tau_Ni=8.8 #decay time of Ni56 in day
+    tau_Co=9.822e6/86400. #decay time of Co56 in day
+    e_Ni=3.90e10 #erg/s/g energy produced by 1 gram of Ni
+    e_Co=6.78e9 #erg/s/g energy produced by 1 gram of Co
+    
+    #time axis, in days
+    t = np.array([t]) if (isinstance(t, np.float64) or
+                            isinstance(t, float)) else t
+    n = len(t)
+
+    #diffusion wave depth in solar masses
+    dM = t**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    #total mass and Ni56 mass in Ni56 shell
+    dM_s = t_s**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
+    M_ni = dM_s*a_s
+    #specific heating rate from Ni56 decay in erg/s/g
+    eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
+                                        np.exp(-t/tau_Ni))
+    
+    #integration range
+    t_range=np.linspace(0.0005,t_s,2000, endpoint=True)
+    #Ni56 mass fraction at depth
+    X56_t = np.zeros(len(t))
+    X56_t[t < t_s] = a_s
+    #total Ni56 distribution
+    X56_range = np.zeros(len(t_range))
+    X56_range[t_range < t_s] = a_s
+    #approx. local heating from Ni56 in erg/s
+    L56 = X56_t*dM*M_sun*eps
+
+    #integrate from 0 to t_s at each epoch
+    L_direct = np.zeros(n)
+    L_tail = np.zeros(n)
+    L_ph = np.zeros(n)
+    for i in range(n):
+        #before t_s is reached
+        if t[i] < t_s: #there is Ni56 deeper than diffusion depth
+            #luminosity due to Ni56 shallower than diffusion depth.
+            mask_direct = t_range<=t[i]
+            t_direct = t_range[mask_direct]
+            X56_direct = X56_range[mask_direct]
+            intg_direct = (X56_direct/X56_t[i])*(t_direct/t[i])**1.76/t_direct
+            L_direct[i] = 1.76 * L56[i] * simps(intg_direct, t_direct)
+            
+            #luminosity due to Ni56 deeper than diffusion depth.
+            mask_tail = t_range>=t[i]
+            t_tail = t_range[mask_tail]
+            X56_tail = X56_range[mask_tail]
+            intg_tail =  (X56_tail/X56_t[i])*(t_tail/t[i])**1.76/t_tail
+            diff_corr = erfc(t_tail/t[i]/np.sqrt(2.))/erfc(1./np.sqrt(2.))
+            L_tail[i] = 1.76 * L56[i] * simps(intg_tail*diff_corr, t_tail)
+        else: #diffusion depth has exposed all nickel
+            #luminosity due to Ni56 shallower than diffusion depth.
+            t_direct = t_range
+            X56_direct = X56_range
+            intg_direct = (X56_direct)*(t_direct/t[i])**1.76/t_direct
+            L_direct[i] = 1.76 * dM[i] * M_sun * eps[i] * simps(intg_direct, t_direct)
+            
+            #no Ni56 is deeper than diffusion depth
+            L_tail[i] = 0
+        
+        #total luminosity
+        L_ph[i] = L_direct[i] + L_tail[i]
+        
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(6,6))
+        ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
+        ax2 = plt.subplot2grid((4, 1), (2, 0))
+        ax3 = plt.subplot2grid((4, 1), (3, 0))
+        ax = [ax1, ax2, ax3]
+        
+        #plot luminosity over time
+        ax[0].plot(t, L_tail, 'k', linestyle='--', label="$L_{tail}$")
+        ax[0].plot(t, L_direct, 'k', linestyle=':', label="$L_{direct}$")
+        ax[0].plot(t, L_ph, 'k', label="$L = L_d + L_t$")
+        ax[0].set_ylabel("$L$ [ergs/s]")
+        #ax[0].set_ylim([0.0011,2])
+        ax[0].set_ylim([1e39,1e41])
+        ax[0].set_xlim([-0.5,10])
+        ax[0].set_yscale('log')
+        ax[0].axes.get_xaxis().set_ticklabels([])
+
+        ax[1].plot(t, L56/L_ph, 'k')
+        ax[1].set_ylabel("$L_{56}/L$")
+        ax[1].set_ylim([0.0011, 3])
+        ax[1].set_xlim([-0.5,10])
+        ax[1].set_yscale('log')
+        ax[1].axes.get_xaxis().set_ticklabels([])
+
+        print "Clump mass:", dM_s
+        print "Ni56 mass:", M_ni
+        ax[2].plot(t, X56_t, 'k')
+        ax[2].set_yscale('log')
+        ax[2].set_ylim([0.001,2.0])
+        ax[2].set_ylabel("$X_{56}$")
+        
+        ax[-1].set_xlabel("$x=t$ [days]")
+        ax[-1].set_xlim([-0.5,10])
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=0.0)
+        plt.show()
+    
+    #return results
+    return L_ph
+
+#function: predict observations in some band
+def predNiSmod(t, wave, z, DM, taus, Mej, Ek, t_s, a_s, t0, prnt=False):
+    #Inputs
+    #################################
+    #Parameters:
+    #Mej = Mass of ejecta (in 1.4 solar masses)
+    #Ek = Kinetic energy of ejecta (*10^51 ergs)
+    
+    #t = time from epoch in days
+
+    #Outputs
+    #################################
+    #array of flux (uJy)
+    
+    from scipy.integrate import simps
+    from SEDAnalysis import BBflux
+    
+    tr = t/(1.+z) - t0
+    L = np.zeros(len(tr))
+    L[tr>0] = NiSFit(tr[tr>0], Mej, Ek, t_s, a_s)
+    
+    #Constants
+    M_sun=2.e33
+    k_opt=1.0 #x0.1g/cm^2 (this corresponds to electron scattering)
+    sb_const = 5.6704e-5 #erg/cm^2/s/K^4
+    
+    #photospheric radius for calculating temperature [cm]
+    rph = 3.0e14 * (tr[tr>0]**0.78)*(k_opt**0.11)*(Ek**0.39)/(Mej*1.40)**0.28
+    if prnt:
+        print "Rphot when clump exposed", rph[tr < t_s/(1.+z)][-1]
+    #color temperature (approximate)
+
+    Tc = np.ones(len(tr))
+    Tc[tr>0] = np.power(L[tr>0]*taus[tr>0]/(4.*np.pi*rph**2*sb_const), 0.25)
+    if prnt:
+        print "Tc when clump exposed", Tc[tr < t_s/(1.+z)][-1]
+    
+    return BBflux(L, Tc, wave, z, DM) #uJy
+
+#function: error function for multi-band fitting of shallow Ni model
+def NiSMultiErr(p, t, L, L_err, z, DM, taus, Mej, Ek):
+    from Cosmology import wave_0, bands
+    from LCFitting import earlyFit
+    #Ni shell component p0=epoch (in rest frame), p1=t_s, p2=a_s
+    B_pred = predNiSmod(t[0], wave_0[bands['B']], z, DM, taus[0], Mej, Ek, p[1], p[2], p[0])
+    V_pred = predNiSmod(t[1], wave_0[bands['V']], z, DM, taus[1], Mej, Ek, p[1], p[2], p[0])
+    I_pred = predNiSmod(t[2], wave_0[bands['i']], z, DM, taus[2], Mej, Ek, p[1], p[2], p[0])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[3]*(1.+z), p[4], p[7]) 
+    V_pred = V_pred + earlyFit(t[1], p[3]*(1.+z), p[5], p[8])
+    I_pred = I_pred + earlyFit(t[2], p[3]*(1.+z), p[6], p[9])
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    err = np.concatenate([B_err, V_err, I_err],axis=0)
+    return np.array(err, dtype=float)
+
+#function: error function for multi-band fitting of shallow Ni model
+def NiSTMultiErr(p, t, L, L_err, z, DM, taus, Mej, Ek):
+    from Cosmology import wave_0, bands
+    from LCFitting import earlyFit
+    #Ni shell component p0=epoch (in rest frame), p1=t_s, p2=a_s, p3=tau_s
+    B_pred = predNiSmod(t[0], wave_0[bands['B']], z, DM, p[3]*taus[0], Mej, Ek, p[1], p[2], p[0])
+    V_pred = predNiSmod(t[1], wave_0[bands['V']], z, DM, p[3]*taus[1], Mej, Ek, p[1], p[2], p[0])
+    I_pred = predNiSmod(t[2], wave_0[bands['i']], z, DM, p[3]*taus[2], Mej, Ek, p[1], p[2], p[0])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[4]*(1.+z), p[5], p[8]) 
+    V_pred = V_pred + earlyFit(t[1], p[4]*(1.+z), p[6], p[9])
+    I_pred = I_pred + earlyFit(t[2], p[4]*(1.+z), p[7], p[10])
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    err = np.concatenate([B_err, V_err, I_err],axis=0)
+    return np.array(err, dtype=float)
+

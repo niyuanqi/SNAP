@@ -22,7 +22,7 @@ def BreakoutFlash(R8,T5,m_c=1):
     :return: energy (erg), Teff (K)
     """
 
-    #Errata
+    #Errata Bloom et al. 2012
     EL = 1./(7.**(4./3.))
     ET = 1./(7.**(1./3.))
 
@@ -68,7 +68,7 @@ def ShockCoolingMod(t_day,R8,T5,m_c=1,late=True):
     :return: luminosity (erg/s), Teff (K)
     """
 
-    #Errata
+    #Errata Bloom et al. 2012
     EL = 1./(7.**(4./3.))
     ET = 1./(7.**(1./3.))
     
@@ -252,7 +252,7 @@ def kasenMultiErr(p, t, L, L_err, z, DM, m_c, e_51):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[8]) 
     I_pred = np.array(I_pred) + earlyFit(t[2], p[3]*(1.+z), p[6], p[9]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/100.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -276,7 +276,7 @@ def kasenFixedMultiErr(p, t, L, L_err, z, DM, m_c, e_51, angle):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[2]*(1.+z), p[4], p[7]) 
     I_pred = np.array(I_pred) + earlyFit(t[2], p[2]*(1.+z), p[5], p[8]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/1000.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -300,7 +300,7 @@ def kasent0MultiErr(p, t, L, L_err, z, DM, m_c, e_51, t0):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[2]*(1.+z), p[4], p[7]) 
     I_pred = np.array(I_pred) + earlyFit(t[2], p[2]*(1.+z), p[5], p[8]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/1000.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -324,7 +324,7 @@ def kasenPowMultiErr(p, t, L, L_err, z, DM, m_c, e_51, sep, angle):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[1]*(1.+z), p[3], p[6]) 
     I_pred = np.array(I_pred) + earlyFit(t[2], p[1]*(1.+z), p[4], p[7]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/10.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -391,7 +391,8 @@ def CSMpeak(Eej, Mej, Mext, Rext):
     #Rext is radius of extended material in 10^13 cm
 
     #opacity
-    k_opt = 0.1 #0.1g/cm^2
+    #k_opt = 0.1 #0.1g/cm^2
+    k_opt = 0.2
     k034 = k_opt/0.34
     
     #peak scalings from Nakar and Piro 2014
@@ -417,7 +418,8 @@ def CSMmod(t_day, Eej, Mej, Mext, Rext):
         #sB constant
         sb_const = 5.6704e-5 #erg/cm^2/s/K^4
         #opacity
-        k_opt = 0.1 #0.1g/cm^2
+        #k_opt = 0.1 #0.1g/cm^2
+        k_opt = 0.2
         k034 = k_opt/0.34
         
         #velocity imparted on extended material
@@ -469,7 +471,7 @@ def CSMMultiErr(p, t, L, L_err, z, DM, Mej, Eej):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[3]*(1.+z), p[5], p[8])
     I_pred = np.array(I_pred) + earlyFit(t[2], p[3]*(1.+z), p[6], p[9]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/1000.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
@@ -490,7 +492,7 @@ def CSMt0MultiErr(p, t, L, L_err, z, DM, Mej, Eej, t0):
     V_pred = np.array(V_pred) + earlyFit(t[1], p[2]*(1.+z), p[4], p[7])
     I_pred = np.array(I_pred) + earlyFit(t[2], p[2]*(1.+z), p[5], p[8]) 
     #Error
-    B_err = (B_pred - L[0])/L_err[0]/1000.
+    B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)

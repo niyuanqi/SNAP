@@ -139,11 +139,12 @@ def filter_flux(filterfile, syn_spec, syn_err=None, wrange=None):
         wrange = (max(fwave[0],swave[0]),min(fwave[-1],swave[-1]))
         wlengths = fwave[np.logical_and(fwave>wrange[0], fwave<wrange[1])]
     else:
-        wlengths = fwave[np.logical_and(fwave>wrange[0], fwave<wrange[1])]
+        fwave = filt.waveset
+        wlengths = fwave[np.logical_and(fwave>wrange[0]*u.AA, fwave<wrange[1]*u.AA)]
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
-    #flux = obs.effstim(flux_unit='jy', waverange=wrange).value
-    flux = obs.effstim(flux_unit='jy', wavelengths=wlengths).value
+    flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    #flux = obs.effstim(flux_unit='jy', wavelengths=wlengths).value
     #Synthetic observation of error spectrum
     if syn_err is not None:
         #square filter and error spectrum
@@ -190,8 +191,8 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
     waves = np.linspace(wrange[0], wrange[-1], 10000)
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
-    #flux = obs.effstim(flux_unit='jy', waverange=wrange).value
-    flux = obs.effstim(flux_unit='jy', wavelengths=waves).value
+    flux = obs.effstim(flux_unit='jy', waverange=wrange).value
+    #flux = obs.effstim(flux_unit='jy', wavelengths=waves).value
     #Calibrate magnitude with zero point
     mag = -2.512*np.log10(flux/filterzero)
     #Synthetic observation of error spectrum
@@ -266,13 +267,15 @@ def lpNorm(x, A, mu, sig, skew, b):
     return A*skewnorm.pdf((x-mu)/sig, skew) + b
     
 #function: fit the center of a line feature
-def fitLine(center, width, spec, spec_err=None, plot=False):
+def fitLine(center, width, spec, skew=None, spec_err=None, plot=False):
     from scipy.optimize import curve_fit, minimize
     
     spec_wave = spec.waveset.value
     b_est = max(spec(spec_wave, flux_unit='flam').value*1.e14)
-    mask = np.logical_and(spec_wave < center+width/2.,
-                          spec_wave > center-width/2.)
+    if skew is None:
+        skew = 0.5
+    mask = np.logical_and(spec_wave < center+skew*width,
+                          spec_wave > center-(1.-skew)*width)
     spec_wave = spec_wave[mask]
     spec_flux = spec(spec_wave, flux_unit='flam').value*1.e14
 
