@@ -88,9 +88,9 @@ def PSFclean(x,y,psf,ref,skyN=None,sat=40000,fu=10,fl=10):
         #find centroid of saturation
         x_sat = np.mean(x[satmask])
         y_sat = np.mean(y[satmask])
-        #remove vertical bleeding within 3 pixels
-        x_mask = np.logical_or(x<x_sat-3.0, x>x_sat+3.0)
-        xy_mask = np.logical_or(x_mask, y<y_sat-3.0)
+        #remove vertical bleeding within 2 pixels
+        x_mask = np.logical_or(x<x_sat-2, x>x_sat+2)
+        xy_mask = np.logical_or(x_mask, y<y_sat-2)
         mask = np.logical_and(mask, xy_mask)
     #discard pixels based on fit noise
     if skyN is not None:
@@ -413,6 +413,29 @@ def PSFfit(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
     #graph fits if verbosity is high enough
     if verbosity > 1:
         PSF_plot(image, x0, y0, PSFpopt, X2dof, skypopt, skyN, fitsky, fsize*fwhm)
+        """
+        #diagnostic image
+        import matplotlib.pyplot as plt
+        I_t = np.copy(image)
+        x1, x2 = min(x)-10,max(x)+11
+        y1, y2 = min(y)-10,max(y)+11
+        for i in np.arange(x1, x2):
+            for j in np.arange(y1, y2):
+                I_t[j][i] = D2plane((i, j),*skypopt)
+        print "Plotting sky planar fit residual"
+        print "Plotting image at x:", x1, x2
+        print "Plotting image at y:", y1, y2
+        sb = image[y1:y2,x1:x2]-I_t[y1:y2,x1:x2]
+        sbmax = np.mean(sb)
+        sbmin = -skyN
+        plt.title("Sky planar fit residual")
+        plt.imshow(sb, cmap='Greys',vmax=sbmax,vmin=sbmin)
+        plt.colorbar()
+        plt.scatter(x-x1, y-y1, c='b', marker='.')
+        plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+        plt.show()
+        """
+        
     #check if fit is ridiculous
     if E2moff_verify(PSFpopt, x0, y0):
         #not ridiculous, give back fit
