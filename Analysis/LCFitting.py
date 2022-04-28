@@ -265,13 +265,30 @@ def earlyFit(t, t0, C, a):
 
 #function: Error function for multi-band early light curve leastsq fitting
 def earlyMultiErr(p, t, L, L_err):
-    B_err = 0.001*(earlyFit(t[0], p[0], p[1], p[4]) - L[0])/L_err[0]
+    B_err = (earlyFit(t[0], p[0], p[1], p[4]) - L[0])/L_err[0]
     V_err = (earlyFit(t[1], p[0], p[2], p[5]) - L[1])/L_err[1]
     I_err = (earlyFit(t[2], p[0], p[3], p[6]) - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
 
 #function: Error function for multi-band gaussian+PL leastsq fitting
 def GaussianMultiErr(p, t, L, L_err):
+    from scipy.stats import norm
+    #gaussian component
+    B_pred = p[2]*norm.pdf(t[0], p[0], p[1])
+    V_pred = p[3]*norm.pdf(t[1], p[0], p[1])
+    I_pred = p[4]*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[5], p[6], p[9]) 
+    V_pred = V_pred + earlyFit(t[1], p[5], p[7], p[10])
+    I_pred = I_pred + earlyFit(t[2], p[5], p[8], p[11]) 
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
+#function: Error function for multi-band gaussian+PL leastsq fitting
+def GaussianViErr(p, t, L, L_err):
     from scipy.stats import norm
     #gaussian component
     #B_pred = norm.pdf(t[0], p[0], p[1])

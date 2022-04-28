@@ -138,7 +138,7 @@ def moonEQC(time, loc):
     
     t = Time(time, format='isot', scale='utc')
     l = EarthLocation.from_geodetic(*loc)
-    eq = get_moon(t,l,'de430')
+    eq = get_moon(t,l,'de440')
     aa = eq.transform_to(AltAz(obstime=t, location=l))
     RA, DEC = eq.ra.degree, eq.dec.degree
     return RA, DEC
@@ -168,7 +168,7 @@ def moonLC(time, loc):
     
     t = Time(time, format='isot', scale='utc')
     l = EarthLocation.from_geodetic(*loc)
-    eq = get_moon(t,l,'de430')
+    eq = get_moon(t,l,'de440')
     lc = eq.transform_to(AltAz(obstime=t, location=l))
     ALT, AZ = lc.alt.degree, lc.az.degree
     return ALT, AZ

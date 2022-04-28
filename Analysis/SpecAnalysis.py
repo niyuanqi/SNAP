@@ -54,12 +54,13 @@ def spec_fits(filename, get_err=False, get_meta=False):
         from astropy.coordinates import SkyCoord
         
         #calculate time observed
-        if 'T' in spec_meta['DATE-OBS']:
-            isot_obs = spec_meta['DATE-OBS']
+        datestr = 'DATE-OBS'
+        if 'T' in spec_meta[datestr]:
+            isot_obs = spec_meta[datestr]
         elif 'UT' in spec_meta:
-            isot_obs = spec_meta['DATE-OBS']+'T'+spec_meta['UT']
+            isot_obs = spec_meta[datestr]+'T'+spec_meta['UT']
         else:
-            isot_obs = spec_meta['DATE-OBS']+'T'+spec_meta['UT-TIME']
+            isot_obs = spec_meta[datestr]+'T'+spec_meta['UT-TIME']
         #exposure time
         exp_obs = spec_meta['EXPTIME']
         #RA, DEC observed
@@ -199,10 +200,10 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
     if syn_err is not None:
         #square filter and error spectrum
         filt2 = SpectralElement(Empirical1D, points=fwave,
-                          lookup_table=np.square(filt(fwave)))
+                                lookup_table=np.square(filt(fwave)))
         pseudo_flux = np.square(syn_err(swave,flux_unit='jy')).value
         syn_err2 = SourceSpectrum(Empirical1D, points=swave,
-                                   lookup_table=pseudo_flux)
+                                  lookup_table=pseudo_flux)
         #sum errors in quadrature
         obs = Observation(syn_err2, filt2, force='extrap')
         #flux_err = np.sqrt(obs.effstim(waverange=wrange).value)
@@ -353,6 +354,7 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
     #load spectrum data
     spec_wave = spec.waveset.value
     spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+    spec_flux = spec(spec_wave, flux_unit='flam').value
 
     #Na I D locations
     line2 = 5890.0*(1.+z)
@@ -371,13 +373,18 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
     if spec_err is None:
         popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
                                p0=est, maxfev=1000000)
+        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, maxfev=1000000)
     else:
         spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
         popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
                                p0=est, sigma=spec_flux_err[mask],
                                maxfev=1000000)
     perr = np.sqrt(np.diag(pcov))
-    print popt, perr
+    print popt
+    print perr
+    wave = np.linspace(line2-r, line1+r, 1000)
+    V = DVoigt(wave, *popt)
 
     #calculate equivalent widths
     wave2 = np.linspace(line2-r, line2+r, 1000)
@@ -409,6 +416,7 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
         #plt.plot(spec_wave[mask], DVoigt(spec_wave[mask], *popt), c='r')
         plt.plot(wave2, V2+backg2, c='r')
         plt.plot(wave1, V1+backg1, c='b')
+        plt.plot(wave, V, c='k', linestyle=':')
         plt.title("Doublet Voigt Line Fit")
         plt.xlabel("Wavelength [A]")
         plt.ylabel("Flux [flam]")
@@ -503,7 +511,7 @@ def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
         plt.show()
 
 #function: measure equivalent width of a line
-def EWdirect(spec, lim1, lim2, r=20, spec_err=None, plot=False):
+def EWdirect(spec,lim1,lim2,r=20,spec_err=None, fit=True,plot=False,ret=False):
     #lim1 and lim2 are limits surrounding the line
     #r is annulus size for fitting
     
@@ -513,16 +521,33 @@ def EWdirect(spec, lim1, lim2, r=20, spec_err=None, plot=False):
     
     #crop a window around the line
     lmask = np.logical_and(spec_wave > lim1, spec_wave < lim2)
-    #crop an annulus around the line
-    amask = np.logical_and(spec_wave > lim1-30, spec_wave < lim2+30)
-    amask = np.logical_and(amask, np.logical_not(lmask))
-    
-    #fit continuum emission using 2nd order polynomial
-    cont_poly = np.polyfit(spec_wave[amask], spec_flux[amask], 3)
 
-    #measure equivalent width
-    cont_flux = np.polyval(cont_poly, spec_wave[lmask])
-    ratio = (cont_flux - spec_flux[lmask])/cont_flux
+    if fit == True:
+        #crop an annulus around the line
+        allmask = np.logical_and(spec_wave > lim1-30, spec_wave < lim2+30)
+        amask = np.logical_and(allmask, np.logical_not(lmask))
+        #fit continuum emission using 2nd order polynomial
+        cont_poly = np.polyfit(spec_wave[amask], spec_flux[amask], 3)
+        cont_flux = np.polyval(cont_poly, spec_wave[lmask])
+        #continuum representation
+        rep_w = spec_wave[allmask]
+        rep_f = np.polyval(cont_poly, spec_wave[allmask])
+        #measure equivalent width
+        ratio = (cont_flux - spec_flux[lmask])/cont_flux
+    elif fit == False:
+        #measure continuum emission
+        amask1 = np.logical_and(spec_wave>lim1-30, spec_wave<lim1)
+        cont_flux1 = np.mean(spec_flux[amask1])
+        amask2 = np.logical_and(spec_wave>lim2, spec_wave<lim2+30)
+        cont_flux2 = np.mean(spec_flux[amask2])
+        slope = (cont_flux2 - cont_flux1)/(lim2-lim1)
+        #continuum representation
+        rep_w = spec_wave[lmask]
+        rep_f = slope*(rep_w - lim1) + cont_flux1
+        #measure equivalent width
+        ratio = (rep_f - spec_flux[lmask])/rep_f
+
+    #integrate equivalent width
     EW = np.trapz(ratio, spec_wave[lmask])
     print "EW:", EW
 
@@ -534,10 +559,11 @@ def EWdirect(spec, lim1, lim2, r=20, spec_err=None, plot=False):
         plt.show()
         
         plt.plot(spec_wave, spec_flux, c='g')
-        plt.plot(spec_wave[amask],
-                 np.polyval(cont_poly, spec_wave[amask]),
-                 c='r')
+        plt.plot(rep_w, rep_f, c='r')
         plt.title("Direct Integration")
         plt.xlabel("Wavelength [A]")
         plt.ylabel("Flux [flam]")
         plt.show()
+
+    if ret:
+        return EW
