@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, fitact="", diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -252,6 +252,14 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         import matplotlib.pyplot as plt
         #plot image of catalog positions
         plt.imshow(catimage, cmap='Greys', vmax=0.001*np.amax(catimage), vmin=0)
+        plt.plot([Xo[0]-radius/2, Xo[0]-radius/2],
+                 [Yo[0]-radius/2, Yo[0]+radius/2], 'r')
+        plt.plot([Xo[0]+radius/2, Xo[0]+radius/2],
+                 [Yo[0]-radius/2, Yo[0]+radius/2], 'r')
+        plt.plot([Xo[0]-radius/2, Xo[0]+radius/2],
+                 [Yo[0]-radius/2, Yo[0]-radius/2], 'r')
+        plt.plot([Xo[0]-radius/2, Xo[0]+radius/2],
+                 [Yo[0]+radius/2, Yo[0]+radius/2], 'r')
         plt.scatter(catX, catY)
         plt.scatter(Xo, Yo, c='r')
         for i in range(Ncat):
@@ -438,7 +446,9 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         elif psf[0] == '3':
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         else:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            #PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFpopt[0], PSFperr[0], X2dof, skypopto, skyNo
         
         PSFpopt, PSFperr = [PSFpopt], [PSFperr]
         #check preferred intensity calculation method
@@ -456,7 +466,13 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         Io, SNo = [Io], [SNo]
     #deal with mult-object photometry
     elif Nobj > 0:
-        PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
+        fitname = "lastsavedfit.txt"
+        if fitact == 'save':
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, outfile=fitname, verbosity=verbosity)
+        elif fitact == 'load':
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, infile=fitname, verbosity=verbosity)
+        else:
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
 
         #check preferred intensity calculation method
         if aperture is None:
@@ -509,13 +525,16 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         #try to compute magnitude if source is present
         if I[i] != float('NaN') and I[i] > 0 and skyNo != 0:
             #convert position to world coordinates
-            if psf[i][0] != 's':
-                Xp, Yp = PSFpopt[i][5], PSFpopt[i][6]
-            else:
+            if psf[i][0] == 's':
                 if psf[i][1] == 'n':
                     Xp, Yp = PSFpopt[i][3], PSFpopt[i][4]
                 else:
-                    Xp, Yp = PSFpopt[i][2], PSFpopt[i][3]
+                    Xp, Yp = PSFpopt[i][1], PSFpopt[i][2]
+            elif psf[i][0] == 'c':
+                Xp, Yp = PSFpopt[i][0], PSFpopt[i][1]
+            else:
+                #moffat
+                Xp, Yp = PSFpopt[i][5], PSFpopt[i][6]
                     
             RAo[i], DECo[i] = wcs.all_pix2world(Xp, Yp, 0)
             #calculate magnitude from flux
@@ -679,6 +698,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--refMag", type=float, default=19.0, help="Reliable lower bound for reference star brightness")
     parser.add_argument("-d", "--diffIm", type=str, default=None, help="Difference fits image containing source, which if given will be used instead to perform source photometry. Original image will be used for reference star photometry. Difference image wcs and psf must match original image. If not, matching is required in preprocessing.")
     parser.add_argument("--fit_sky", action='store_const', const=True, default=False, help="Give this flag if it is desirable to fit for and subtract planar sky around the source.")
+    parser.add_argument("--fit_actions", type=str, default="", help="Use 'save' to record fit parameters for multi-fit only and 'load' to use saved parameters as initial conditions.")
     parser.add_argument("-v", "--verbosity", action="count", default=0)
     args = parser.parse_args()
     
@@ -696,10 +716,10 @@ if __name__ == "__main__":
     
     #compute position, magnitude and error
     if args.noiseSNR != 0:
-        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), radius=args.radius, aperture=args.aperture, psf=args.psf, name=args.source, band=args.band, fwhm=args.fwhm, limsnr=args.noiseSNR, satmag=args.satMag, refmag=args.refMag, fitsky=args.fit_sky, satpix=args.satpix, verbosity=args.verbosity)
+        RA, DEC, I, SN, M, Merr, Mlim = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), radius=args.radius, aperture=args.aperture, psf=args.psf, name=args.source, band=args.band, fwhm=args.fwhm, limsnr=args.noiseSNR, satmag=args.satMag, refmag=args.refMag, fitsky=args.fit_sky, satpix=args.satpix, fitact=args.fit_actions, verbosity=args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr, Mlim
     else:
-        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), radius=args.radius, aperture=args.aperture, psf=args.psf, name=args.source, band=args.band, fwhm=args.fwhm, limsnr=args.noiseSNR, satmag=args.satMag, refmag=args.refMag, fitsky=args.fit_sky, satpix=args.satpix, verbosity=args.verbosity)
+        RA, DEC, I, SN, M, Merr = magnitude(image, catimage, wcs, args.catalog, args.catname, (RA,DEC), radius=args.radius, aperture=args.aperture, psf=args.psf, name=args.source, band=args.band, fwhm=args.fwhm, limsnr=args.noiseSNR, satmag=args.satMag, refmag=args.refMag, fitsky=args.fit_sky, satpix=args.satpix, fitact=args.fit_actions, verbosity=args.verbosity)
         #output position, magnitude
         print time, RA, DEC, I, SN, M, Merr

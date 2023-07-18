@@ -88,7 +88,7 @@ def absMag(appMag, z, appMag_err=None, z_err=None, Kcorr=None):
     print dl
     if Kcorr is None:
         #estimate absolute magnitude using luminosity distance and naive K
-        Mabs = appMag - 5.*np.log10(dl/10.0) - 2.5*np.log10(1+z)
+        Mabs = appMag - 5.*np.log10(dl/10.0) + 2.5*np.log10(1+z)
     else:
         #compute absolute magnitude using luminosity distance and K correction
         Mabs = appMag - 5.*np.log10(dl/10.0) - Kcorr

@@ -53,7 +53,6 @@ def ArnettFit(t, M_N, MejE):
     #tau_m is the timescale of the light-curve
     #tau_m=((k_opt/(beta*c))**0.5)*((10./3.)**(0.25))*M_ejE_K
     tau_m=((k_opt/(beta*c))**0.5)*((6./5.)**(0.25))*M_ejE_K
-    #print "tau_m=", tau_m
 
     #integrate up the A(z) factor where z goes from 0 to x
     int_A=np.zeros(n) 
@@ -74,6 +73,23 @@ def ArnettFit(t, M_N, MejE):
 
     #return results
     return L_ph
+
+#function: convert Arnett MejE to tau_m parameter
+def ArnettTau(MejE, MejE_err=None, k_opt=0.10):
+    #Constants
+    M_sun=2.e33
+    c=3.e10
+    beta=13.8 #constant of integration (Arnett 1982)
+    
+    #convert MejE to tau_m
+    M_ejE_K = MejE*((M_sun)**3/(1.e51))**(0.25)
+    tau_m=((k_opt/(beta*c))**0.5)*((6./5.)**(0.25))*M_ejE_K
+    if MejE_err is None:
+        return tau_m
+    else:
+        M_ejE_K_err = MejE_err*((M_sun)**3/(1.e51))**(0.25)
+        tau_m_err = ((k_opt/(beta*c))**0.5)*((6./5.)**(0.25))*M_ejE_K_err
+        return tau_m, tau_m_err
 
 #function: break Arnett degeneracy
 def ArnettMejE(MejE, MejEerr, vej, vejerr):
@@ -1042,6 +1058,7 @@ def NiSFit(t, Mej, Ek, t_s, a_s, plot=False):
     #total mass and Ni56 mass in Ni56 shell
     dM_s = t_s**1.76*(2.0e-2*Ek**0.44)/(k_opt**0.88*Mej**0.32)
     M_ni = dM_s*a_s
+    print "Ni mass, Mdiff, Mdiff/Mej, Mej, t_s:", M_ni, dM_s, dM_s/(Mej*1.38), dM_s/(1.3*(t_s/11.80)**1.76), t_s
     #specific heating rate from Ni56 decay in erg/s/g
     eps = e_Ni*np.exp(-t/tau_Ni) +e_Co*(np.exp(-t/tau_Co) - 
                                         np.exp(-t/tau_Ni))
@@ -1170,7 +1187,6 @@ def predNiSmod(t, wave, z, DM, taus, Mej, Ek, t_s, a_s, t0, prnt=False):
     Tc[tr>0] = np.power(L[tr>0]*taus[tr>0]/(4.*np.pi*rph**2*sb_const), 0.25)
     if prnt:
         print "Tc when clump exposed", Tc[tr < t_s/(1.+z)][-1]
-    
     return BBflux(L, Tc, wave, z, DM) #uJy
 
 #function: error function for multi-band fitting of shallow Ni model

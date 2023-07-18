@@ -8,6 +8,9 @@
 
 #essential modules
 import numpy as np
+from scipy.signal import fftconvolve
+from scipy.special import gamma, gammainc, gammaincinv
+from scipy.optimize import fsolve
 
 #function: distance metric on images
 def dist(x1, y1, x2, y2):
@@ -20,7 +23,7 @@ def dist(x1, y1, x2, y2):
 
 #function: general 2D background sky plane
 def D2plane((x, y), a, b, c):
-    return (a*x + b*y + c).ravel()
+    return a*x + b*y + c
 
 ###############################################
 # Circular moffat function for PSF (legacy)   #
@@ -29,7 +32,7 @@ def D2plane((x, y), a, b, c):
 #function: circular 2D moffat function
 def S2moff((x, y), A, a, b, x0, y0):
     m = A*np.power(1+np.square(dist(x,y,x0,y0)/a),-b)
-    return m.ravel()
+    return m
 #function: moffat a, b paramters -> fwhm
 def S2moff_toFWHM(a,b):
     if b != 0 and np.power(2,1.0/b)-1 > 0:
@@ -60,14 +63,16 @@ def S2moff_aperture(a,b,f=0.9):
 #function: coordinate counterclockwise rotation by theta
 def rot(x, y, theta):
     rad = theta*np.pi/180
-    xp = x*np.cos(rad) - y*np.sin(rad)
-    yp = x*np.sin(rad) + y*np.cos(rad)
+    costh, sinth = np.cos(rad), np.sin(rad)
+    xp = x*costh - y*sinth
+    yp = x*sinth + y*costh
     return xp, yp
 #function: coordinate clockwise rotation by theta
 def rotI(x, y, theta):
-    rad = theta*np.pi/180
-    xp = x*np.cos(rad) + y*np.sin(rad)
-    yp = -x*np.sin(rad) + y*np.cos(rad)
+    rad = theta*np.pi/180.0
+    costh, sinth = np.cos(rad), np.sin(rad)
+    xp = x*costh + y*sinth
+    yp = -x*sinth + y*costh
     return xp, yp
 #function: Mahalanobis distance on images
 def Mdist(x, y, x0, y0, ax, ay, theta):
@@ -97,7 +102,7 @@ def E2moff((x, y), A, ax, ay, b, theta, x0, y0):
     centered at position x0, y0, with sharpness b, scaling A.
     """
     m = A*np.power(1+np.square(Mdist(x,y,x0,y0,ax,ay,theta)),-b)
-    return m.ravel()
+    return m
 #function: integrate elliptical moffat function
 def E2moff_integrate(A, ax, ay, b, f=0.9):
     if b > 1:
@@ -186,62 +191,188 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
 # Sersic Profile                              #
 ###############################################
 
-def b_integrand(r, re, n, C, b):
-    """
-    This is used in the integration to find b
-    """
-    return r*Sersic(r, re, n, C, b)
+ker_in = dict()
 
-def Sersic(r, re, n, C, b):
-    """
-    Sersic Function for integration
-    """
-    ra=np.power((r/re), 1/n)
-    return C*np.exp(-b*(ra-1))
+def KerSersic((x,y), PSF, nsamp=1, fker=1):
+    global ker_in
+    global ker_out
+    #oversampling factor
+    n=nsamp #assume image PSF is well sampled, n=1
+    #kernal radius as factor of fwhm
+    f=fker #assume PSF is relatively sharp, f=1
+    
+    hashseq = hash(tuple([x.tostring(),y.tostring(),tuple(PSF)]))
+    if hashseq in ker_in:
+        #particular subimage and PSF already exists
+        kz, sx, sy, ix, iy = ker_in[hashseq]
+    else:   
+        #psf parameters
+        ax, ay, mb, mtheta = PSF
+        mA = (mb-1)/(np.pi*ax*ay)
+        #kernel radius f*fwhms
+        mr = np.sqrt(np.power(2.0, 1/mb) - 1)
+        kr = 2*f*max(ax,ay)*mr #in psf frame
+        kr = int(np.ceil(np.absolute(kr)))
+        #kernel size, nx oversampling
+        kn = 2*n*kr+1
+        #create kernel base
+        kx = np.linspace(-kr, kr, kn, endpoint=True)
+        ky = np.linspace(-kr, kr, kn, endpoint=True)
+        kx, ky = np.meshgrid(kx, ky)
+        #evaluate kernel
+        kz = E2moff((kx, ky), mA, ax, ay, mb, mtheta, 0, 0)
+        
+        #sersic image size 2*fwhm over-extension and 4x oversampling
+        xmin, xmax, ymin, ymax = np.min(x), np.max(x), np.min(y), np.max(y)
+        nx, ny = (xmax-xmin)*n + 2*n*kr+1, (ymax-ymin)*n + 2*n*kr+1
+        sx = np.linspace(xmin-kr, xmax+kr, nx, endpoint=True)
+        sy = np.linspace(ymin-kr, ymax+kr, ny, endpoint=True)
+        sx, sy = np.meshgrid(sx, sy)
+        #indices of original x,y
+        ix = np.round((x-xmin)*n+n*kr).astype(int)
+        iy = np.round((y-ymin)*n+n*kr).astype(int)
+        
+        #add to global variable
+        ker_in[hashseq] = [kz, sx, sy, ix, iy]
+    return kz, sx, sy, ix, iy
+
+def Sersic2D((x,y), Ie, re, n, x0, y0, e, theta):
+    bn = gammaincinv(2.0*n, 0.5)
+    #effective radius scaling
+    amax, amin = re, (1-e)*re
+    xmaj, xmin = rotI(x-x0, y-y0, theta)
+    z = np.sqrt(np.square(xmaj/amax) + np.square(xmin/amin))
+    return Ie*np.exp(-bn*(np.power(z, 1./n)-1.))
+
+def SersicK2D((x,y), PSF, Ie, re, n, x0, y0, e, theta, nsamp=1, fker=1):
+    #get kernel and base
+    kz, sx, sy, ix, iy = KerSersic((x,y), PSF, nsamp=nsamp, fker=fker)
+    #evaluate sersic image
+    sz = Sersic2D((sx,sy), Ie,re,n,x0,y0,e,theta)
+    #convolve sersic image with kernel
+    sz = fftconvolve(sz, kz, mode='same')/nsamp**2
+    #obtain sz at x,y
+    z = sz[tuple(np.array([iy, ix]))]
+    #print "eval {0:07.3f}, {1:07.3f}, {2:07.3f}, {3:07.3f}".format(C, re, n, np.max(z))
+    return z
 
 def Sersic_integrate(Ie,re,n,e,f=0.9):
-    from scipy import integrate
-    from scipy.special import gamma
+    bn = gammaincinv(2.0*n, 0.5)
+    return f*(1-e)*2*np.pi*re**2*Ie*n*gamma(2.*n)*np.exp(bn)/np.power(bn, 2*n)
 
-    if n > 0.35:
-        #Approximate well using MacArthur 2003
-        bn = 2*n - 1./3. + 4./(405.*n) + 46./(25515.*n**2) + 131./(1148175.*n**3) - 2194697./(30690717750.*n**4)
+###############################################
+# Core-Sersic Profile                         #
+###############################################
+
+csb_in = dict()
+
+def CoreSersicb(re, n, gma, rbe):
+    global csb_in
+    global csb_out
+    hashseq = str([n,gma,rbe])
+    if hashseq in csb_in:
+        bn = csb_out[hashseq]
     else:
-        #Numerically using Mohammad Akhlaghi 2012
-        #This is the value of b for n=0.36
-        b_test=0.426200378468
-        #rate of increasing b
-        b_drate=1.002
-        #rate of decreasing b
-        b_irate=1.001
-        #Effective radius:
-        re=2
+        rb = rbe*re
+        rbn = np.power(rbe, 1./n)
+        #func = lambda b: (n/np.power(b, 2*n))*np.exp(b*rbn)*gamma(2.*n)*(1 + gammainc(2.*n, b*rbn) - 2*gammainc(2.*n, b)) - (1./(2.-gma))*np.square(rbe)
+        func = lambda b: 1 + gammainc(2.*n, b*rbn) - 2*gammainc(2.*n, b)
+        bn = fsolve(func, gammaincinv(2.0*n, 0.5))[0]
+        csb_in[hashseq] = bn
+    return bn
 
-        while True:
-            a=integrate.quad(b_integrand, 0, float('inf'), 
-                             args=(re, n, 1, b_test))[0]
-            b=integrate.quad(b_integrand, 0, re, 
-                             args=(re, n, 1, b_test))[0]
-            I_diff=2*np.pi*(a-(2*b))
-            if I_diff>-0.00001 and I_diff<0.00001:
-                break
-            elif I_diff<=-0.00001:
-                b_test=b_test/b_drate
-            elif I_diff>=0.00001:
-                b_test=b_test*b_irate
-            bn = b_test
-        print "n={} --> b(n)={}".format(n, bn)
-    return np.pi*re**2*Ie*2*n*gamma(2*n)*np.power(np.e, bn)/np.power(bn, 2*n)*f
-    
+def CoreSersic2D((x,y), x0, y0, Ib, e, theta, re, n, gma, rbe):
+    #evaluate sersic image
+    b = CoreSersicb(re, n, gma, rbe)
+    a = 10. #sharp transition
+    rb = rbe*re #rb as a fraction of re
+    #get scaling factor
+    C = Ib*np.power(2,-gma/a)*np.exp(b*np.power(2,1./(a*n))*np.power(rbe,1./n))
+    #effective radius scaling
+    amax, amin = re, (1-e)*re
+    xmaj, xmin = rotI(x-x0, y-y0, theta)
+    z = np.power(np.square(xmaj/amax) + np.square(xmin/amin), a/2.)
+    zb = np.power(rbe, a)
+    #spherical core sersic
+    rs=np.power(z+zb, 1./(a*n))
+    rc=np.power(1+zb/z, gma/a)
+    return C*rc*np.exp(-b*rs)
+
+def CoreSersicK2D((x,y), PSF, x0, y0, Ib, e, theta, re, n, gma, rbe, nsamp=1, fker=1):
+    """
+    Sersic Function for integration
+    Trujillo et al. (2004)
+    """
+    #get kernel and base
+    kz, sx, sy, ix, iy = KerSersic((x,y), PSF, nsamp=nsamp, fker=fker)
+    #evaluate sersic image
+    sz = CoreSersic2D((sx,sy), x0, y0, Ib, e, theta, re, n, gma, rbe)
+    #convolve sersic image with kernel
+    sz = fftconvolve(sz, kz, mode='same')/nsamp**2
+    #obtain sz at x,y
+    z = sz[tuple(np.array([iy, ix]))]
+    #print "eval {0:07.3f}, {1:07.3f}, {2:07.3f}, {3:07.3f}, {4:07.3f}".format(C, re, n, gma, np.max(z))
+    return z
+
+def CoreSersic_integrate(Ib,re,n,gma,rbe,e,f=0.9):
+    a = 10.
+    rb = rbe*re
+    rbn = np.power(rbe, 1./n)
+    b = CoreSersicb(re, n, gma, rbe)
+    return f*(1-e)*2*np.pi*Ib*(np.square(rb)/(2-gma) + np.exp(b*rbn)*n*(np.square(re)/np.power(b,2*n))*gamma(2.*n)*(1 - gammainc(2.*n, b*rbn)))
 
 ###############################################
 # Multi-object fit                            #
 ###############################################
-        
+
+def PSFlen(psf):
+    if psf == '3' or psf == '2' or psf =='1':
+        return 7
+    elif psf[0] == 's':
+        if psf[1] == 'n':
+            return 7
+        else:
+            return 3
+    elif psf[0] == 'c':
+        if psf[1] == 'n':
+            return 9
+        else:
+            return 3
+    else:
+        print "No PSF in library"
+
+def PSFparams(psf):
+    if psf == '3':
+        return ['C', 'ax', 'ay', 'b', 'theta', 'x0', 'y0']
+    elif psf == '2':
+        return ['C', 'x0', 'y0']
+    elif psf == '1':
+        return ['C']
+    elif psf[0] == 's':
+        if psf[1] == 'n':
+            return ['Ie', 're', 'n', 'x0', 'y0', 'e', 'theta']
+        elif psf[-1] == 'f':
+            return ['Ie']
+        else:
+            return ['Ie', 'x0', 'y0']
+    elif psf[0] == 'c':
+        if psf[1] == 'n':
+            return ['x0', 'y0', 'Ib', 'e', 'theta', 're', 'n', 'gma', 'rbe']
+        elif psf[-1] == 'f':
+            return ['Ib']
+        else:
+            return ['x0', 'y0', 'Ib']
+    elif psf == 'p':
+        #sky
+        return ['a', 'b', 'c']
+
 #function: Composite moffat psf for multiple objects
-def E2moff_multi((x,y), psftype, given, free):
+def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=2, fker=2):
     out = 0
     count = 0
+    #get kernel and base
+    outconv = 0
+    kz, sx, sy, ix, iy = KerSersic((x,y), PSF, nsamp=nsamp, fker=fker)
     for i, psf in enumerate(psftype):
         #add moffat to output for each moffat
         if psf == '3':
@@ -258,13 +389,84 @@ def E2moff_multi((x,y), psftype, given, free):
             count = count+1
         if psf[0] == 's':
             #we need to use sersic profile
-            from astropy.modeling.models import Sersic2D
             if psf[1] == 'n':
+                #make ellipticity an independent parameter
+                e, theta = free[count+5], free[count+6]
+                #print "e, theta", e,theta
+                Ie, re = free[count], free[count+1]/np.sqrt(1-e)
+                params = list([Ie,re])+list(free[count+2:count+5])+list([e, theta])
                 #full sersic profile
-                out+= Sersic2D(*free[count:count+7])(x,y)
+                outconv+= Sersic2D((sx,sy), *params)
                 count = count+7
+            elif psf[-1] == 'f' and given != []:
+                Ie = free[count]
+                n=float(psf.split('-')[0][1:])
+                re=float(psf.split('-')[-3])
+                e=float(psf.split('-')[-2])
+                theta=float(psf.split('-')[-1][:-1])
+                
+                #sersic with known n and position
+                params = [Ie, re, n]+list(given[i])+[e, theta]
+                outconv+= Sersic2D((sx,sy), *params)
+                count = count+1
             else:
+                Ie = free[count]
+                n=float(psf.split('-')[0][1:])
+                re=float(psf.split('-')[-3])
+                e=float(psf.split('-')[-2])
+                if psf[-1] == 'f':
+                    theta=float(psf.split('-')[-1][:-1])
+                else:
+                    theta=float(psf.split('-')[-1])
+
+                params = [Ie, re, n]+list(free[count+1:count+3])+[e, theta]
                 #known sersic n
-                out+= Sersic2D(amplitude=free[count],r_eff=free[count+1],n=float(psf[1:]),x_0=free[count+2],y_0=free[count+3],ellip=free[count+4],theta=free[count+5])(x,y)
-                count = count+6
+                outconv+= Sersic2D((sx,sy), *params)
+                count = count+3
+        if psf[0] == 'c':
+            #we need to use core sersic profile
+            if psf[1] == 'n':
+                #make ellipticity an independent parameter
+                e, theta = free[count+3], free[count+4]
+                Ib, re = free[count+2], free[count+5]/np.sqrt(1-e)
+                params = list(free[count:count+2])+list([Ib, e, theta, re])+list(free[count+6:count+9])
+                #full sersic profile
+                outconv+= CoreSersic2D((sx,sy), *params)
+                count = count+9
+            elif psf[-1] == 'f' and given != []:
+                n=float(psf.split('-')[0][1:])
+                gma=float(psf.split('-')[1])
+                rbe=float(psf.split('-')[2])
+                re=float(psf.split('-')[-3])
+                e=float(psf.split('-')[-2])
+                theta=float(psf.split('-')[-1][:-1])
+                #sersic with known n and position
+                params = list(given[i])+list([free[count]])+[e, theta, re, n, gma, rbe]
+                outconv+= CoreSersic2D((sx,sy), *params)
+                count = count+1
+            else:
+                n=float(psf.split('-')[0][1:])
+                gma=float(psf.split('-')[1])
+                rbe=float(psf.split('-')[2])
+                re=float(psf.split('-')[-3])
+                e=float(psf.split('-')[-2])
+                if psf[-1] == 'f':
+                    theta=float(psf.split('-')[-1][:-1])
+                else:
+                    theta=float(psf.split('-')[-1])
+                #known sersic n
+                params = list(free[count:count+3])+[e, theta, re, n, gma, rbe]
+                outconv+= CoreSersic2D((sx,sy), *params)
+                count = count+3
+    if not (outconv is 0):
+        #do convolution
+        #convolve sersic image with kernel
+        outconv = fftconvolve(outconv, kz, mode='same')/nsamp**2
+        out += outconv[tuple(np.array([iy, ix]))]
+        #print np.max(outconv), free[15]
+        #print np.max(outconv)
+    if skyflag:
+        out+= D2plane((x, y), *free[count:count+5])
+        count = count+5
     return out
+        

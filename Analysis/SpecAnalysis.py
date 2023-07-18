@@ -27,19 +27,19 @@ def spec_fits(filename, get_err=False, get_meta=False):
     spec_meta = fits.getheader(filename)
     #check for multispec
     if isinstance(spec_fits, list):
-        spec = spec_fits[1]
+        spec = spec_fits[0]
         if get_err:
             spec_err = spec_fits[3]
         print spec_meta['SITEID']
     else:
         spec = spec_fits
+    #check units
+    if 'BUNIT' not in spec_meta or spec_meta['BUNIT']=='erg/cm2/s/A':
+        unit = u.erg/u.cm**2/u.s/u.AA
     #spectrum flux data
-    flux = spec.data
-    if spec_meta['BUNIT']=='erg/cm2/s/A':
-        flux = flux * u.erg/u.cm**2/u.s/u.AA
-        if get_err:
-            flux_err = spec_err.data
-            flux_err = flux_err * u.erg/u.cm**2/u.s/u.AA
+    flux = spec.data*unit
+    if get_err:
+        flux_err = spec_err.data*unit
     wave = spec.dispersion
     if isinstance(wave, u.Quantity):
         wave = wave.value * u.AA
@@ -59,8 +59,10 @@ def spec_fits(filename, get_err=False, get_meta=False):
             isot_obs = spec_meta[datestr]
         elif 'UT' in spec_meta:
             isot_obs = spec_meta[datestr]+'T'+spec_meta['UT']
-        else:
+        elif 'UT-TIME' in spec_meta:
             isot_obs = spec_meta[datestr]+'T'+spec_meta['UT-TIME']
+        elif 'TIME-OBS' in spec_meta:
+            isot_obs = spec_meta[datestr]+'T'+spec_meta['TIME-OBS']
         #exposure time
         exp_obs = spec_meta['EXPTIME']
         #RA, DEC observed
@@ -162,7 +164,7 @@ def filter_flux(filterfile, syn_spec, syn_err=None, wrange=None):
         return flux
 
 #function: evaluates magnitudes of spectrum in filter system
-def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
+def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, z=0, wrange=None):
     '''
     ######################################################
     # Input                                              #
@@ -190,6 +192,8 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
         swave = syn_spec.waveset
         wrange = (max(fwave[0],swave[0]),min(fwave[-1],swave[-1]))
     waves = np.linspace(wrange[0], wrange[-1], 10000)
+    filt = SpectralElement(Empirical1D, points=fwave*(1.+z),
+                           lookup_table=filt(fwave))
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
     flux = obs.effstim(flux_unit='jy', waverange=wrange).value
@@ -199,7 +203,7 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
     #Synthetic observation of error spectrum
     if syn_err is not None:
         #square filter and error spectrum
-        filt2 = SpectralElement(Empirical1D, points=fwave,
+        filt2 = SpectralElement(Empirical1D, points=fwave*(1.+z),
                                 lookup_table=np.square(filt(fwave)))
         pseudo_flux = np.square(syn_err(swave,flux_unit='jy')).value
         syn_err2 = SourceSpectrum(Empirical1D, points=swave,
@@ -219,14 +223,14 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, wrange=None):
 #################################################################
 
 #function: evaluate S correction on Vega spectrum from filt1 to filt2
-def Scorr_vega(filt1,filt2, zerof1,zerof2):
+def Scorr_vega(filt1,filt2, zerof1,zerof2, wrange1=None,wrange2=None):
     from synphot import SourceSpectrum
     
     #load Vega spectrum
     spec = SourceSpectrum.from_vega()
     #Scorr = -2.5log(flux2/flux1) such that mag2 = mag1 + Scorr
-    mag1 = filter_mag(filt1, zerof1, spec)
-    mag2 = filter_mag(filt2, zerof2, spec)
+    mag1 = filter_mag(filt1, zerof1, spec, wrange=wrange1)
+    mag2 = filter_mag(filt2, zerof2, spec, wrange=wrange2)
     scorr = mag2 - mag1
     return scorr
 
@@ -235,17 +239,34 @@ def Scorr(filt1,filt2, zerof1,zerof2, syn_spec, syn_err=None, wrange1=None,wrang
     #Scorr = -2.5log(flux2/flux1) such that mag2 = mag1 + Scorr
     if syn_err is not None:
         #if error spectrum is given
-        mag1, err1 = filter_mag(filt1, zerof1, syn_spec, syn_err, wrange1)
-        mag2, err2 = filter_mag(filt2, zerof2, syn_spec, syn_err, wrange2)
+        mag1, err1 = filter_mag(filt1, zerof1, syn_spec, syn_err, wrange=wrange1)
+        mag2, err2 = filter_mag(filt2, zerof2, syn_spec, syn_err, wrange=wrange2)
         scorr = mag2 - mag1
         scorr_err = np.sqrt(err1**2 + err2**2)
         return scorr, scorr_err
     else:
         #if error spectrum is not given
-        mag1 = filter_mag(filt1, zerof1, syn_spec, wrange1)
-        mag2 = filter_mag(filt2, zerof2, syn_spec, wrange2)
+        mag1 = filter_mag(filt1, zerof1, syn_spec, wrange=wrange1)
+        mag2 = filter_mag(filt2, zerof2, syn_spec, wrange=wrange2)
         scorr = mag2 - mag1
         return scorr
+
+#function: evaluate K correction on spec from 0 to z
+def Kcorr(z, filt, zerof, syn_spec, syn_err=None, wrange=None):
+    #Kcorr = 2.5log(flux(z)/flux1(z=0)) such that mag(z) = mag(z=0) - Kcorr
+    if syn_err is not None:
+        #if error spectrum is given
+        mag1, err = filter_mag(filt, zerof, syn_spec, syn_err, z=z, wrange=wrange)
+        mag2, err = filter_mag(filt, zerof, syn_spec, syn_err, z=0, wrange=wrange)
+        kcorr = -2.5*np.log10(1.+z) + mag2 - mag1
+        kcorr_err = err
+        return kcorr, kcorr_err
+    else:
+        #if error spectrum is not given
+        mag1 = filter_mag(filt, zerof, syn_spec, z=z, wrange=wrange)
+        mag2 = filter_mag(filt, zerof, syn_spec, z=0, wrange=wrange)
+        kcorr = mag2 - mag1
+        return kcorr
 
 #################################################################
 # Spectral Line Fitting                                         #
@@ -260,6 +281,22 @@ def bin_spec(wave, spec, R=400):
         mask = np.logical_and(wave >= wave[i]-dw/2., wave < wave[i]+dw/2)
         spec_filt[i] = np.mean(spec[mask])
     return spec_filt
+
+#function: Doppler velocity from line shift
+def Dopp_v(zdop, zdop_err=None):
+    #speed of light
+    c = 3e2 #1e3 km/s
+    #relativistic Doppler equation
+    beta = ((zdop+1)**2 - 1)/((zdop+1)**2 + 1)
+    if zdop_err is None:
+        #return Doppler velocity
+        return beta*c
+    else:
+        #calculate error
+        beta_err = zdop_err*2*(zdop+1)*(1 - beta)/((zdop+1)**2 + 1)
+        #return Doppler velocity
+        return beta*c, beta_err*c
+        
 
 #function: Skewed Gaussian line profile
 def lpNorm(x, A, mu, sig, skew, b):
@@ -309,6 +346,167 @@ def fitLine(center, width, spec, skew=None, spec_err=None, plot=False):
     #return line center
     return min_wave, perr[1]
 
+def poly_gaus(x, *params):
+    from scipy.stats import norm
+
+    #count number of gaussians [A, mu, sig]
+    ngaus = int(len(params)/3)
+    #construction number of gaussians [A, mu, sig]
+    y = np.zeros(len(x))
+    for i in range(ngaus):
+        y += params[i*3]*norm(params[i*3+1], params[i*3+2]).pdf(x)
+    return y
+
+def poly_caii3(x, m, b, *params):
+    from scipy.stats import norm
+    #Ca II triplet separation
+    x0 = 8498.02
+    x1 = 8542.09
+    x2 = 8662.14
+    #EW of lines propto line strengths propto gi*fik
+    #this is opticaly thin limit (Silverman et al. 2015)
+    #values below are log(gi*fik) from NIST absorption oscillator strength
+    log_gifik0, gi0 = -1.318, 2*1.5+1
+    log_gifik1, gi1 = -0.36, 2*2.5+1
+    log_gifik2, gi2 = -0.622, 2*1.5+1
+    fik0 = np.power(10, log_gifik0)/gi0
+    fik1 = np.power(10, log_gifik1)/gi1
+    fik2 = np.power(10, log_gifik2)/gi2
+    #note sigma is from temp/velocity, not strength
+
+    #count number of Ca II triplets [A, mu, sig]
+    ngaus = int(len(params)/3)
+    #construction number of gaussians [A, mu, sig]
+    y = np.zeros(len(x))
+    for i in range(ngaus):
+        #line continuum
+        z0 = (params[i*3+1]-x0)/x0
+        c0 = m*(params[i*3+1])+b
+        c1 = m*(z0*x1+x1)+b
+        c2 = m*(z0*x2+x2)+b
+        #line absoption ratio
+        y0 = params[i*3]*norm(0,params[i*3+2]).pdf(0)
+        r0 = (1 + y0/c0) #I/Ic
+        r1 = r0*np.exp(-fik1+fik0)
+        r2 = r0*np.exp(-fik2+fik0)
+        A1 = -(1-r1)*c1/norm(0,params[i*3+2]).pdf(0)
+        A2 = -(1-r2)*c2/norm(0,params[i*3+2]).pdf(0)
+        #Sum Ca II triplet
+        y += params[i*3]*norm(params[i*3+1], params[i*3+2]).pdf(x)
+        y += A1*norm(z0*x1+x1, params[i*3+2]).pdf(x)
+        y += A2*norm(z0*x2+x2, params[i*3+2]).pdf(x)
+    return y
+
+#function: concave down quadratic
+def quadpeak(x,a,b,c):
+    return -1 * abs(a) * x**2 + b * x + c 
+
+#function: fit HVF and PVF of Si II line (based on Silverman et al. 2015)
+def fit_SiII(center, lim1, lim2, spec, spec_err=None,
+             HVF=True, C=True, plot=False):
+    from scipy.optimize import curve_fit, minimize
+    
+    #decompose spectrum
+    spec_wave = spec.waveset.value
+    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+
+    win=20
+    #measure left limit
+    limmask = np.logical_and(spec_wave > lim1-win, spec_wave < lim1+win)
+    p, pcov = curve_fit(quadpeak, spec_wave[limmask], spec_flux[limmask])
+    #p = np.polyfit(spec_wave[limmask], spec_flux[limmask], 2)
+    lim1 = p[1]/(2*abs(p[0]))
+    cont1 = (p[1]**2 + 4*abs(p[0])*p[2])/(4*abs(p[0]))
+    #measure right limit
+    limmask = np.logical_and(spec_wave > lim2-win, spec_wave < lim2+win)
+    p, pcov = curve_fit(quadpeak, spec_wave[limmask], spec_flux[limmask])
+    #p = np.polyfit(spec_wave[limmask], spec_flux[limmask], 2)
+    lim2 = p[1]/(2*abs(p[0]))
+    cont2 = (p[1]**2 + 4*abs(p[0])*p[2])/(4*abs(p[0]))
+    #represent continuum
+    slope = (cont2 - cont1)/(lim2-lim1)
+
+    #cut out feature
+    mask = np.logical_and(spec_wave > lim1, spec_wave < lim2)
+    feat_wave = spec_wave[mask]
+    #subtract out continuum
+    cont_flux = slope*(feat_wave - lim1) + cont1
+    feat_flux = spec_flux[mask] - cont_flux
+
+    #PVF estimate
+    est = [-0.20, center[0], center[0]*1e4/3e5]
+    #HVF + C estimate
+    if HVF:
+        #add to fit list
+        est += [-0.10, center[1], center[1]*1e4/3e5]
+    if C:
+        #add to fit list
+        est += [-0.02, center[2], center[2]*1e4/3e5]
+
+    if plot:
+        import matplotlib.pyplot as plt
+        
+        #plot feature and continuum definition
+        plt.plot(spec_wave, spec_flux, 'k')
+        plt.plot(feat_wave, cont_flux, 'r')
+        plt.title("Feature and continuum definition")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.tight_layout()
+        plt.show()
+
+    #fit poly gaussian
+    popt, pcov = curve_fit(poly_gaus, feat_wave, feat_flux, p0=est)
+    perr = np.sqrt(np.diag(pcov))
+    #order gaussians by wavelength
+    if HVF:
+        ngaus = len(popt)/3
+        centers = popt[1::3]
+        #locate HVF
+        hvf_i = np.argmin(centers)
+        hvf_popt = popt[hvf_i*3:hvf_i*3+3]
+        hvf_perr = perr[hvf_i*3:hvf_i*3+3]
+        popt = np.delete(popt, np.s_[hvf_i*3:hvf_i*3+3])
+        perr = np.delete(perr, np.s_[hvf_i*3:hvf_i*3+3])
+        centers = np.delete(centers, hvf_i)
+        #locate PVF
+        pvf_i = np.argmin(centers)
+        pvf_popt = popt[pvf_i*3:pvf_i*3+3]
+        pvf_perr = perr[pvf_i*3:pvf_i*3+3]
+        popt = np.delete(popt, np.s_[pvf_i*3:pvf_i*3+3])
+        perr = np.delete(perr, np.s_[pvf_i*3:pvf_i*3+3])
+        #concatenate everything together
+        popt = np.concatenate([pvf_popt, hvf_popt, popt])
+        perr = np.concatenate([pvf_perr, hvf_perr, perr])
+    
+    #plot best fit
+    if plot:
+        from scipy.stats import norm
+
+        #plot HVF and PVF fitting
+        plt.plot(feat_wave, feat_flux, 'k')
+        #do each gaussian separately
+        ngaus = int(len(popt)/3)
+        colors = ['b', 'c', 'm']
+        labels = ['Si II PVF', 'Si II HVF', 'C II']
+        for i in range(ngaus):
+            gaus_flux = popt[i*3]*norm(popt[i*3+1], popt[i*3+2]).pdf(feat_wave)
+            plt.plot(feat_wave, gaus_flux, color=colors[i], label=labels[i])
+        #do the gaussians together
+        poly_flux = poly_gaus(feat_wave, *popt)
+        plt.plot(feat_wave, poly_flux, color='y', label='Combined')
+        #continuum level
+        plt.plot(feat_wave, np.zeros(len(feat_wave)), 'r')
+        plt.title("Fit of HVF and PVF")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+    #return line centers
+    return popt, perr
+
 def lin(x, a, b):
     return a*x + b
 
@@ -321,7 +519,6 @@ def voigt(x, y):
     z = x + 1j * y
     I = wofz(z).real
     return I
-
 
 def Voigt(nu, alphaD, alphaL, nu_0, A):
     # The Voigt line shape in terms of its physical parameters

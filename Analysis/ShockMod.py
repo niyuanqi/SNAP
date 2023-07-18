@@ -178,6 +178,444 @@ def ShockCoolingViErr(p, t, L, L_err, z, DM, Mej):
     return np.concatenate([V_err, I_err],axis=0)
 
 #################################################################
+# Chevalier 1982 reverse shock evolution model                  #
+#################################################################
+
+#function: Chevalier (1982) system of ODEs
+def C82_fluidEQ(y, eta, n, s, gma):
+    #constants
+    lbd = (n-s)/(n-3.)
+    #similarity variables
+    P, U, C = y
+    #differential equation matrix
+    A = np.array([[(lbd*eta/gma)*(C**2/P), (lbd*U-1.)*eta, 0],
+                  [eta*(lbd*U-1.)/P, lbd*eta, -eta*(lbd*U-1.)*2./C],
+                  [eta*(lbd*U-1.)*(1.-gma), 0, 2.*eta*gma*(lbd*U-1.)*P/C]])
+    B = np.array([-(2.-n)*C**2/gma - (U**2 - U),
+                  -(n-3.)*(1.-U),
+                  -P*((n-5.) - gma*(n-3.) - U*(n-2.-n*gma))])
+    #solve for derivatives
+    dy = np.linalg.inv(A).dot(B)
+    #return derivatives
+    return dy
+
+#function: Chevalier (1982) inner boundary condition
+def C82_innerBC(n, s, gma, g):
+    #constants
+    lbd = (n-s)/(n-3.)
+    #inner shock boundary
+    P2 = 2.*(g**n)*(1.-1./lbd)**2/(gma+1.)
+    U2 = 2./lbd/(gma+1.) + (gma-1.)/(gma+1.)
+    C2 = np.sqrt(gma*2.*(gma-1.))*(1.-1./lbd)/(gma+1.)
+    return np.array([P2, U2, C2])
+
+#function: Parker (1963) system of ODEs
+def P63_fluidEQ(y, eta, n, s, gma):
+    #constants
+    lbd = (n-s)/(n-3.)
+    #similarity variables
+    P, U, C = y
+    #differential equation matrix
+    A = np.array([[0, ((1-lbd*U)**2 - (lbd*C)**2)*eta, 0],
+                  [0, 0, 2.*((1-lbd*U)**2 - (lbd*C)**2)*eta/C],
+                  [((1.-lbd*U)**2 - (lbd*C)**2)*eta/P, 0, 0]])
+    B = np.array([U*(1.-U)*(1.-lbd*U) + ((2.*lbd-2.+s)-3.*gma*lbd*U)*C**2/gma,
+                  2.+U*(1-3.*lbd-3.*gma+lbd*gma) + 2.*gma*lbd*U**2 + ((-2.*lbd**2/gma-s*lbd/gma-2.*lbd+s*lbd+2.*lbd/gma)+2*lbd**2*U)*C**2/(1.-lbd*U),
+                  2.+U*(s-2.-2.*lbd+lbd*gma-3.*gma) + (2.-s+2*gma)*lbd*U**2 + (s-2.)*lbd*C**2])
+    #solve for derivatives
+    dy = np.linalg.inv(A).dot(B)
+    #return derivatives
+    return dy
+
+#function: Parker (1963) outer boundary condition
+def P63_outerBC(n, s, gma, q):
+    #constants
+    lbd = (n-s)/(n-3.)
+    #inner shock boundary
+    P1 = 2.*q/lbd**2/(gma+1.)
+    U1 = 2./lbd/(gma+1.)
+    C1 = np.sqrt(gma*2.*(gma-1.))/lbd/(gma+1.)
+    return np.array([P1, U1, C1])
+
+#function: n=10 s=0 solution
+def C82_n10s0(r, gma):
+    from scipy.integrate import odeint
+
+    #r in units of Rc
+    
+    #strong shock density ratio
+    rhof = (gma+1.)/(gma-1.)
+    #Type Ia Supernova ejecta (C82)
+    n = 10
+    #outer medium properties (normalization)
+    s = 0
+    q = 1./rhof #rankine hugoniot jump
+
+    #integration radial axis (normalization of U, C)
+    R2 = 0.966
+    Rc = 1.0
+
+    #physical time for normalized coordinates (affects P and pre-solution)
+    rho2 = 4.3
+    p2 = 0.57
+    lbd = (n-s)/(n-3.)
+    t = np.sqrt(2.*(gma-1.)*rho2/p2) * R2*(1.-1./lbd) / (gma+1.)
+    g = (rho2*(gma-1.)*t**(3.-n)/(gma+1.))**(1./n) * R2 #normalized g
+    #inner boundary conditions
+    y0 = C82_innerBC(n, s, gma, g)
+    #integration similarity axis
+    eta = t**(-1) * r**lbd
+
+    #solve ODE
+    y = odeint(C82_fluidEQ, y0, eta, args=(n,s,gma))
+    P, U, C = y.T
+    #get density profile
+    Om = gma*P/C**2
+    rho = t**(n-3.) * r**(-n) * Om
+    
+    #get normalized velocity profile
+    v = U*r/t
+    v = v/v[0]
+
+    #return normalized
+    return rho, v #in units of outer density and inner velocity
+
+#function: n=10 s=2 solution
+def C82_n10s2(r, gma):
+    from scipy.integrate import odeint
+
+    #r in units of Rc
+    
+    #strong shock density ratio
+    rhof = (gma+1.)/(gma-1.)
+    #Type Ia Supernova ejecta (C82)
+    n = 10
+    #outer medium properties (normalization)
+    s = 2
+    R1 = 1.239
+    q = R1**s/rhof #rankine hugoniot jump
+
+    #integration radial axis (normalization of U, C)
+    R2 = 0.984
+    Rc = 1.0
+
+    #physical time for normalized coordinates (affects P and pre-solution)
+    rho2 = 27.
+    p2 = 0.35
+    lbd = (n-s)/(n-3.)
+    t = np.sqrt(2.*(gma-1.)*rho2/p2) * R2*(1.-1./lbd) / (gma+1.)
+    g = (rho2*(gma-1.)*t**(3.-n)/(gma+1.))**(1./n) * R2 #normalized g
+    #inner boundary conditions
+    y0 = C82_innerBC(n, s, gma, g)
+    #integration similarity axis
+    eta = t**(-1) * r**lbd
+
+    #solve ODE
+    y = odeint(C82_fluidEQ, y0, eta, args=(n,s,gma))
+    P, U, C = y.T
+    #get density profile
+    Om = gma*P/C**2
+    rho = t**(n-3.) * r**(-n) * Om
+    
+    #get normalized velocity profile
+    v = U*r/t
+    v = v/v[0]
+
+    #return normalized
+    return rho, v #in units of outer density and inner velocity
+
+#function: physical shock solution
+def C82_revshock(t, taum, vej, q, k_opt=0.2, kappa=0.1):
+    import matplotlib.pyplot as plt
+    
+    # taum in days
+    # vej in cm/s
+    # q is CSM density in g/cm^3
+    # kappa = opacity used to calculate taum
+
+    #gma = 5./3. #adiabatic constant
+    gma = 4./3. #adiabatic constant
+
+    L_u = 1.69 # constant related to ejecta density profile.
+    L_r = 0.12 # constant related to ejecta density profile.
+    beta = 13.8 #constant of integration (Arnett 1982)
+    A = 0.33 #constant of normalization
+    R2 = 0.966 #inner shock radius fraction of Rc
+    R1 = 1.131 #outer shock radius
+
+    c = 3e10 #cm/s speed of light
+    
+    vt =  L_u*np.sqrt(3./10.)*vej # transition velocity
+    Mej = 0.5*(taum*86400.0)**2*vej*beta*c/kappa #ejecta mass, kappa^-1 dependence
+    gn = L_r*Mej*vt**7 #kappa^-1 dependence
+
+    #radial normalization
+    nsamp = 100000
+    Rc = (A*gn/q)**(1./10.) * (t*86400.0)**(7./10.)
+    r = np.linspace(R2*Rc-Rc*(1-R2)/2., Rc, nsamp)
+    #density profile cases
+    inmask = r < R2*Rc
+    outmask = r >= R2*Rc
+    rho = np.zeros(len(r))
+    v = r/(t*86400.0) #cm/s
+    #unshocked density distribution
+    rho[inmask] = (t*86400.0)**(7) * (r[inmask])**(-10) * gn
+
+    fig, ax = plt.subplots(2, sharex=True)
+    
+    #shocked density solution (unnormalized)
+    rho[outmask], vout = C82_n10s0(r[outmask]/Rc, gma)
+    rho[outmask] = rho[outmask]*(gma+1.)*q/(gma-1.) #g/cm^3
+    nanmask = np.invert(np.isnan(rho))
+    ax[0].plot(r[nanmask], rho[nanmask]) #rho has kappa^-1 dependence from gn
+    ax[0].set_ylabel("Density [g/cm^3]")
+    
+    #shocked velocity solution (unnormalized)
+    v[outmask] = vout*((gma-1.)+2./(10./7.))*(R2*Rc)/(t*86400.0)/(gma+1.) #cm/s
+    ax[1].plot(r[nanmask], v[nanmask]/1e5)
+    ax[1].set_ylabel("Velocity [km/s]")
+    ax[1].set_xlabel("Radius [cm]")
+
+    nanmask = np.invert(np.isnan(rho[outmask]))
+    tau_sh = np.trapz(k_opt*rho[outmask][nanmask], x=r[outmask][nanmask])
+    print "Optical depth of reverse shocked ejecta:", tau_sh
+    print "Shock location", R2*Rc
+    nval = len(r[outmask][nanmask])
+    if tau_sh > 1.:
+        #optically deep shock region
+        for i in range(nval-1):
+            #photosphere integral for range of r
+            tau = np.trapz(k_opt*rho[outmask][nanmask][nval-i-1:],
+                           x=r[outmask][nanmask][nval-i-1:])
+            if tau >= 1.:
+                #found rph in shock region
+                print "Photosphere:", r[nval-i-1], v[nval-i-1] #cgs units
+                break
+
+    r = np.linspace(R2*Rc-Rc*(1-R2)/2., Rc*100, nsamp)
+    outmask = r >= R2*Rc
+    rho = (t*86400.0)**(7) * (r)**(-10) * gn
+    tau_sh = np.trapz(kappa*rho[outmask], x=r[outmask])
+    print "Optical depth if unshocked", tau_sh
+    
+    rph = Kasen_rph0(t, taum, vej/1e9, k0=kappa/0.1)
+    print "Photosphere unshocked:", rph
+    print "Photosphere velocity:", rph/(t*86400.0)/1e5
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+
+#function: physical shock photosphere
+def C82_revshockph(t, taum, vej, q, k_opt=0.2, kappa=0.1):
+    # t in days
+    # taum in days
+    # vej in cm/s
+    # q is CSM density in g/cm^3
+    # k_opt = electron scattering opacity cm^2/g
+    # kappa = opacity used to calculate taum
+
+    #gma = 5./3. #adiabatic constant
+    gma = 4./3. #adiabatic constant
+
+    L_u = 1.69 # constant related to ejecta density profile.
+    L_r = 0.12 # constant related to ejecta density profile.
+    beta = 13.8 #constant of integration (Arnett 1982)
+    A = 0.33 #constant of normalization
+    R2 = 0.966 #inner shock radius fraction of Rc
+    R1 = 1.131 #outer shock radius
+
+    c = 3e10 #cm/s speed of light
+    
+    vt =  L_u*np.sqrt(3./10.)*vej # transition velocity
+    Mej = 0.5*(taum*86400.0)**2*vej*beta*c/kappa #ejecta mass, kappa^-1 dependence
+    gn = L_r*Mej*vt**7 #kappa^-1 dependence
+
+    #radial normalization
+    nsamp = 100000
+    Rc = (A*gn/q)**(1./10.) * (t*86400.0)**(7./10.)
+    r = np.linspace(R2*Rc, Rc, nsamp)
+    #shocked density solution (unnormalized)
+    rho, v = C82_n10s0(r/Rc, gma) #kappa^-1 dependence
+    rho = rho*(gma+1.)*q/(gma-1.) #g/cm^3
+    nanmask = np.invert(np.isnan(rho))
+    #shocked velocity solution (unnormalized)
+    v = v*((gma-1.)+2./(10./7.))*(R2*Rc)/(t*86400.0)/(gma+1.) #cm/s
+    #remove nans
+    r = r[nanmask]
+    rho = rho[nanmask]
+    v = v[nanmask]
+    nval = len(r)
+
+    #optical depth of shock region
+    tau_sh = np.trapz(k_opt*rho, x=r) #(k_opt/kappa)^1 dependence
+    #print tau_sh
+    if tau_sh > 1.:
+        #optically deep shock region
+        for i in range(nval-1):
+            #photosphere integral for range of r
+            tau = np.trapz(k_opt*rho[nval-i-1:], x=r[nval-i-1:])
+            if tau >= 1.:
+                #found rph in shock region
+                return r[nval-i-1], v[nval-i-1] #cgs units
+            
+    else:
+        #optically thin shock region
+        vph = Kasen_vph0(t, taum, vej/1.e9, k0=k_opt/0.1)
+        rph = Kasen_rph0(t, taum, vej/1.e9, k0=k_opt/0.1)
+        return rph, vph
+
+#function: physical shock solution
+def C82_revshock2(t, taum, vej, q, k_opt=0.2, kappa=0.1):
+    import matplotlib.pyplot as plt
+    
+    # taum in days
+    # vej in cm/s
+    # q is CSM density in g/cm^3
+    # kappa = opacity used to calculate taum
+
+    #gma = 5./3. #adiabatic constant
+    gma = 4./3. #adiabatic constant
+
+    L_u = 1.69 # constant related to ejecta density profile.
+    L_r = 0.12 # constant related to ejecta density profile.
+    beta = 13.8 #constant of integration (Arnett 1982)
+    A = 0.067 #constant of normalization
+    R2 = 0.984 #inner shock radius fraction of Rc
+    R1 = 1.239 #outer shock radius
+    s = 2
+
+    c = 3e10 #cm/s speed of light
+    
+    vt =  L_u*np.sqrt(3./10.)*vej # transition velocity
+    Mej = 0.5*(taum*86400.0)**2*vej*beta*c/kappa #ejecta mass, kappa^-1/2 dependence
+    gn = L_r*Mej*vt**7 #kappa^-1/2 dependence
+
+    #radial normalization
+    nsamp = 100000
+    Rc = (A*gn/q)**(1./(10.-s)) * (t*86400.0)**(7./(10.-s))
+    #r = np.linspace(R2*Rc-Rc*(1-R2)/2., Rc, nsamp)
+    r = np.logspace(np.log10(1.-R2+(1-R2)/2.),-3.0, nsamp)
+    r = Rc - r*Rc
+    #density profile cases
+    inmask = r < R2*Rc
+    outmask = r >= R2*Rc
+    rho = np.zeros(len(r))
+    v = r/(t*86400.0) #cm/s
+    #unshocked density distribution
+    rho[inmask] = (t*86400.0)**(7) * (r[inmask])**(-10) * gn
+
+    fig, ax = plt.subplots(2, sharex=True)
+    
+    #shocked density solution (unnormalized)
+    rho[outmask], vout = C82_n10s2(r[outmask]/Rc, gma)
+    rho[outmask] = rho[outmask]*(gma+1.)*q*(R1*Rc)**(-s)/(gma-1.) #g/cm^3
+    nanmask = np.invert(np.isnan(rho))
+    ax[0].plot(r[nanmask], rho[nanmask]) #rho has kappa^-1/2 dependence from gn
+    ax[0].set_ylabel("Density [g/cm^3]")
+    ax[0].set_yscale('log')
+    
+    #shocked velocity solution (unnormalized)
+    v[outmask] = vout*((gma-1.)+2./((10.-s)/7.))*(R2*Rc)/(t*86400.0)/(gma+1.) #cm/s
+    ax[1].plot(r[nanmask], v[nanmask]/1e5)
+    ax[1].set_ylabel("Velocity [km/s]")
+    ax[1].set_xlabel("Radius [cm]")
+
+    nanmask = np.invert(np.isnan(rho[outmask]))
+    tau_sh = np.trapz(k_opt*rho[outmask][nanmask], x=r[outmask][nanmask])
+    print "Optical depth of reverse shocked ejecta:", tau_sh
+    print "Shock location", R2*Rc
+    nval = len(r[outmask][nanmask])
+    if tau_sh > 1.:
+        #optically deep shock region
+        for i in range(nval-1):
+            #photosphere integral for range of r
+            tau = np.trapz(k_opt*rho[outmask][nanmask][nval-i-1:],
+                           x=r[outmask][nanmask][nval-i-1:])
+            if tau >= 1.:
+                #found rph in shock region
+                print "Photosphere:", r[nval-i-1], v[nval-i-1] #cgs units
+                break
+
+    r = np.logspace(np.log10(1.-R2+(1-R2)/2.),-10, nsamp)
+    r = Rc - r*Rc
+    #r = np.linspace(R2*Rc-Rc*(1-R2)/2., Rc*100, nsamp)
+    outmask = r >= R2*Rc
+    rho = (t*86400.0)**(7) * (r)**(-10) * gn
+    tau_sh = np.trapz(kappa*rho[outmask], x=r[outmask])
+    print "Optical depth if unshocked", tau_sh
+    
+    rph = Kasen_rph0(t, taum, vej/1e9, k0=kappa/0.1)
+    print "Photosphere unshocked:", rph
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+
+#function: physical shock photosphere
+def C82_revshockph2(t, taum, vej, q, k_opt=0.2, kappa=0.1):
+    # t in days
+    # taum in days
+    # vej in cm/s
+    # q is CSM density in g/cm^3
+    # k_opt = electron scattering opacity cm^2/g
+    # kappa = opacity used to calculate taum
+
+    #gma = 5./3. #adiabatic constant
+    gma = 4./3. #adiabatic constant
+
+    L_u = 1.69 # constant related to ejecta density profile.
+    L_r = 0.12 # constant related to ejecta density profile.
+    beta = 13.8 #constant of integration (Arnett 1982)
+    A = 0.067 #constant of normalization
+    R2 = 0.984 #inner shock radius fraction of Rc
+    R1 = 1.239
+    s = 2
+
+    c = 3e10 #cm/s speed of light
+    
+    vt =  L_u*np.sqrt(3./10.)*vej # transition velocity
+    Mej = 0.5*(taum*86400.0)**2*vej*beta*c/kappa #ejecta mass, kappa^-1 dependence
+    gn = L_r*Mej*vt**7 #kappa^-1/2 dependence
+
+    #radial normalization
+    nsamp = 100000
+    Rc = (A*gn/q)**(1./(10.-s)) * (t*86400.0)**(7./(10.-s))
+    #r = np.logspace(0, np.log10(R2), nsamp)
+    r = np.logspace(np.log10(1.-R2+(1-R2)/2.),-3.0, nsamp)
+    r = Rc - r*Rc
+    #r = np.linspace(R2*Rc, Rc, nsamp)
+    #shocked density solution (unnormalized)
+    rho, v = C82_n10s2(r/Rc, gma) #kappa^-1 dependence
+    rho = rho*(gma+1.)*q*(R1*Rc)**(-s)/(gma-1.) #g/cm^3
+    nanmask = np.invert(np.isnan(rho))
+    #shocked velocity solution (unnormalized)
+    v = v*((gma-1.)+2./((10.-s)/7.))*(R2*Rc)/(t*86400.0)/(gma+1.) #cm/s
+    #remove nans
+    r = r[nanmask]
+    rho = rho[nanmask]
+    v = v[nanmask]
+    nval = len(r)
+
+    #optical depth of shock region
+    tau_sh = np.trapz(k_opt*rho, x=r) #(k_opt/kappa)^1 dependence
+    #print tau_sh
+    if tau_sh > 1.:
+        #optically deep shock region
+        for i in range(nval-1):
+            #photosphere integral for range of r
+            tau = np.trapz(k_opt*rho[nval-i-1:], x=r[nval-i-1:])
+            if tau >= 1.:
+                #found rph in shock region
+                return r[nval-i-1], v[nval-i-1] #cgs units
+            
+    else:
+        #optically thin shock region
+        vph = Kasen_vph0(t, taum, vej/1.e9, k0=k_opt/0.1)
+        rph = Kasen_rph0(t, taum, vej/1.e9, k0=k_opt/0.1)
+        return rph, vph
+
+#################################################################
 # Kasen Companion-Ejecta Interaction (CEI) model.               #
 #################################################################
 
@@ -213,7 +651,58 @@ def Kasen2010(t_day,a13,m_c=1,e_51=1,kappa=1.0):
         Teff = 1000
     return Lc_iso,Teff #erg/s
 
-#function: Kasen fitting functyion
+#function: shocked ejecta photosphere components
+def Kasen_rph0(t_day, tau_m, v9, k0=1.0): #photosphere
+    #t_day is time since explosion in days
+    #tau_m is Arnett mean timescale in days
+    #v9 is ejecta velocity in 10^9 cm/s
+    #k0 is opacity at early times as fraction of k used to
+    #   derive Mej, Eej, usually k = 0.1 cm2/g and k_0 = 1.
+    
+    #prefac = 1.5**(1./9.) #for optical depth 2/3 correction
+    prefac = 1. #optical depth 1
+    return prefac*0.917e14 * k0**(1./9.) * v9**(8./9.) * tau_m**(2./9.) * t_day**(7./9.) #cm
+def Kasen_rphS(t_day, tau_m, v9, k0=1.0): #shocked photosphere
+    #prefac = 10.5**(1./9.) #for Rankine-Hugoniot and optical depth 2/3
+    prefac = 7.**(1./9.) #for Rankine-Hugoniot and optical depth 1
+    return prefac*0.917e14 * k0**(1./9.) * v9**(8./9.) * tau_m**(2./9.) * t_day**(7./9.) #cm
+
+#function: shocked ejecta photosphere velocity components
+def Kasen_vph0(t_day, tau_m, v9, k0=1.0): #photosphere
+    return Kasen_rph0(t_day, tau_m, v9, k0=k0)/(t_day*86400.0) #cm/s
+def Kasen_vphS(t_day, tau_m, v9, k0=1.0): #shocked photosphere
+    return Kasen_rphS(t_day, tau_m, v9, k0=k0)/(t_day*86400.0) #cm/s
+#function: shocked ejecta diffusion time
+def Kasen_vdiffS(t_day, tau_m, v9, k0=1.0, f_sh=1.0):
+    #prefac = 1.5**(1./9.) #for optical depth 2/3 correction
+    prefac = 1.
+    return prefac*1.486e9 * (k0*f_sh)**(1./9.) * v9**(8./9.) * (t_day/tau_m)**(-2./9.) #cm
+
+#function: shock region depth as fraction of separation distance
+def f_sh(v9, vsh):
+    #vsh is shock density-average velocity in 10^9 cm/s
+    #observed HVF plateau is what should be used to infer f_sh
+    #this has no dependence on opacity or optical depth factor
+    return 0.0728 * (vsh/v9)**(-2)
+#function: shock region opening angle
+def theta_h(f_sh):
+    return np.arccos(1.-7.*f_sh)*180./np.pi
+#function: opening angle inverse function
+def fsh_theta(theta):
+    return (1.-np.cos(theta*np.pi/180)) / 7.
+    
+#function: shock density-average velocity
+def vdiff_sh(v9, f_sh = 1./35.):
+    #simple inverse of f_sh(v_sh) function, similarly general
+    return np.sqrt(0.075/f_sh)*v9*1e9 #cm/2    
+#function: shock region diffusion time
+def tdiff_sh(tau_m, v9, f_sh = 1./35., k0=1.0):
+    #this is an estimate for the shock region diffusion time.
+    prefac = (3./2.)**(1./2.) #optical depth 2/3
+    prefac = 1 #optical depth 1
+    return prefac*1.254e3 * k0**0.5 * v9**(-0.5) * f_sh**(9./4.) * tau_m #days
+
+#function: Kasen fitting function
 def KasenFit(t_day,a13,kappa,wave,z,m_c,e_51,DM,t0):
     #essential imports
     from SEDAnalysis import BBflux

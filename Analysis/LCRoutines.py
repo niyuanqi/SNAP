@@ -286,6 +286,30 @@ def LCpurify(ts, mags, errs, strs=None, fluxes=None, snrs=None, nthres=None, lim
     return retlist
 
 #function: crop time segment from dataset
+def LCcrop(t, t1, t2, *args):
+    '''
+    ##############################################
+    # Input                                      #
+    # ------------------------------------------ #
+    #      *any arguments, starting with t       #
+    # ------------------------------------------ #
+    # Output                                     #
+    # ------------------------------------------ #
+    #      t: cropped time array                 #
+    #   terr: cropped array of time errors       #
+    #      M: cropped magnitude array            #
+    #  M_err; cropped error array                #
+    #   Mlim; cropped limiting magnitude array   #
+    ##############################################
+    '''
+    index = np.logical_and(t<t2,t>t1)
+    retlist = [t[index]]
+    for arg in args:
+        retlist += [arg[index]]
+    return retlist
+
+"""
+#function: crop time segment from dataset
 def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None, terr=None):
     '''
     ##############################################
@@ -321,6 +345,7 @@ def LCcrop(t, t1, t2, M, M_err=None, F=None, SN=None, Mlim=None, terr=None):
     if terr is not None:
         retlist += [terr[index]]
     return retlist
+"""
 
 #function: apply limiting magnitude cutoff
 def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
@@ -738,6 +763,8 @@ def LCload(filenames, tcol, magcols, errcols=None, fluxcols=None, SNcols=None, S
         retlist += [decs]
     if terrcols is not None:
         retlist += [terrs]
+    if scols is not None:
+        retlist += [strs]
     #return arrays of data
     return retlist
 
@@ -785,15 +812,21 @@ def Swift_load(filename, bcol, tcol, magcol, errcol, limcol=None, bands=['UVW2',
     #load magnitudes, divide into bands
     mag = np.loadtxt(filename,usecols=(magcol,),comments='#',unpack=True)
     err = np.loadtxt(filename,usecols=(errcol,),comments='#',unpack=True)
-    lim = np.loadtxt(filename,usecols=(limcol,),comments='#',unpack=True)
-    ts, mags, errs, lims = [], [], [], []
+    ts, mags, errs = [], [], []
+    if limcol is not None:
+        lim = np.loadtxt(filename,usecols=(limcol,),comments='#',unpack=True)
+        lims = []
     for band in bands:
         mask = b == band
         ts.append(t[mask])
         mags.append(mag[mask])
         errs.append(err[mask])
-        lims.append(lim[mask])
-    return ts, mags, errs, lims
+        if limcol is not None:
+            lims.append(lim[mask])
+    retlist = [ts, mags, errs]
+    if limcol is not None:
+        retlist += [lims]
+    return retlist
 
 #function: load light curve from ANDICAM file
 def ANDI_load(filenames, tcol, magcol, errcol, bands=['J', 'H', 'K']):
