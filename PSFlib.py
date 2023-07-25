@@ -89,7 +89,7 @@ def E2ap_get(image, x0, y0, ax, ay, theta, r1, r2):
     apy = np.array([y for x in xaxis for y in yaxis if (Mdist(x,y,x0,y0,ax,ay,theta)<=r2 and Mdist(x,y,x0,y0,ax,ay,theta)>=r1)])
     return api, apx, apy
 #function: elliptical 2D moffat function
-def E2moff((x, y), A, ax, ay, b, theta, x0, y0):
+def E2moff(pos, A, ax, ay, b, theta, x0, y0):
     """
     This is the most frequently used function to model PSFs,
     but it is not perfect! Expect residuals!
@@ -101,7 +101,7 @@ def E2moff((x, y), A, ax, ay, b, theta, x0, y0):
     rotated counterclockwise by angle theta in radians
     centered at position x0, y0, with sharpness b, scaling A.
     """
-    m = A*np.power(1+np.square(Mdist(x,y,x0,y0,ax,ay,theta)),-b)
+    m = A*np.power(1+np.square(Mdist(pos[0],pos[1],x0,y0,ax,ay,theta)),-b)
     return m
 #function: integrate elliptical moffat function
 def E2moff_integrate(A, ax, ay, b, f=0.9):
@@ -193,15 +193,14 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
 
 ker_in = dict()
 
-def KerSersic((x,y), PSF, nsamp=1, fker=1):
+def KerSersic(pos, PSF, nsamp=1, fker=1):
     global ker_in
-    global ker_out
     #oversampling factor
     n=nsamp #assume image PSF is well sampled, n=1
     #kernal radius as factor of fwhm
     f=fker #assume PSF is relatively sharp, f=1
     
-    hashseq = hash(tuple([x.tostring(),y.tostring(),tuple(PSF)]))
+    hashseq = hash(tuple([pos[0].tostring(),pos[1].tostring(),tuple(PSF)]))
     if hashseq in ker_in:
         #particular subimage and PSF already exists
         kz, sx, sy, ix, iy = ker_in[hashseq]
@@ -223,14 +222,14 @@ def KerSersic((x,y), PSF, nsamp=1, fker=1):
         kz = E2moff((kx, ky), mA, ax, ay, mb, mtheta, 0, 0)
         
         #sersic image size 2*fwhm over-extension and 4x oversampling
-        xmin, xmax, ymin, ymax = np.min(x), np.max(x), np.min(y), np.max(y)
+        xmin, xmax, ymin, ymax = np.min(pos[0]), np.max(pos[0]), np.min(pos[1]), np.max(pos[1])
         nx, ny = (xmax-xmin)*n + 2*n*kr+1, (ymax-ymin)*n + 2*n*kr+1
         sx = np.linspace(xmin-kr, xmax+kr, nx, endpoint=True)
         sy = np.linspace(ymin-kr, ymax+kr, ny, endpoint=True)
         sx, sy = np.meshgrid(sx, sy)
         #indices of original x,y
-        ix = np.round((x-xmin)*n+n*kr).astype(int)
-        iy = np.round((y-ymin)*n+n*kr).astype(int)
+        ix = np.round((pos[0]-xmin)*n+n*kr).astype(int)
+        iy = np.round((pos[1]-ymin)*n+n*kr).astype(int)
         
         #add to global variable
         ker_in[hashseq] = [kz, sx, sy, ix, iy]
@@ -367,7 +366,7 @@ def PSFparams(psf):
         return ['a', 'b', 'c']
 
 #function: Composite moffat psf for multiple objects
-def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=2, fker=2):
+def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
     out = 0
     count = 0
     #get kernel and base

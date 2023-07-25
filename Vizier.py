@@ -45,7 +45,7 @@ def aavso_static(lines, band):
 
     #parse text
     sl = lines.splitlines()
-    sl = sl[50:-1] # get rid of header
+    sl = sl[53:-1] # get rid of header
     name = np.array([]) 
     rad = np.array([]) # RA in degrees 
     ded = np.array([]) # DEC in degrees 

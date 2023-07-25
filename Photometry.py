@@ -596,7 +596,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
     
     #get fit box (around all sources) to multi-fit psf
     fsize = 3
-    #fsize = 5
+    #fsize = 9
     intens, x, y = ap_multi(image, x0, y0, [1]*Nobj, 0, fsize*fwhm)
 
     #sky fitting
@@ -648,46 +648,48 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
             ubounds = np.concatenate((ubounds,[float("Inf")]))
             estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
         if psftype[i][0] == 's':
+            Iest = np.mean(ap_get(image, x0[i], y0[i], 0, fwhm))
             if psftype[i][1] == 'n':
                 #given is empty, general Sersic params are all in free
                 given.append([])
-                est = np.concatenate((est,[0.5*image[int(y0[i])][int(x0[i])],fwhm,4.0,x0[i],y0[i],0.0,120.0]))
+                est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.0,120.0]))
                 lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,0.0,0.0,0.0,-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),float("Inf"),float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             elif psftype[i][-1] == 'f': #check for fixed position
                 #given contains [x0, y0], free has [Ie]
                 given.append([x0[i], y0[i]])
-                est = np.concatenate((est, [0.5*image[int(y0[i])][int(x0[i])]]))
+                est = np.concatenate((est, [Iest]))
                 lbounds = np.concatenate((lbounds,[-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             else:
                 #given is empty, Sersic n is fixed
                 given.append([])
-                est = np.concatenate((est,[0.5*image[int(y0[i])][int(x0[i])],x0[i],y0[i]]))
+                est = np.concatenate((est,[Iest,x0[i],y0[i]]))
                 lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[1],image.shape[0]]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
         if psftype[i][0] == 'c':
+            Iest = np.mean(ap_get(image, x0[i], y0[i], 0, fwhm))
             if psftype[i][1] == 'n':
                 #given is empty, general Sersic params are all in free
                 given.append([])
-                est = np.concatenate((est,[x0[i],y0[i],10*image[int(y0[i])][int(x0[i])],0.0,120.0,2*fwhm,4.0,0.2,0.1]))
+                est = np.concatenate((est,[x0[i],y0[i],10*Iest,0.0,120.0,2*fwhm,4.0,0.2,0.1]))
                 lbounds = np.concatenate((lbounds,[0.0,0.0,0.0,0.0,-float("Inf"),0.01,0.01,0.01,0.001]))
                 ubounds = np.concatenate((ubounds,[image.shape[1],image.shape[0],float("Inf"),0.99,float("Inf"),float("Inf"),50.0,0.99,0.99]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             elif psftype[i][-1] == 'f': #check for fixed position
                 #given contains [x0, y0], free has [Ie]
                 given.append([x0[i], y0[i]])
-                est = np.concatenate((est, [10*image[int(y0[i])][int(x0[i])]]))
+                est = np.concatenate((est, [10*Iest]))
                 lbounds = np.concatenate((lbounds,[-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             else:
                 #given is empty, Sersic n is fixed
                 given.append([])
-                est = np.concatenate((est,[x0[i],y0[i],10*image[int(y0[i])][int(x0[i])]]))
+                est = np.concatenate((est,[x0[i],y0[i],10*Iest]))
                 lbounds = np.concatenate((lbounds,[0.0,0.0,-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[image.shape[1],image.shape[0],float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
@@ -735,8 +737,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
             intens_err = intens_err*weights
             if verbosity > 1:
                 print "Fitting source weighted plane"
-        #fit 2d fixed psf to background subtracted source light
-        fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, PSF, given, free, skyflag=skyflag), (x,y), intens, sigma=intens_err, p0=est, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
+        #first estimation of best fit, use LM for speed with no bounds
+        fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, PSF, given, free, skyflag=skyflag), (x,y), intens, sigma=intens_err, p0=est, absolute_sigma=True, maxfev=maxfev)
 
         #record first set of parameters
         if outfile is not None:
@@ -1014,9 +1016,9 @@ def PSFmulti_plot(image, x0, y0, PSFpopt, psftype, PSF, X2dof, skypopt, skyN, fi
         yt = np.arange(y0[i]-window,y0[i]+window+1,0.25)
         Iy_im = np.array([image[j][int(x0[i])] for j in y])
         #compute PSF fit
-        Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psfmod, PSF, [], psfpopt, nsamp=4)
+        Ix_theo = E2moff_multi((xt,np.array([int(y0[i])]*len(xt))), psfmod, PSF, [], psfpopt)
         Ix_res = Ix_im - E2moff_multi((x,np.array([int(y0[i])]*len(x))), psfmod, PSF, [], psfpopt)
-        Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psfmod, PSF, [], psfpopt, nsamp=4)
+        Iy_theo = E2moff_multi((np.array([int(x0[i])]*len(yt)),yt), psfmod, PSF, [], psfpopt)
         Iy_res = Iy_im - E2moff_multi((np.array([int(x0[i])]*len(y)),y), psfmod, PSF, [], psfpopt)
 
         if psfmod[i] == '3':
