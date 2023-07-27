@@ -267,10 +267,9 @@ csb_in = dict()
 
 def CoreSersicb(re, n, gma, rbe):
     global csb_in
-    global csb_out
     hashseq = str([n,gma,rbe])
     if hashseq in csb_in:
-        bn = csb_out[hashseq]
+        bn = csb_in[hashseq]
     else:
         rb = rbe*re
         rbn = np.power(rbe, 1./n)

@@ -653,6 +653,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 #given is empty, general Sersic params are all in free
                 given.append([])
                 est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.0,120.0]))
+                #est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.6,30.0]))
                 lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,0.0,0.0,0.0,-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),float("Inf"),float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
@@ -720,7 +721,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
     if (outfile is not None) and verbosity > 1:
         print "Saving params"
     
-    try:
+    if 1:
         if verbosity > 1:
             print "Initial fit"
         #estimate errorbars
@@ -773,6 +774,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         #re-estimate errorbars
         intens_err = np.sqrt(np.absolute(intens)+skyN**2)
         #calculate better PSF from cleaner data
+        print fitpopt, bounds
         fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, PSF, given, free, skyflag=skyflag), (x,y), intens, sigma=intens_err, p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         
         try:
@@ -875,6 +877,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
             plt.colorbar()
             plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
             plt.show()
+    """
     except:
         #catastrophic failure of PSF fitting
         print "PSF fitting catastrophic failure"
@@ -882,7 +885,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         PSFperr = [[0]*PSFlen(psfi) for psfi in psftype]
         skyflag = 0
         X2dof = 0
-    
+    """
     if verbosity > 0:
         print "Multi-obj best fit parameters"
         for i in range(Nobj):
@@ -1206,7 +1209,7 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, psftype, skypopt, skyN, verb
 def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=True, verbosity=0):
     
     from PSFlib import D2plane, E2moff_verify
-    
+    print PSF
     if radius is None and E2moff_verify(PSF, x0, y0):
         #get some critical values to calculate radius
         frac = 0.9 #Kron aperture light fraction
