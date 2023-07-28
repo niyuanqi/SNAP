@@ -721,7 +721,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
     if (outfile is not None) and verbosity > 1:
         print "Saving params"
     
-    if 1:
+    try:
         if verbosity > 1:
             print "Initial fit"
         #estimate errorbars
@@ -877,7 +877,6 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
             plt.colorbar()
             plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
             plt.show()
-    """
     except:
         #catastrophic failure of PSF fitting
         print "PSF fitting catastrophic failure"
@@ -885,7 +884,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         PSFperr = [[0]*PSFlen(psfi) for psfi in psftype]
         skyflag = 0
         X2dof = 0
-    """
+    
     if verbosity > 0:
         print "Multi-obj best fit parameters"
         for i in range(Nobj):
