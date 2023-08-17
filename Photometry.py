@@ -597,6 +597,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
     #get fit box (around all sources) to multi-fit psf
     fsize = 3
     #fsize = 9
+    #fsize = 7
     intens, x, y = ap_multi(image, x0, y0, [1]*Nobj, 0, fsize*fwhm)
 
     #sky fitting
@@ -654,7 +655,18 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 given.append([])
                 est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.0,120.0]))
                 #est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.6,30.0]))
-                lbounds = np.concatenate((lbounds,[-float("Inf"),0.01,0.01,0.0,0.0,0.0,-float("Inf")]))
+                #est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.3,120.0]))
+                """
+                #e.g., for N300_2017cz needed better tuning of initial params
+                if i==0:
+                    est = np.concatenate((est,[0.1*Iest,1.5*fwhm,0.5,x0[i],y0[i],0.3,25.0]))
+                elif i==1:
+                    est = np.concatenate((est,[Iest,0.5*fwhm,1.0,x0[i],y0[i],0.6,70.0]))
+                elif i==2:
+                    est = np.concatenate((est,[Iest,fwhm,1.0,x0[i],y0[i],0.8,130.0]))
+                """
+                        
+                lbounds = np.concatenate((lbounds,[-float("Inf"),0.0001,0.0001,0.0,0.0,0.0,-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),float("Inf"),float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             elif psftype[i][-1] == 'f': #check for fixed position
@@ -720,7 +732,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 est[i] = prevest[np.argwhere(prevnames == name)[0]]
     if (outfile is not None) and verbosity > 1:
         print "Saving params"
-    
+
+    #annoying try/except structure, necessaary evil
     try:
         if verbosity > 1:
             print "Initial fit"
@@ -753,7 +766,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         x, y, intens = PSFclean(x,y,intens,I_theo,skyN,sat,10,10)
         
         if verbosity > 1:
-            print "Second fit"
+            print "Second fit, with init:"
+            print fitpopt
         if skyflag:
             #get sky background
             sky = D2plane((x,y),*fitpopt[-3:])
@@ -774,7 +788,6 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         #re-estimate errorbars
         intens_err = np.sqrt(np.absolute(intens)+skyN**2)
         #calculate better PSF from cleaner data
-        print fitpopt, bounds
         fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y),psftype, PSF, given, free, skyflag=skyflag), (x,y), intens, sigma=intens_err, p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
         
         try:
@@ -783,7 +796,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         except:
             try:
                 if verbosity > 1:
-                    print "Re-fit to get errors"
+                    print "Re-fit to get errors, with init:"
+                    print fitpopt
                 #take closer initial conditions
                 fitpopt, fitpcov = curve_fit(lambda (x, y),*free: E2moff_multi((x, y), psftype, PSF, given, free, skyflag=skyflag), (x,y), intens, sigma=intens_err, p0=fitpopt, bounds=bounds, absolute_sigma=True, maxfev=maxfev)
                 fitperr = np.sqrt(np.diag(fitpcov))
@@ -859,6 +873,8 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
         #Graph residual if verbosity is high enough
         if verbosity > 1:
             import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(1, 3)
+            fig.set_figwidth(12)
             #limits of subimage to show
             x1, x2 = int(min(x0)-fsize*fwhm),int(max(x0)+fsize*fwhm)
             y1, y2 = int(min(y0)-fsize*fwhm),int(max(y0)+fsize*fwhm)
@@ -872,11 +888,25 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
             sb = image[y1:y2,x1:x2]-I_t
             sbmax = 5*skyN
             sbmin = -5*skyN
-            plt.title("Multi-object fit residual")
-            plt.imshow(sb, cmap='Greys',vmax=sbmax,vmin=sbmin)
-            plt.colorbar()
-            plt.scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            ax[0].set_title("Multi-obj fit data")
+            ax[0].imshow(image[y1:y2,x1:x2], cmap='Greys',vmax=sbmax,vmin=sbmin)
+            ax[0].scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            ax[1].set_title("Model")
+            ax[1].imshow(I_t, cmap='Greys',vmax=sbmax,vmin=sbmin)
+            ax[1].scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            ax[2].set_title("Residual")
+            im = ax[2].imshow(sb, cmap='Greys',vmax=sbmax,vmin=sbmin)
+            ax[2].scatter(np.array(x0, dtype=int)-x1, np.array(y0, dtype=int)-y1, color='r', marker='.')
+            plt.tight_layout()
             plt.show()
+    except ValueError:
+        #catastrophic failure of PSF fitting
+        print "x0 is infeasible after initial LM fit, try different x0."
+        print "Setting fit parameters to zero for now."
+        PSFpopt = [[0]*PSFlen(psfi) for psfi in psftype]
+        PSFperr = [[0]*PSFlen(psfi) for psfi in psftype]
+        skyflag = 0
+        X2dof = 0
     except:
         #catastrophic failure of PSF fitting
         print "PSF fitting catastrophic failure"

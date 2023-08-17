@@ -399,8 +399,8 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
             elif psf[-1] == 'f' and given != []:
                 Ie = free[count]
                 n=float(psf.split('-')[0][1:])
-                re=float(psf.split('-')[-3])
                 e=float(psf.split('-')[-2])
+                re=float(psf.split('-')[-3])/np.sqrt(1-e)
                 theta=float(psf.split('-')[-1][:-1])
                 
                 #sersic with known n and position
@@ -410,8 +410,8 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
             else:
                 Ie = free[count]
                 n=float(psf.split('-')[0][1:])
-                re=float(psf.split('-')[-3])
                 e=float(psf.split('-')[-2])
+                re=float(psf.split('-')[-3])/np.sqrt(1-e)
                 if psf[-1] == 'f':
                     theta=float(psf.split('-')[-1][:-1])
                 else:
@@ -435,8 +435,8 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
                 n=float(psf.split('-')[0][1:])
                 gma=float(psf.split('-')[1])
                 rbe=float(psf.split('-')[2])
-                re=float(psf.split('-')[-3])
                 e=float(psf.split('-')[-2])
+                re=float(psf.split('-')[-3])/np.sqrt(1-e)
                 theta=float(psf.split('-')[-1][:-1])
                 #sersic with known n and position
                 params = list(given[i])+list([free[count]])+[e, theta, re, n, gma, rbe]
@@ -446,8 +446,8 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
                 n=float(psf.split('-')[0][1:])
                 gma=float(psf.split('-')[1])
                 rbe=float(psf.split('-')[2])
-                re=float(psf.split('-')[-3])
                 e=float(psf.split('-')[-2])
+                re=float(psf.split('-')[-3])/np.sqrt(1-e)
                 if psf[-1] == 'f':
                     theta=float(psf.split('-')[-1][:-1])
                 else:
