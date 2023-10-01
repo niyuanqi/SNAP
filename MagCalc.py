@@ -383,9 +383,6 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         corr = [dx - corr_ast[0], dy - corr_ast[1]]
         if verbosity > 0:
             print "Correcting astrometric error:", str(corr)
-        for i in range(ncat):
-            catXs[i] = catXs[i] + corr[0]
-            catYs[i] = catYs[i] + corr[1]
         for i in range(Nobj):
             Xo[i] = Xo[i] + corr[0]
             Yo[i] = Yo[i] + corr[0]
