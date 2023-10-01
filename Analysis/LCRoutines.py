@@ -369,7 +369,7 @@ def LClimcut(t, t1, t2, lim, limcut, M, M_err=None, F=None, SN=None, terr=None):
     return retlist
 
 #function: return first difference (color) between a set of light curves
-def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retinterps=False):
+def LCcolors(ts, mags, errs, tlims=None, mlims=None, interp='lin', win=0.5, tmin0=None, tlen0=None, retinterps=False):
     '''
     #######################################################################
     # Input                                                               #
@@ -393,14 +393,20 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retint
     #######################################################################
     '''
     tdiff, mag_diffs, mag_derrs, diffs, derrs = [], [], [], [], []
-    if tmin is None:
-        tmin = min(np.concatenate(ts))-0.01
-    if tlen is None:
-        tmax = max(np.concatenate(ts))+0.01
-    else:
-        tmax = tmin + tlen
+    if tlims is not None:
+        tllims, llims, llim_errs, tulims, ulims, ulim_errs = [], [], [], [], [], []
     #for each adjacent pair of light curve in mags
     for i in range(len(ts)-1):
+        #set range of color curves
+        if tmin0 is None:
+            tmin = max(min(ts[i]), min(ts[i+1])) - 0.1
+        else:
+            tmin = tmin0
+        if tlen0 is None:
+            tmax = min(max(ts[i]), max(ts[i+1])) + 0.1
+        else:
+            tmax = tmin + tlen0
+        #color curve methods
         if interp == 'lin':
             #create common axis (ordered union)
             tdiff.append(np.sort(np.concatenate((ts[i],ts[i+1]))))
@@ -416,6 +422,23 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retint
             mag_derrs.append([np.sqrt(interp1_err2), np.sqrt(interp2_err2)])
             diffs.append(interp1 - interp2)
             derrs.append(np.sqrt(interp1_err2 + interp2_err2))
+            if tlims is not None:
+                #do upper limits
+                #mask = np.logical_and(tlims[i] > min(ts[i+1])-0.1, tlims[i] < min(ts[i]))
+                mask = tlims[i] > min(ts[i+1])-0.1
+                tllims.append(tlims[i][mask])
+                interp2 = np.interp(tllims[i],ts[i+1],mags[i+1])
+                interp2_err2 = np.interp(tllims[i],ts[i+1],np.square(errs[i+1]))
+                llims.append(mlims[i][mask]-interp2)
+                llim_errs.append(np.sqrt(interp2_err2))
+                #do lower limits
+                #mask = np.logical_and(tlims[i+1] > min(ts[i])-0.1, tlims[i+1] < min(ts[i+1]))
+                mask = tlims[i+1] > min(ts[i])-0.1
+                tulims.append(tlims[i+1][mask])
+                interp1 = np.interp(tulims[i],ts[i],mags[i])
+                interp1_err2 = np.interp(tulims[i],ts[i],np.square(errs[i]))
+                ulims.append(interp1 - mlims[i+1][mask])
+                ulim_errs.append(np.sqrt(interp1_err2))
         elif interp == 'bin':
             tdiff.append([])
             diffs.append([])
@@ -449,18 +472,22 @@ def LCcolors(ts, mags, errs, interp='lin', win=0.5, tmin=None, tlen=None, retint
             tdiff[i] = np.array(tdiff[i])
             diffs[i] = np.array(diffs[i])
             derrs[i] = np.array(derrs[i])
+            if tlims is not None:
+                print "color lims for bin type under construction"
             #import matplotlib.pyplot as plt
             #plt.show()
             #plt.scatter(ts[i], mags[i])
             #plt.scatter(ts[i+1], mags[i+1])
             #plt.scatter(tdiff[i], diffs[i])
             #plt.show()
+    #return first difference light curves
+    retlist = [tdiff, diffs, derrs]
+    if tlims is not None:
+        retlist += [tllims, llims, llim_errs, tulims, ulims, ulim_errs]
     if retinterps:
         #return interpolated light curves
-        return tdiff, diffs, derrs, mag_diffs, mag_derrs
-    else:
-        #return first difference light curves
-        return tdiff, diffs, derrs
+        retlist += [mag_diffs, mag_derrs]
+    return retlist
 
 #function: bin light curves on time intervals
 def LCbin(t, mag, err, winlength):

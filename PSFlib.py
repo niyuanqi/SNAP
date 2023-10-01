@@ -389,7 +389,7 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
             #we need to use sersic profile
             if psf[1] == 'n':
                 #make ellipticity an independent parameter
-                e, theta = free[count+5], free[count+6]
+                e, theta = np.absolute(free[count+5]), free[count+6]
                 #print "e, theta", e,theta
                 Ie, re = free[count], free[count+1]/np.sqrt(1-e)
                 params = list([Ie,re])+list(free[count+2:count+5])+list([e, theta])
@@ -425,7 +425,7 @@ def E2moff_multi((x,y), psftype, PSF, given, free, skyflag=0, nsamp=4, fker=4):
             #we need to use core sersic profile
             if psf[1] == 'n':
                 #make ellipticity an independent parameter
-                e, theta = free[count+3], free[count+4]
+                e, theta = np.absolute(free[count+3]), free[count+4]
                 Ib, re = free[count+2], free[count+5]/np.sqrt(1-e)
                 params = list(free[count:count+2])+list([Ib, e, theta, re])+list(free[count+6:count+9])
                 #full sersic profile

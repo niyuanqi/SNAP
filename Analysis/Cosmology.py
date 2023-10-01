@@ -187,6 +187,14 @@ def Mag_addMag(mag1, mag2):
     relflux_sub = flux1+flux2
     mag_add = -2.5*np.log10(relflux_sub)
     return mag_add
+#function: add a source of error to limiting mag
+def Lim_addMag(mag1, mag2, err2, SNR=3):
+    flux1 = np.power(10,mag1/-2.5)
+    flux2 = np.power(10,mag2/-2.5)
+    flux2err = flux2*np.log(10)*err2/2.5
+    relflux_sub = np.sqrt(np.square(flux1/SNR)+np.square(flux2err))*SNR
+    mag_add = -2.5*np.log10(relflux_sub)
+    return mag_add
 #function: subtract a constant magnitude object from fluxes
 def Flux_subMag(flux1, err1, mag2, err2, band='i'):
     flux2 = flux_0[bands[band]]*np.power(10,mag2/-2.5)

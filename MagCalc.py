@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, fitact="", diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, fsize=3, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, fitact="", corr_ast=None, diagnosis=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -280,11 +280,14 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     catIDs = []
     if verbosity > 0:
         print "Extracting PSF of "+str(Ncat)+" catalog stars."
-    
+
+    #astrometric sanity check
+    dx, dy = [], []
     #calculate PSF for each reference star
     for i in range(Ncat):
         if verbosity > 0:
             print "\nComputing PSF of "+str(i+1)+"/"+str(Ncat)
+            print "ID:", ID[i]
         #position of reference star
         x0, y0 = catX[i], catY[i]
         #calculate intensity and SN ratio
@@ -323,6 +326,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
             #save fit X2/dof
             catX2dofs.append(X2dof)
             catIDs.append(ID[i])
+
+            #astrometric sanity check
+            dx.append(PSFpopt[5] - x0)
+            dy.append(PSFpopt[6] - y0)
         else:
             if verbosity > 0:
                 #say something about fit being bad for this particular star
@@ -354,18 +361,34 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     #calculate average sky parameters
     skyval = catSkyMs.mean() #mean constant background
     noise = catSkyNs.mean() #mean std from background
+    #average astrometric offset
+    dx, dy = np.mean(dx), np.mean(dy)
     if verbosity > 0:
         print "Average PSF [ax, ay, b, theta] =",str(catPSF)
         print "parameter errors =",str(catPSFerr)
         print "Average FWHMx,FWHMy =",str(plib.E2moff_toFWHM(*catPSF[:-1]))
         print "Average background sky count =",str(skyval)
         print "Average noise in background =",str(noise)
+        print "Average astrometric pixel offset =",str(dx),str(dy)
         print ""
 
     if diagnosis:
         if verbosity > 0:
             print "Returning image data for diagnosis"
-        return catPSF, catPSFerr, skyval, noise
+        return catPSF, catPSFerr, skyval, noise, (dx, dy)
+
+    #astrometric correction
+    if corr_ast is not None:
+        #correct as X + corr_x
+        corr = [dx - corr_ast[0], dy - corr_ast[1]]
+        if verbosity > 0:
+            print "Correcting astrometric error:", str(corr)
+        for i in range(ncat):
+            catXs[i] = catXs[i] + corr[0]
+            catYs[i] = catYs[i] + corr[1]
+        for i in range(Nobj):
+            Xo[i] = Xo[i] + corr[0]
+            Yo[i] = Yo[i] + corr[0]
 
     #Integration using common PSF
     catIs = np.zeros(ncat)
@@ -447,7 +470,7 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFextract(image, Xo[0], Yo[0], fwhm, fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
         else:
             #PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFscale(image, catPSF, catPSFerr, Xo[0], Yo[0], fitsky=fitsky[0], sat=satpix, verbosity=verbosity)
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, fsize=fsize, verbosity=verbosity)
             PSFpopt, PSFperr, X2dof, skypopto, skyNo = PSFpopt[0], PSFperr[0], X2dof, skypopto, skyNo
         
         PSFpopt, PSFperr = [PSFpopt], [PSFperr]
@@ -468,11 +491,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
     elif Nobj > 0:
         fitname = "lastsavedfit.txt"
         if fitact == 'save':
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, outfile=fitname, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, fsize=fsize, outfile=fitname, verbosity=verbosity)
         elif fitact == 'load':
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, infile=fitname, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, fsize=fsize, infile=fitname, verbosity=verbosity)
         else:
-            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, verbosity=verbosity)
+            PSFpopt, PSFperr, X2dof, skypopto, skyNo = pht.PSFmulti(image, catPSF, catPSFerr, psf, Xo, Yo, fitsky=fitsky, sat=satpix, fsize=fsize, verbosity=verbosity)
 
         #check preferred intensity calculation method
         if aperture is None:

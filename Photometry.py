@@ -576,7 +576,7 @@ def PSFscale(image, PSF, PSFerr, x0, y0, fitsky=True, sat=40000.0, verbosity=0):
         return [0]*7, [0]*7, 0, [0]*3, skyN
 
 #function: fit multiple PSFs
-def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=None, outfile=None, verbosity=0):
+def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, fsize=3, infile=None, outfile=None, verbosity=0):
 
     from scipy.optimize import curve_fit
     from PSFlib import D2plane, E2moff_multi, E2moff_toFWHM, E2moff_verify, PSFlen, PSFparams, Mdist
@@ -595,9 +595,6 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
     Nobj = len(psftype)
     
     #get fit box (around all sources) to multi-fit psf
-    fsize = 3
-    #fsize = 9
-    #fsize = 7
     intens, x, y = ap_multi(image, x0, y0, [1]*Nobj, 0, fsize*fwhm)
 
     #sky fitting
@@ -655,8 +652,24 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 given.append([])
                 est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.0,120.0]))
                 #est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.6,30.0]))
-                #est = np.concatenate((est,[Iest,fwhm,4.0,x0[i],y0[i],0.3,120.0]))
+                #est = np.concatenate((est,[0.5*Iest,fwhm,4.0,x0[i],y0[i],0.3,40.0]))
                 """
+                #e.g., for N247_2017cv
+                if i==0:
+                    est = np.concatenate((est,[0.5*Iest,2*fwhm,4.0,x0[i],y0[i],0.6,40.0]))
+                elif i==1:
+                    est = np.concatenate((est,[0.5*Iest,2*fwhm,4.0,x0[i],y0[i],0.0,40.0]))
+                
+                #e.g., for E149_2017gp
+                if i==0:
+                    est = np.concatenate((est,[0.01*Iest,4*fwhm,4.0,x0[i],y0[i],0.7,14.0]))
+                elif i==1:
+                    est = np.concatenate((est,[0.1*Iest,fwhm,4.0,x0[i],y0[i],0.5,12.0]))
+                #e.g., for ZN7314_2021D
+                if i==0:
+                    est = np.concatenate((est,[Iest,1.5*fwhm,3.0,x0[i],y0[i],0.52,170.0]))
+                if i==1:
+                    est = np.concatenate((est,[-Iest,fwhm,1.0,x0[i],y0[i],0.55,170.0]))
                 #e.g., for N300_2017cz needed better tuning of initial params
                 if i==0:
                     est = np.concatenate((est,[0.1*Iest,1.5*fwhm,0.5,x0[i],y0[i],0.3,25.0]))
@@ -666,13 +679,20 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                     est = np.concatenate((est,[Iest,fwhm,1.0,x0[i],y0[i],0.8,130.0]))
                 """
                         
-                lbounds = np.concatenate((lbounds,[-float("Inf"),0.0001,0.0001,0.0,0.0,0.0,-float("Inf")]))
+                lbounds = np.concatenate((lbounds,[-float("Inf"),0.0001,0.0001,0.0,0.0,-0.99,-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),float("Inf"),float("Inf"),image.shape[1],image.shape[0],0.99,float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             elif psftype[i][-1] == 'f': #check for fixed position
                 #given contains [x0, y0], free has [Ie]
                 given.append([x0[i], y0[i]])
                 est = np.concatenate((est, [Iest]))
+                """
+                #for ZN7314_2021D
+                if i == 1:
+                    est = np.concatenate((est, [0.5*Iest]))
+                elif i == 2:
+                    est = np.concatenate((est, [-0.5*Iest]))
+                """
                 lbounds = np.concatenate((lbounds,[-float("Inf")]))
                 ubounds = np.concatenate((ubounds,[float("Inf")]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
@@ -680,6 +700,13 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 #given is empty, Sersic n is fixed
                 given.append([])
                 est = np.concatenate((est,[Iest,x0[i],y0[i]]))
+                """
+                #for ZN7314_2021D
+                if i == 1:
+                    est = np.concatenate((est,[0.5*Iest,x0[i],y0[i]]))
+                elif i == 2:
+                    est = np.concatenate((est,[-0.5*Iest,x0[i],y0[i]]))
+                """
                 lbounds = np.concatenate((lbounds,[-float("Inf"),0.0,0.0]))
                 ubounds = np.concatenate((ubounds,[float("Inf"),image.shape[1],image.shape[0]]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
@@ -689,7 +716,7 @@ def PSFmulti(image, PSF, PSFerr, psftype, x0, y0, fitsky, sat=40000.0, infile=No
                 #given is empty, general Sersic params are all in free
                 given.append([])
                 est = np.concatenate((est,[x0[i],y0[i],10*Iest,0.0,120.0,2*fwhm,4.0,0.2,0.1]))
-                lbounds = np.concatenate((lbounds,[0.0,0.0,0.0,0.0,-float("Inf"),0.01,0.01,0.01,0.001]))
+                lbounds = np.concatenate((lbounds,[0.0,0.0,0.0,-0.99,-float("Inf"),0.01,0.01,0.01,0.001]))
                 ubounds = np.concatenate((ubounds,[image.shape[1],image.shape[0],float("Inf"),0.99,float("Inf"),float("Inf"),50.0,0.99,0.99]))
                 estnames = np.concatenate((estnames,[str(i)+namei for namei in PSFparams(psftype[i])]))
             elif psftype[i][-1] == 'f': #check for fixed position
@@ -1238,7 +1265,7 @@ def PSF_photometry(image, x0, y0, PSFpopt, PSFperr, psftype, skypopt, skyN, verb
 def Ap_photometry(image, x0, y0, skypopt, skyN, radius=None, PSF=None, fitsky=True, verbosity=0):
     
     from PSFlib import D2plane, E2moff_verify
-    print PSF
+    
     if radius is None and E2moff_verify(PSF, x0, y0):
         #get some critical values to calculate radius
         frac = 0.9 #Kron aperture light fraction
