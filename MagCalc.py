@@ -379,11 +379,8 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
 
     #astrometric correction
     if corr_ast is not None:
-        if corr_ast[-1] == 'R':
-            #correct as X + corr_x
-            corr = [dx - corr_ast[0], dy - corr_ast[1]]
-        else:
-            corr = corr_ast
+        #correct as X + corr_x
+        corr = [dx - corr_ast[0], dy - corr_ast[1]]
         if verbosity > 0:
             print "Correcting astrometric error:", str(corr)
         for i in range(Nobj):
