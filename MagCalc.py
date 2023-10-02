@@ -379,13 +379,16 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
 
     #astrometric correction
     if corr_ast is not None:
-        #correct as X + corr_x
-        corr = [dx - corr_ast[0], dy - corr_ast[1]]
+        if corr_ast[-1] == 'R':
+            #correct as X + corr_x
+            corr = [dx - corr_ast[0], dy - corr_ast[1]]
+        else:
+            corr = corr_ast
         if verbosity > 0:
             print "Correcting astrometric error:", str(corr)
         for i in range(Nobj):
             Xo[i] = Xo[i] + corr[0]
-            Yo[i] = Yo[i] + corr[0]
+            Yo[i] = Yo[i] + corr[1]
 
     #Integration using common PSF
     catIs = np.zeros(ncat)
