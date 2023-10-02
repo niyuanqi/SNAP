@@ -555,7 +555,11 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
             else:
                 #moffat
                 Xp, Yp = PSFpopt[i][5], PSFpopt[i][6]
-                    
+
+            #astrometric correction
+            if corr_ast is not None:
+                Xp = Xp - corr[0]
+                Yp = Yp - corr[1]
             RAo[i], DECo[i] = wcs.all_pix2world(Xp, Yp, 0)
             #calculate magnitude from flux
             mo[i] = -2.5*np.log10(I[i]/(flux_0[bands[band]]*1e6))
@@ -563,6 +567,10 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         else:
             #bad source
             mo[i], mo_err[i] = float('NaN'), float('NaN')
+            #astrometric correction
+            if corr_ast is not None:
+                Xo[i] = Xo[i] - corr[0]
+                Yo[i] = Yo[i] - corr[1]
             RAo[i], DECo[i] = wcs.all_pix2world(Xo[i], Yo[i], 0)
 
     if limsnr != 0 and skyNo != 0:
