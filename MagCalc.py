@@ -442,6 +442,12 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
             ccor.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
             #xmask = catX2dofs < 10
             #ccor.Bcol_corr(cat, catname, catIDs[xmask], RAo, DECo, radius, insMags[xmask], insMagerrs[xmask], catMags[xmask], catMagerrs[xmask])
+        elif band == 'V':
+            import ColorCorr as ccor
+
+            ccor.Vcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+            #xmask = catX2dofs < 10
+            #ccor.Vcol_corr(cat, catname, catIDs[xmask], RAo, DECo, radius, insMags[xmask], insMagerrs[xmask], catMags[xmask], catMagerrs[xmask])
         elif band == 'I':
             import ColorCorr as ccor
 

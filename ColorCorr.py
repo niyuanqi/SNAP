@@ -76,7 +76,7 @@ def Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
         #essential additional import
         import matplotlib.pyplot as plt
 
-        #np.savetxt("ZN988-1.Q0.corr.txt", np.array([BV, dI, BV_err, dI_err]).T)
+        np.savetxt("ZN988-1.Q0.corr.txt", np.array([BV, dI, BV_err, dI_err]).T)
 
         #fit color dependence
         plt.title("B band dependence on B-V")
@@ -102,7 +102,99 @@ def Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
         
     #return mean color of reference stars
     return BV_mean, BV_merr 
+
+#function: plot B band color correlation
+def Vcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs, plot=True):
+    #essential extra imports
+    from scipy.optimize import curve_fit
+    from SNAP.Analysis.LCFitting import linfunc
+    import Catalog as ctlg
+    #load B band data
+    if cat == 'aavso':
+        fovam = 2.0*radius*0.4/60.0 #arcmin radius in KMT scaling
+        IDBV, RABV, DECBV, catBV, catBVerr = ctlg.catAAVSO(RAo[0],DECo[0],fovam,'B-V',out=catname)
+        V, Verr = [], []
+        KV, KVerr = [], []
+        BV, BV_err = [], []
+        for i in range(len(catBV)):
+            if IDBV[i] in catIDs:
+                Vid = list(catIDs).index(IDBV[i])
+                V.append(catMags[Vid])
+                Verr.append(catMagerrs[Vid])
+                KV.append(insMags[Vid])
+                KVerr.append(insMagerrs[Vid])
+                BV.append(catBV[i])
+                BV_err.append(catBVerr[i])
+        V, Verr = np.array(V), np.array(Verr)
+        KV, KVerr = np.array(KV), np.array(KVerr)
+        BV, BV_err = np.array(BV), np.array(BV_err)
+    else:
+        #fetch V band magnitudes
+        if cat == 'phot':
+            IDB, RAB, DECB, catMB, catMerrB = ctlg.catPhot(catname,band='B')
+        elif cat == 'dprs':
+            IDB, RAB, DECB, catMB, catMerrB = ctlg.catDPRS(catname,band='B')
+        elif cat == 'diff':
+            IDB, RAB, DECB, catMB, catMerrB = ctlg.catDiff(catname,band='B')
+        #compute B-V
+        B, Berr = [], []
+        KV, KVerr = [], []
+        V , Verr = [], []
+        for i in range(len(catMV)):
+            if IDV[i] in catIDs:
+                Vid = list(catIDs).index(IDB[i])
+                V.append(catMags[Vid])
+                Verr.append(catMagerrs[Vid])
+                KV.append(insMags[Vid])
+                KVerr.append(insMagerrs[Vid])
+                B.append(catMB[i])
+                Berr.append(catMerrB[i])
+        B, Berr = np.array(B), np.array(Berr)
+        KV, KVerr = np.array(KV), np.array(KVerr)
+        V, Verr = np.array(V), np.array(Verr)
+        BV = B-V
+        BV_err = np.sqrt(np.square(Berr) + np.square(Verr))
+    #photometric solution color dependence
+    dI = V - KV
+    dI_err = np.sqrt(Verr**2 + KVerr**2)
+    #average B-V color
+    BV_err = [BV_err[i] if BV_err[i] > 0 else 0.0005 for i in range(len(BV))]
+    w = 1/np.square(BV_err)
+    BV_mean = np.sum(BV*w)/np.sum(w)
+    BV_merr = np.sqrt(1/np.sum(w))
+    print "Average color (B-V):", BV_mean, "+/-", BV_merr 
     
+    #make color correlation plot
+    if plot:
+        #essential additional import
+        import matplotlib.pyplot as plt
+
+        #np.savetxt("ZN988-1.Q0.corr.txt", np.array([BV, dI, BV_err, dI_err]).T)
+
+        #fit color dependence
+        plt.title("V band dependence on B-V")
+        plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='k+', zorder=1)
+        popt, pcov = curve_fit(linfunc,BV,dI,p0=[0.27,27.8],
+                               sigma=dI_err,absolute_sigma=True)
+        perr = np.sqrt(np.diag(pcov))
+        colsol = linfunc(BV, *popt)
+        #mask out 3sig deviators 
+        mask = np.absolute(dI-colsol) < 3*np.std(dI-colsol)
+        plt.scatter(BV[mask], dI[mask], c='r')
+        popt, pcov = curve_fit(linfunc,BV[mask],dI[mask],p0=[0.27,27.8],
+                               sigma=dI_err[mask],absolute_sigma=True)
+        perr = np.sqrt(np.diag(pcov))
+        colsol = linfunc(BV[mask], *popt)
+        print "Color correlation:",popt, perr
+        print "Nstar:",len(BV[mask])
+        print "Pearson:",np.corrcoef(BV[mask],dI[mask])
+        plt.plot(BV[mask], colsol, zorder=2)
+        plt.ylabel("V - inst")
+        plt.xlabel("B - V")
+        plt.show()
+        
+    #return mean color of reference stars
+    return BV_mean, BV_merr 
 
 #function: plot B band color correlation
 def Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs, plot=True):
