@@ -15,7 +15,7 @@ import numpy as np
 #Reiss 2016 Cosmological parameters from SN1a
 H0 = 73.24 #km/s/Mpc Hubble constant (1.74)
 H = H0*1e3/1e6 #m/s/pc Hubble Constant
-c = 2.9979e8 #m/s
+c = 2.99792485e8 #m/s
 Wm = 0.27 #matter density parameter
 Wl = 0.73 #vacuum density parameter
 Tcmb=2.725 #CMB current temperature
@@ -39,37 +39,135 @@ def comov(z):
     return (c/H)/np.sqrt(Wm*np.power(1.0+z,3)+Wl)
 
 #function: integrate comoving distance to some redshift [pc]
-def intDc(z):
+def intDc(z, H1=H0):
     #import scipy.integrate as integrate
     #return integrate.quad(comov,0,z)[0]
     from astropy.cosmology import FlatLambdaCDM
 
-    cosmo = FlatLambdaCDM(H0=H0, Om0=Wm, Tcmb0=2.725)
+    cosmo = FlatLambdaCDM(H0=H1, Om0=Wm, Tcmb0=2.725)
     return cosmo.comoving_distance(z).value*1e6
 
 #function: integrate angular diameter distance to some redshift
-def intDa(z):
-    return intDc(z)/(1.0+z)
+def intDa(z, H1=H0):
+    return intDc(z, H1=H1)/(1.0+z)
 
 #function: integrate luminosity distance to some redshift
-def intDl(z):
-    return intDc(z)*(1.0+z)
+def intDl(z, H1=H0):
+    return intDc(z, H1=H1)*(1.0+z)
 
 #function: integrate distance modulus to some redshift
-def intDM(z):
-    return 5.*np.log10(intDl(z)/10)
+def intDM(z, H1=H0):
+    return 5.*np.log10(intDl(z, H1=H1)/10)
+
+#function: invert DM to equivalent hubble flow redshift
+def DM_toz(DM, DMerr, z0=0, ra=None, dec=None):
+    from scipy.optimize import fsolve
+    diff_func = lambda z: MCDM(z, 0, ra=ra, dec=dec)[0] - DM
+    zDM = fsolve(diff_func, z0)[0]
+    return zDM
 
 #function: bootstrap DM error
-def MCDM(z, zerr, n=1000):
+def MCDM(z, zerr, n=1000, ra=None, dec=None, Herr=None, verbose=False):
+    if ra is not None:
+        if dec is None:
+            print "COORDINATE ERROR"
+        #Mould et al. (2000) local velocity field correction
+        z, zerr = M00_corrz(z, zerr, ra, dec, verbose)
+    if Herr is None:
+        Hs = np.ones(n)*H0
+    else:
+        Hs = np.random.normal(H0, Herr, n)
     dzs = np.random.normal(0,zerr,n)
     DMs = []
     for i in range(n):
         #get distance modulus
-        DM = intDM(z+dzs[i])
+        DM = intDM(z+dzs[i], H1=Hs[i])
         DMs.append(DM)
     DM = intDM(z)
     DMerr = np.std(DMs)
-    print DM, DMerr
+    return DM, DMerr
+
+#function: Mould et al. (2000) infall velocity component
+def r_infall(Vo, Va, theta):
+    gma = 2.
+    roa = np.sqrt(Vo**2 + Va**2 - 2*Vo*Va*np.cos(theta))
+    return np.cos(theta)+np.power(roa/Va, 1-gma)*(Vo-Va*np.cos(theta))/roa
+#function: Transform heliocentric to LG coordinates
+def Hel_toLG(v, l, b):
+    #(Karachentsev & Makarov 1996)
+    vap = 316
+    lap, bap = 93*np.pi/180., -4*np.pi/180.
+    dvLG = vap*(np.sin(b)*np.sin(bap) + np.cos(b)*np.cos(bap)*np.cos(l-lap))
+    return v + dvLG
+
+#function: Mould et al. (2000) local velocity field correction
+def M00_corrz(z, zerr, ra, dec, verbose=False):
+    from SNAP.Astrometry import Hel_toGal, sepAngle
+    #observed redshift z
+    v, verr = c*1e-3*z, c*1e-3*zerr
+    
+    l, b = Hel_toGal(ra, dec)
+    l, b = l*np.pi/180., b*np.pi/180.
+    #correction for local group velocity 
+    vLG = Hel_toLG(v, l, b)
+    
+    #Virgo infall
+    Virgo_pos = (187.0791667, 12.0666667)
+    #Virgo_l, Virgo_b = Hel_toGal(*Virgo_pos)
+    Virgo_fid = 200 #km/s
+    #Virgo_v = 1035 #km/s
+    #Virgo_vLG = Hel_toLG(Virgo_v, Virgo_l, Virgo_b)
+    Virgo_vLG = 957 #km/s
+    theta = sepAngle((ra, dec), Virgo_pos)*np.pi/180.
+    Virgo_vin = Virgo_fid*r_infall(vLG, Virgo_vLG, theta)
+
+    #GA infall
+    GA_pos = (200.0, -44.0)
+    #GA_l, GA_b = Hel_toGal(*GA_pos)
+    GA_fid = 400 #km/s
+    #GA_v = 4600 #km/s
+    #GA_vLG = Hel_toLG(GA_v, GA_l, GA_b)
+    GA_vLG = 4380 #km/s
+    theta = sepAngle((ra, dec), GA_pos)*np.pi/180.
+    GA_vin = GA_fid*r_infall(vLG, GA_vLG, theta)
+
+    #Shapley infall
+    Shapley_pos = (202.5, -31.0)
+    #Shapley_l, Shapley_b = Hel_toGal(*Shapley_pos)
+    Shapley_fid = 85 #km/s
+    #Shapley_v = 13800 #km/s
+    #Shapley_vLG = Hel_toLG(Shapley_v, Shapley_l, Shapley_b)
+    Shapley_vLG = 13600 #km/s
+    theta = sepAngle((ra, dec), Shapley_pos)*np.pi/180.
+    Shapley_vin = Shapley_fid*r_infall(vLG, Shapley_vLG, theta)
+
+    #corrected to cosmic velocity
+    vin = Virgo_vin + GA_vin + Shapley_vin
+    vC = vLG + vin
+    vCerr = np.sqrt(verr**2 + (0.06*(vLG-v))**2 + (0.07*Virgo_vin)**2
+                    +(0.07*GA_vin)**2 + (0.07*Shapley_vin)**2)
+    if verbose:
+        print "vhelio", v
+        print "vLG", vLG
+        print "Virgo", vLG+Virgo_vin
+        print "Virgo + GA", vLG+Virgo_vin+GA_vin
+        print "Virgo + GA + Shapley", vC, vCerr
+    
+    #convert to cosmic redshift
+    zC, zCerr = vC*1e3/c, vCerr*1e3/c
+    return zC, zCerr
+
+#function: convert luminosity distance (Mpc) to DM
+def Dl_toDM(Dl, Dlerr):
+    DM = 5.*np.log10(Dl*1e6) - 5.
+    DMerr = 5.*Dlerr/(Dl*np.log(10.))
+    return DM, DMerr
+
+#function: convert DM to luminosity distance
+def DM_toDl(DM, DMerr):
+    Dl = np.power(10., 0.2*(DM+5))/1.e6
+    Dlerr = Dl*np.log(10.)*DMerr
+    return Dl, Dlerr #Mpc
 
 #function: projected dist (pc) between angle separated objects at redshift z
 def sepDistProj(sepRad, z):
@@ -83,30 +181,38 @@ def deredFlux(appFlux, EBV, Coef):
     return appFlux*np.power(10,EBV*Coef/2.5)
     
 #function: calculate absolute magnitude at redshift z
-def absMag(appMag, z, appMag_err=None, z_err=None, Kcorr=None):
-    dl = intDl(z)
-    print dl
+def absMag(appMag, z, appMag_err=None, z_err=None, DM=None, DMerr=None, Kcorr=None):
+    if DM is None:
+        dl = intDl(z)
+        DM = 5.*np.log10(dl/10.0)
+    
     if Kcorr is None:
         #estimate absolute magnitude using luminosity distance and naive K
-        Mabs = appMag - 5.*np.log10(dl/10.0) + 2.5*np.log10(1+z)
+        Mabs = appMag - DM + 2.5*np.log10(1+z)
     else:
         #compute absolute magnitude using luminosity distance and K correction
-        Mabs = appMag - 5.*np.log10(dl/10.0) - Kcorr
+        Mabs = appMag - DM - Kcorr
     if appMag_err is not None:
         #calculate corresponding errors
-        dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
+        if DM is None:
+            dl_err = (intDl(z+z_err)-intDl(z-z_err))/2.0
+            DMerr = (5./np.log(10))*(dl_err/dl)
         if Kcorr is None:
-            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5./(10*np.log(10)))*(dl_err/dl)) + np.square((2.5/np.log(10))*(z_err/(1.0+z))))
+            Mabs_err = np.sqrt(np.square(appMag_err) + np.square(DMerr) + np.square((2.5/np.log(10))*(z_err/(1.0+z))))
         else:
-            Mabs_err = np.sqrt(np.square(appMag_err) + np.square((5./(10*np.log(10.0)))*(dl_err/dl)))
+            Mabs_err = np.sqrt(np.square(appMag_err) + np.square(DMerr))
         return Mabs, Mabs_err
     else:
         #don't calculate errors
         return Mabs
 
 #function: calculate absolute magnitude at redshift z
-def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
-    dl = intDl(z)
+def absFlux(appFlux, z, appFlux_err=None, z_err=None, DM=None, DMerr=None, Kcorr=None):
+    if DM is None:
+        dl = intDl(z)
+    else:
+        dl = np.power(10, 1.+DM/5.0)
+    
     if Kcorr is None:
         #estimate absolute flux using luminosity distance and naive K
         Fabs = appFlux*(1+z)*(dl/10.0)**2
@@ -114,9 +220,13 @@ def absFlux(appFlux, z, appFlux_err=None, z_err=None, Kcorr=None):
         #compute absolute magnitude using luminosity distance and K correction
         Fabs = appFlux*np.power(10,Kcorr/2.5)*(dl/10.0)**2
     if appFlux_err is not None:
-        #calculate corresponding errors
-        dl_err = (intDl(z+z_err)-intDl(z-z_err))/(2.0*np.sqrt(3))
+        if DM is None:
+            #calculate corresponding errors
+            dl_err = (intDl(z+z_err)-intDl(z-z_err))/(2.0*np.sqrt(3))
+        else:
+            dl_err = (np.log(10)/5.0)*DMerr*dl
         if Kcorr is None:
+            appFlux[appFlux == 0] = 1e-10
             Fabs_err = np.absolute(Fabs)*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)) + np.square(z_err/(1.0+z)))
         else:
             Fabs_err = np.absolute(Fabs)*np.sqrt(np.square(appFlux_err/appFlux) + np.square(2*(dl_err/dl)))
@@ -201,3 +311,13 @@ def Flux_subMag(flux1, err1, mag2, err2, band='i'):
     flux_sub = flux1 - flux2*1e6
     err_sub = np.sqrt(np.square(err1) + np.square(err2*flux2*np.log10(10)/(-2.5)))
     return flux_sub, err_sub
+
+#function: subtract a constant flux object from mags
+def Mag_subFlux(mag1, flux2, band='i'):
+    flux1 = Mag_toFlux(band, mag1)
+    relflux_sub = flux1-flux2*1e-6
+    mag_sub = Flux_toMag(band, relflux_sub)
+    return mag_sub
+#function: subtract a constant magnitude object from fluxes
+def Flux_subFlux(flux1, flux2):
+    return flux1-flux2

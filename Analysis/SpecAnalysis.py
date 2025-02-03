@@ -30,12 +30,14 @@ def spec_fits(filename, get_err=False, get_meta=False):
         spec = spec_fits[0]
         if get_err:
             spec_err = spec_fits[3]
-        print spec_meta['SITEID']
+        #print spec_meta['SITEID']
     else:
         spec = spec_fits
     #check units
-    if 'BUNIT' not in spec_meta or spec_meta['BUNIT']=='erg/cm2/s/A':
+    if 'BUNIT' not in spec_meta or spec_meta['BUNIT']=='erg/cm2/s/A' or spec_meta['BUNIT']=='erg/cm2/s/Angstrom':
         unit = u.erg/u.cm**2/u.s/u.AA
+    elif spec_meta['BUNIT']=='adu' or spec_meta['BUNIT']=='DU/PIXEL':
+        unit = 1
     #spectrum flux data
     flux = spec.data*unit
     if get_err:
@@ -50,19 +52,24 @@ def spec_fits(filename, get_err=False, get_meta=False):
         spec_err = SourceSpectrum(Empirical1D, points=wave,
                           lookup_table=flux_err, keep_neg=True)
     #check if metadata is needed
-    if get_meta:
+    if get_meta == 'mjd':
+        from astropy.time import Time
+        datestr = 'MJD-OBS'
+        isot_obs = Time(spec_meta[datestr], format='mjd', scale='utc').isot
+        return spec, isot_obs
+    elif get_meta:
         from astropy.coordinates import SkyCoord
-        
         #calculate time observed
-        datestr = 'DATE-OBS'
-        if 'T' in spec_meta[datestr]:
-            isot_obs = spec_meta[datestr]
-        elif 'UT' in spec_meta:
-            isot_obs = spec_meta[datestr]+'T'+spec_meta['UT']
-        elif 'UT-TIME' in spec_meta:
-            isot_obs = spec_meta[datestr]+'T'+spec_meta['UT-TIME']
-        elif 'TIME-OBS' in spec_meta:
-            isot_obs = spec_meta[datestr]+'T'+spec_meta['TIME-OBS']
+        if 'DATE-OBS' in spec_meta:
+            datestr = 'DATE-OBS'
+            if 'T' in spec_meta[datestr]:
+                isot_obs = spec_meta[datestr]
+            elif 'UT' in spec_meta:
+                isot_obs = spec_meta[datestr]+'T'+spec_meta['UT']
+            elif 'UT-TIME' in spec_meta:
+                isot_obs = spec_meta[datestr]+'T'+spec_meta['UT-TIME']
+            elif 'TIME-OBS' in spec_meta:
+                isot_obs = spec_meta[datestr]+'T'+spec_meta['TIME-OBS']
         #exposure time
         exp_obs = spec_meta['EXPTIME']
         #RA, DEC observed
@@ -70,7 +77,6 @@ def spec_fits(filename, get_err=False, get_meta=False):
         coord = SkyCoord(RA, DEC, unit=(u.hourangle, u.deg))
         RA, DEC = coord.ra.degree, coord.dec.degree
         #return spectrum and metadata
-        #return spectrum
         if get_err:
             return spec, spec_err, isot_obs, exp_obs, (RA,DEC)
         else:
@@ -81,6 +87,36 @@ def spec_fits(filename, get_err=False, get_meta=False):
             return spec, spec_err
         else:
             return spec
+
+#function: loading spectra
+def spec_dat(filename):
+    import astropy.units as u
+    from synphot import SourceSpectrum
+    from synphot.models import Empirical1D
+    
+    wave, flux = np.loadtxt(filename, unpack=True)
+    #create synphot spectrum object
+    spec = SourceSpectrum(Empirical1D, points=wave*u.AA,
+                          lookup_table=flux*u.erg/u.cm**2/u.s/u.AA,
+                          keep_neg=True)
+    return spec
+
+#function: loading spectra
+def spec_txt(filename):
+    import astropy.units as u
+    from synphot import SourceSpectrum
+    from synphot.models import Empirical1D
+    
+    wave, flux = np.loadtxt(filename, unpack=True, skiprows=1, delimiter=', ')
+    #create synphot spectrum object
+    spec = SourceSpectrum(Empirical1D, points=wave*u.AA,
+                          lookup_table=flux*u.erg/u.cm**2/u.s/u.AA,
+                          keep_neg=True)
+    return spec
+
+#################################################################
+# Synthetic Observations                                        #
+#################################################################
 
 #function: calculate zero point of filter system
 def filter_vega_zp(filterfile, filterzero):
@@ -194,12 +230,13 @@ def filter_mag(filterfile, filterzero, syn_spec, syn_err=None, z=0, wrange=None)
     waves = np.linspace(wrange[0], wrange[-1], 10000)
     filt = SpectralElement(Empirical1D, points=fwave*(1.+z),
                            lookup_table=filt(fwave))
+        
     #Synthetic observation
     obs = Observation(syn_spec, filt, force='extrap')
     flux = obs.effstim(flux_unit='jy', waverange=wrange).value
     #flux = obs.effstim(flux_unit='jy', wavelengths=waves).value
     #Calibrate magnitude with zero point
-    mag = -2.512*np.log10(flux/filterzero)
+    mag = -2.5*np.log10(flux/filterzero)
     #Synthetic observation of error spectrum
     if syn_err is not None:
         #square filter and error spectrum
@@ -256,16 +293,20 @@ def Kcorr(z, filt, zerof, syn_spec, syn_err=None, wrange=None):
     #Kcorr = 2.5log(flux(z)/flux1(z=0)) such that mag(z) = mag(z=0) - Kcorr
     if syn_err is not None:
         #if error spectrum is given
-        mag1, err = filter_mag(filt, zerof, syn_spec, syn_err, z=z, wrange=wrange)
-        mag2, err = filter_mag(filt, zerof, syn_spec, syn_err, z=0, wrange=wrange)
+        mag1, err = filter_mag(filt, zerof, syn_spec, syn_err,
+                               z=z, wrange=wrange)
+        mag2, err = filter_mag(filt, zerof, syn_spec, syn_err,
+                               z=0, wrange=wrange)
         kcorr = -2.5*np.log10(1.+z) + mag2 - mag1
+        #kcorr = mag2 - mag1
         kcorr_err = err
         return kcorr, kcorr_err
     else:
         #if error spectrum is not given
         mag1 = filter_mag(filt, zerof, syn_spec, z=z, wrange=wrange)
         mag2 = filter_mag(filt, zerof, syn_spec, z=0, wrange=wrange)
-        kcorr = mag2 - mag1
+        kcorr = -2.5*np.log10(1.+z) + mag2 - mag1
+        #kcorr = mag2 - mag1
         return kcorr
 
 #################################################################
@@ -273,19 +314,28 @@ def Kcorr(z, filt, zerof, syn_spec, syn_err=None, wrange=None):
 #################################################################
 
 #function: bin spectrum to resolution
-def bin_spec(wave, spec, R=400):
-    spec_filt = np.zeros(len(spec))
-    #bin resolved intervals
-    for i in range(len(spec)):
-        dw = wave[i]/R
-        mask = np.logical_and(wave >= wave[i]-dw/2., wave < wave[i]+dw/2)
-        spec_filt[i] = np.mean(spec[mask])
+def bin_spec(wave, spec, filt='boxcar', R=400, filtwin=180.0):
+    if filt == 'boxcar':
+        spec_filt = np.zeros(len(spec))
+        #bin resolved intervals
+        for i in range(len(spec)):
+            dw = wave[i]/R
+            mask = np.logical_and(wave >= wave[i]-dw/2., wave < wave[i]+dw/2)
+            spec_filt[i] = np.mean(spec[mask])
+    elif filt == 'savgol':
+        from scipy.signal import savgol_filter
+
+        #filtering window [A] R~wave/filtwin
+        dwave = np.median(wave[1:] - wave[:-1])
+        window = int(np.ceil(filtwin/dwave) // 2 * 2 + 1)
+        #2nd order savitsky-golay filter
+        spec_filt = savgol_filter(spec, window, 2)
     return spec_filt
 
 #function: Doppler velocity from line shift
 def Dopp_v(zdop, zdop_err=None):
     #speed of light
-    c = 3e2 #1e3 km/s
+    c = 299.792458 #1e3 km/s
     #relativistic Doppler equation
     beta = ((zdop+1)**2 - 1)/((zdop+1)**2 + 1)
     if zdop_err is None:
@@ -296,7 +346,20 @@ def Dopp_v(zdop, zdop_err=None):
         beta_err = zdop_err*2*(zdop+1)*(1 - beta)/((zdop+1)**2 + 1)
         #return Doppler velocity
         return beta*c, beta_err*c
-        
+#function: Doppler z from velocity
+def Dopp_z(vdop, vdop_err=None):
+    #speed of light
+    c = 299.792458 #1e3 km/s
+    #relativistic Doppler equation
+    z = np.sqrt((c+vdop)/(c-vdop)) - 1
+    if vdop_err is None:
+        #return redshift
+        return z
+    else:
+        #calculate error
+        zerr = vdop_err*c/(c-vdop)**2/z
+        #return redshift
+        return z, zerr
 
 #function: Skewed Gaussian line profile
 def lpNorm(x, A, mu, sig, skew, b):
@@ -408,7 +471,7 @@ def fit_SiII(center, lim1, lim2, spec, spec_err=None,
     
     #decompose spectrum
     spec_wave = spec.waveset.value
-    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+    spec_flux = spec(spec_wave, flux_unit='flam').value
 
     win=20
     #measure left limit
@@ -530,6 +593,93 @@ def Voigt(nu, alphaD, alphaL, nu_0, A):
     V = A * f / (alphaD * np.sqrt(np.pi)) * voigt(x, y)
     return V
 
+#function: measure equivalent width of Na I D lines
+def fitVoigt(line0, spec, spec_err=None, r=15, z=0, plot=False, params=True):
+    #r is annulus size around lines for fitting
+    from scipy.optimize import curve_fit
+    
+    #load spectrum data
+    spec_wave = spec.waveset.value
+    spec_flux = spec(spec_wave, flux_unit='flam').value
+
+    #line locations
+    line = line0*(1.+z)
+
+    filt=False
+    #estimate spectrum error
+    if isinstance(spec_err, list):
+        #load spectrum data
+        filt_flux = bin_spec(spec_wave, spec_flux, filt='savgol', filtwin=200)
+        nmask = np.logical_and(spec_wave > spec_err[0]*(1.+z),
+                               spec_wave < spec_err[1]*(1.+z))
+        spec_err = np.std(spec_flux[nmask] - filt_flux[nmask])
+        filt=True
+
+    if line0 == 6564.614:
+        print "Halpha"
+        r1 = r
+        r2 = r
+    else:
+        r1 = r
+        r2 = r
+
+    #crop a fitting window around the Na I D
+    mask = np.logical_and(spec_wave > line-r1, spec_wave < line+r2)
+    #estimate background level
+    b_est = 0.5*(spec_flux[mask][0] + spec_flux[mask][-1])
+
+    #fitting doublet profile
+    est = [z, 0.4, 0.8, 100.0, 0, b_est]
+    print est
+    LineVoigt = lambda nu, z, aD1, aL1, A1, a, b: Voigt(nu, aD1, aL1, line0*(1.+z), A1) + lin(nu, a, b)
+    if spec_err is None:
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, maxfev=1000000)
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, maxfev=1000000)
+    elif isinstance(spec_err, float):
+        spec_flux_err = np.ones(len(spec_wave[mask]))*spec_err
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, sigma=spec_flux_err,
+                               absolute_sigma=True, maxfev=1000000)
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, sigma=spec_flux_err,
+                               absolute_sigma=True, maxfev=1000000)
+    else: #error spectrum given
+        spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, sigma=spec_flux_err[mask],
+                               absolute_sigma=True, maxfev=1000000)
+        popt, pcov = curve_fit(LineVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, sigma=spec_flux_err[mask],
+                               absolute_sigma=True, maxfev=1000000)
+    perr = np.sqrt(np.diag(pcov))
+    print popt
+    print perr
+    wave = np.linspace(line-r1, line+r2, 1000)
+    V = LineVoigt(wave, *popt)
+    
+    z, zerr = popt[0], perr[0]
+    print "Doppler shift:", z, zerr
+
+    #plotting the fit
+    if plot:
+        import matplotlib.pyplot as plt
+        
+        plt.plot(spec_wave, spec_flux, c='g')
+        #plt.plot(spec_wave[mask], DVoigt(spec_wave[mask], *popt), c='r')
+        plt.plot(wave, V, c='b', linestyle=':')
+        if filt:
+            plt.plot(spec_wave[nmask], filt_flux[nmask],
+                     c='orange', linestyle=':')
+        plt.title("Voigt Line Fit")
+        plt.xlabel("Wavelength [A]")
+        plt.ylabel("Flux [flam]")
+        plt.show()
+
+    if params:
+        return popt, perr
+
 def DVoigt(nu, aD1, aL1, nu1, A1, aD2, aL2, nu2, A2, a, b):
     # The Voigt line shape in terms of its physical parameters
     # aD, aL are half widths at half max for Doppler and Lorentz(not FWHM)
@@ -539,7 +689,7 @@ def DVoigt(nu, aD1, aL1, nu1, A1, aD2, aL2, nu2, A2, a, b):
     #second Voigt
     V2 = Voigt(nu, aD2, aL2, nu2, A2)
     #linear background
-    backg = b + a * nu
+    backg = lin(nu, a, b)
     V = V1+V2+backg
     return V
 
@@ -550,48 +700,75 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
     
     #load spectrum data
     spec_wave = spec.waveset.value
-    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
     spec_flux = spec(spec_wave, flux_unit='flam').value
 
+    filt=False
+    #estimate spectrum error
+    if isinstance(spec_err, list):
+        #load spectrum data
+        filt_flux = bin_spec(spec_wave, spec_flux, filt='savgol', filtwin=200)
+        nmask = np.logical_and(spec_wave > spec_err[0]*(1.+z),
+                               spec_wave < spec_err[1]*(1.+z))
+        spec_err = np.std(spec_flux[nmask] - filt_flux[nmask])
+        filt=True
+
     #Na I D locations
-    line2 = 5890.0*(1.+z)
-    line1 = 5896.0*(1.+z)
+    line20 = 5889.950
+    line2 = line20*(1.+z)
+    line10 = 5895.924
+    line1 = line10*(1.+z)
 
     #crop a fitting window around the Na I D
     mask = np.logical_and(spec_wave > line2-r, spec_wave < line1+r)
+    #mask = np.logical_and(spec_wave > 6864, spec_wave <6882)
     #estimate background level
     b_est = 0.5*(spec_flux[mask][0] + spec_flux[mask][-1])
 
     #fitting doublet profile
-    est = [0.4, 0.8, line2, -1.0,
-           0.4, 0.8, line1, -0.5,
-           0, b_est]
+    est = [z, 1, 0.1, -0.2*b_est,
+           1, 0.1, -0.2*b_est,
+           0.0, b_est]
     print est
+    NaVoigt = lambda nu, z, aD1, aL1, A1, aD2, aL2, A2, a, b: DVoigt(nu, aD1, aL1, line20*(1.+z), A1, aD2, aL2, line10*(1.+z), A2, a, b)
     if spec_err is None:
-        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
                                p0=est, maxfev=1000000)
-        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
                                p0=popt, maxfev=1000000)
+    elif isinstance(spec_err, float):
+        spec_flux_err = np.ones(len(spec_wave[mask]))*spec_err
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=est, sigma=spec_flux_err,
+                               absolute_sigma=True, maxfev=1000000)
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, sigma=spec_flux_err,
+                               absolute_sigma=True, maxfev=1000000)
     else:
         spec_flux_err = spec_err(spec_wave, flux_unit='flam').value
-        popt, pcov = curve_fit(DVoigt, spec_wave[mask], spec_flux[mask],
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
                                p0=est, sigma=spec_flux_err[mask],
-                               maxfev=1000000)
+                               absolute_sigma=True, maxfev=1000000)
+        popt, pcov = curve_fit(NaVoigt, spec_wave[mask], spec_flux[mask],
+                               p0=popt, sigma=spec_flux_err[mask],
+                               absolute_sigma=True, maxfev=1000000)
     perr = np.sqrt(np.diag(pcov))
     print popt
     print perr
     wave = np.linspace(line2-r, line1+r, 1000)
-    V = DVoigt(wave, *popt)
+    V = NaVoigt(wave, *popt)
+    
+    z, zerr = popt[0], perr[0]
+    print "Doppler shift:", z, zerr
 
     #calculate equivalent widths
-    wave2 = np.linspace(line2-r, line2+r, 1000)
-    V2 = Voigt(wave2, popt[0], popt[1], popt[2], popt[3])
-    backg2 = popt[9] + popt[8] * wave2
+    wave2 = np.copy(wave)
+    V2 = Voigt(wave2, popt[1], popt[2], line20*(1.+z), popt[3])
+    backg2 = popt[8] + popt[7] * wave2
     EW2 = np.trapz(-V2/backg2, wave2)
     
-    wave1= np.linspace(line1-r, line1+r, 1000)
-    V1 = Voigt(wave1, popt[4], popt[5], popt[6], popt[7])
-    backg1 = popt[9] + popt[8] * wave1
+    wave1 = np.copy(wave)
+    V1 = Voigt(wave1, popt[4], popt[5], line10*(1.+z), popt[6])
+    backg1 = popt[8] + popt[7] * wave1
     EW1 = np.trapz(-V1/backg1, wave1)
     print "D2: EW =",EW2
     print "D1: EW =",EW1
@@ -614,6 +791,9 @@ def fitNaID(spec, spec_err=None, r=15, z=0, plot=False, params=True):
         plt.plot(wave2, V2+backg2, c='r')
         plt.plot(wave1, V1+backg1, c='b')
         plt.plot(wave, V, c='k', linestyle=':')
+        if filt:
+            plt.plot(spec_wave[nmask], filt_flux[nmask],
+                     c='orange', linestyle=':')
         plt.title("Doublet Voigt Line Fit")
         plt.xlabel("Wavelength [A]")
         plt.ylabel("Flux [flam]")
@@ -629,11 +809,11 @@ def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
         
     #load spectrum data
     spec_wave = spec.waveset.value
-    spec_flux = spec(spec_wave, flux_unit='flam').value*1e14
+    spec_flux = spec(spec_wave, flux_unit='flam').value
 
     #Na I D locations
-    line2 = 5890.0*(1.+z)
-    line1 = 5896.0*(1.+z)
+    line2 = 5889.950*(1.+z)
+    line1 = 5895.924*(1.+z)
 
     #crop a fitting window around the Na I D
     mask = np.logical_and(spec_wave > line2-r, spec_wave < line1+r)
@@ -648,14 +828,14 @@ def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
     noise = np.std(spec_flux[mask] - lin_flux)
 
     #generate Voigt profiles until S/N = 3
-    n = 500
-    A = np.linspace(-0.1, -1, n)
+    n = 1000
+    A = np.linspace(-0.02, -1., n)
     
     SNR1 = np.zeros(n)
     wave1= np.linspace(line1-r, line1+r, 1000)
     backg1 = lin(wave1, *plin)
     for i in range(n):
-        V1 = Voigt(wave1, popt[0], popt[1], line1, A[i])
+        V1 = Voigt(wave1, popt[1], popt[2], line1, A[i])
         EW1 = np.trapz(-V1/backg1, wave1)
         #signal to noise ratio
         EWmask1 = np.logical_and(wave1>=line1-0.5*EW1, wave1<=line1+0.5*EW1)
@@ -663,7 +843,7 @@ def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
     i1 = np.argmin(np.absolute(SNR1 + sn))
     A1 = A[i1]
     SNR1 = SNR1[i1]
-    V1 = Voigt(wave1, popt[0], popt[1], line1, A1)
+    V1 = Voigt(wave1, popt[1], popt[2], line1, A1)
     EW1 = np.trapz(-V1/backg1, wave1)
         
     SNR2 = np.zeros(n)
@@ -687,9 +867,9 @@ def limNaID(popt, spec, spec_err=None, r=15, sn=3, z=0, plot=False):
     print "D2: EW =",EW2
     print "D1: EW =",EW1
     EBV2 = np.power(10, 2.16*EW2-1.91)
-    err2 = EBV2*np.log(10)*0.15
+    err2 = EBV2*np.log(10)*0.15 #scatter of D2 relation
     EBV1 = np.power(10, 2.47*EW1-1.76)
-    err1 = EBV1*np.log(10)*0.17
+    err1 = EBV1*np.log(10)*0.17 #scatter of D1 relation
     #SFD 1998 extinction
     print "D2: E(B-V) =",np.power(10, 2.16*EW2-1.91),err2
     print "D1: E(B-V) =",np.power(10, 2.47*EW1-1.76),err1

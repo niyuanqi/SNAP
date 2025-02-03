@@ -9,6 +9,21 @@
 #essential modules
 import numpy as np
 
+#function converts degrees to sexagesimal (hms, dms)
+def deg_sex(ra, dec):
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
+    c = SkyCoord(ra=ra*u.degree, dec=dec*u.degree, frame='icrs')
+    return c.to_string('hmsdms')
+
+#function converts ra, dec to galactocentric
+def Hel_toGal(ra, dec):
+    import astropy.coordinates as coord
+    import astropy.units as u
+    
+    c1 = coord.SkyCoord(ra=ra*u.degree, dec=dec*u.degree,frame='icrs')
+    return c1.galactic.l.value, c1.galactic.b.value #(l, b)
+
 #function: converts KSPTime to isot time
 def ksp_isot(time):
     '''

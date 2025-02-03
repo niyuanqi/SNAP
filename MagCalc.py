@@ -101,7 +101,7 @@ def loadFits(filename, year=2016, getwcs=False, gethdr=False, verbosity=0):
         retlist += [header]
     return retlist
 
-def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, fsize=3, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, fitact="", corr_ast=None, diagnosis=False):
+def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_intens=None, aperture=None, psf='1', name='object', band='V', fwhm=5.0, fsize=3, limsnr=3.0, satmag=14.0, refmag=19.0, fitsky=True, satpix=40000.0, verbosity=0, fitact="", corr_ast=None, diagnosis=False, solution=False):
     """
     #####################################################################
     # Desc: Compute magnitude of object in image using ref catalog.     #
@@ -436,13 +436,26 @@ def magnitude(image, catimage, wcs, cat, catname, (RAo,DECo), radius=500, over_i
         magplt.noise_corr_plot(insMags, catNs)
         #photometric solution between instrumental magnitudes vs catalog
         magplt.phot_sol(insMags, insMagerrs, catMags, catMagerrs)
-        #if band == 'B':
-        #    magplt.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
-        #elif band == 'I':
-        #    magplt.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+        if band == 'B':
+            import ColorCorr as ccor
+
+            ccor.Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+            #xmask = catX2dofs < 10
+            #ccor.Bcol_corr(cat, catname, catIDs[xmask], RAo, DECo, radius, insMags[xmask], insMagerrs[xmask], catMags[xmask], catMagerrs[xmask])
+        elif band == 'I':
+            import ColorCorr as ccor
+
+            ccor.Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catMags, catMagerrs)
+            #xmask = catX2dofs < 10
+            #ccor.Icol_corr(cat, catname, catIDs[xmask], RAo, DECo, radius, insMags[xmask], insMagerrs[xmask], catMags[xmask], catMagerrs[xmask])
         #check reference star fit qualities
         magplt.X2_hist(catX2dofs)
         print ""
+
+    if solution:
+        if verbosity > 0:
+            print "Returning photometric solution"
+        return catIs, catSNs, catMags, catMagerrs
         
     #calculate photometry for source object
     #extract PSF to as great a degree as needed from source

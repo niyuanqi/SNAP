@@ -109,6 +109,12 @@ def E2moff_integrate(A, ax, ay, b, f=0.9):
         return f*A*np.pi*ax*ay/(b-1)
     else:
         return float('Inf')
+#function: invert intensity to A
+def E2moff_invert(I, ax, ay, b, f=0.9):
+    if b > 1:
+        return I*(b-1)/(f*np.pi*ax*ay)
+    else:
+        return float('Inf')
 #function: moffat a, b paramters -> fwhm
 def E2moff_toFWHM(ax, ay, b):
     if b != 0 and np.power(2,1.0/b)-1 > 0:
@@ -147,9 +153,9 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
         elif FWHMx > 2*FWHMy or FWHMx < 0.5*FWHMy:
             #FWHM too skewed
             return False
-        elif est_area > np.pi*np.square(3.0*max(FWHMx, FWHMy)):
-            #area under PSF domain too large
-            return False
+        #elif est_area > np.pi*np.square(3.0*max(FWHMx, FWHMy)):
+        #    #area under PSF domain too large
+        #    return False
         elif dist(X0,Y0,x0,y0)>5:
             #not our source
             return False
@@ -177,9 +183,9 @@ def E2moff_verify(PSFpopt, x0=None, y0=None):
         elif FWHMx > 2*FWHMy or FWHMx < 0.5*FWHMy:
             #unphysical FWHM
             return False
-        elif est_area > np.pi*np.square(3.0*max(FWHMx, FWHMy)):
-            #area under PSF domain too large
-            return False
+        #elif est_area > np.pi*np.square(3.0*max(FWHMx, FWHMy)):
+        #    #area under PSF domain too large
+        #    return False
         elif b <= 1.0:
             #divergent PSF
             return False

@@ -39,13 +39,17 @@ def aavso(radeg,decdeg,fovam,band,out=False):
 def aavso_static(lines, band):
     RAcol = 1
     DEcol = 2
-    bands = {'B-V':8, 'B': 12, 'V': 10, 'i': 18, 'r': 16}
-    banderrs = {'B-V':9, 'B': 13, 'V': 11, 'i': 19, 'r': 17}
+    #bands = {'B-V':8, 'B': 12, 'V': 10, 'i': 18, 'r': 16}
+    #banderrs = {'B-V':9, 'B': 13, 'V': 11, 'i': 19, 'r': 17}
+    #AAVSO updated format ~Jan 2025
+    bands = {'B-V':7, 'B': 11, 'V': 9, 'i': 17, 'r': 15}
+    banderrs = {'B-V':8, 'B': 12, 'V': 10, 'i': 18, 'r': 16}
     null = '      '
 
     #parse text
     sl = lines.splitlines()
-    sl = sl[53:-1] # get rid of header
+    #sl = sl[53:-1] # get rid of header
+    sl = sl[52:-1] # get rid of header
     name = np.array([]) 
     rad = np.array([]) # RA in degrees 
     ded = np.array([]) # DEC in degrees 
@@ -56,8 +60,11 @@ def aavso_static(lines, band):
         kw = k.split('\t')
         if kw[0] != '':  
             name = np.append(name,kw[0])
-            rad = np.append(rad,float(kw[1])) 
-            ded = np.append(ded,float(kw[2]))
+            #rad = np.append(rad,float(kw[1])) 
+            #ded = np.append(ded,float(kw[2]))
+            #AAVSO updated format ~Jan 2025
+            rad = np.append(rad,float(kw[0])) 
+            ded = np.append(ded,float(kw[1]))
             # deal with case where no mag is reported
             if (kw[bands[band]] != null) and (kw[banderrs[band]]) != null:
                 rmag = np.append(rmag,float(kw[bands[band]]))

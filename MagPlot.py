@@ -50,7 +50,8 @@ def phot_sol(insMags, insMagerrs, catMags, catMagerrs):
 #function: plot Chi2 histogram
 def X2_hist(catX2dofs):
     plt.title("Reference star PSF fit qualities")
-    nums, bins, patches = plt.hist(catX2dofs, bins=30)
+    #nums, bins, patches = plt.hist(catX2dofs, bins=30)
+    nums, bins, patches = plt.hist(catX2dofs, bins=100)
     plt.xlabel("X2/dof")
     plt.ylabel("Counts")
     plt.title("Reference star fit qualities")

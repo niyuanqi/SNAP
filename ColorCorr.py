@@ -76,6 +76,8 @@ def Bcol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
         #essential additional import
         import matplotlib.pyplot as plt
 
+        #np.savetxt("ZN988-1.Q0.corr.txt", np.array([BV, dI, BV_err, dI_err]).T)
+
         #fit color dependence
         plt.title("B band dependence on B-V")
         plt.errorbar(BV, dI, xerr=BV_err, yerr=dI_err, fmt='k+', zorder=1)
@@ -150,23 +152,31 @@ def Icol_corr(cat, catname, catIDs, RAo, DECo, radius, insMags, insMagerrs, catM
     if plot:
         #essential additional import
         import matplotlib.pyplot as plt
+
+        #np.savetxt("N300-1.Q0.corr.txt", np.array([VI, dI, VI_err, dI_err]).T)
         
         #fit color dependence
         plt.title("I band dependence on V-I")
-        plt.errorbar(VI, dI, xerr=VI_err, yerr=dI_err, fmt='k+', zorder=1)
-        popt, pcov = curve_fit(linfunc,VI,dI,p0=[0.27,27.8],
-                               sigma=dI_err,absolute_sigma=True)
+        #plt.errorbar(VI, dI, xerr=VI_err, yerr=dI_err, fmt='k+', zorder=1)
+        #don't use errorbars
+        plt.scatter(VI, dI, marker='x', color='k', zorder=1)
+        #popt, pcov = curve_fit(linfunc,VI,dI,p0=[0.27,27.8],
+        #                       sigma=dI_err,absolute_sigma=True)
+        #don't use errorbars
+        popt, pcov = curve_fit(linfunc,VI,dI,p0=[0.27,27.8])
         perr = np.sqrt(np.diag(pcov))
         colsol = linfunc(VI, *popt)
         #mask out 3sig deviators 
         mask = np.absolute(dI-colsol) < 3*np.std(dI-colsol)
-        plt.scatter(VI[mask], dI[mask], c='r')
-        popt, pcov = curve_fit(linfunc,VI[mask],dI[mask],p0=[0.27,27.8],
-                               sigma=dI_err[mask],absolute_sigma=True)
+        plt.scatter(VI[mask], dI[mask], c='r', marker='.')
+        #popt, pcov = curve_fit(linfunc,VI[mask],dI[mask],p0=[0.27,27.8],
+        #                       sigma=dI_err[mask],absolute_sigma=True)
+        #don't use errorbars
+        popt, pcov = curve_fit(linfunc,VI[mask],dI[mask],p0=[0.27,27.8])
         perr = np.sqrt(np.diag(pcov))
         colsol = linfunc(VI[mask], *popt)
         print "Color correlation:",popt, perr
-        print "Nstar:",len(VI[mask])
+        print "Nstar:",len(VI[mask]), "/", len(VI)
         print "Pearson:",np.corrcoef(VI[mask],dI[mask])
         plt.plot(VI[mask], colsol, zorder=2)
         plt.ylabel("i - inst")

@@ -16,6 +16,87 @@ def neg_log_like(params, y, gp):
     gp.set_parameter_vector(params)
     return -gp.log_likelihood(y)
 
+#function: return corrected magnitudes based on K corrections
+def KcorrectMag(ts, mags, z, tcorr, Kcorr, tdiv=0,
+                 Kinterp='GP', Kcorr_err=None, Klinext=False):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   mags: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #     ts: list of time arrays (eg. [tB, tV, tI]) where each is an     #
+    #         array of time (in float) corresponding to the light curve.  #
+    #                                                                     #
+    #   tdiv: dividing time, before which apply spectral information is   #
+    #         insufficient, and we should apply simple BV correction.     #
+    #  tcorr: epochs at which S corrections were measured                 #
+    #  Kcorr: spectral correction measured from spectra                   #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #    tcs: list of time arrays.                                        #
+    #                                                                     #
+    #  magcs: list of corrected light curves.                             #
+    #                                                                     #
+    #  errcs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    import copy
+    tcs, magcs = copy.deepcopy(ts), copy.deepcopy(mags)
+    for i in range(len(tcs)):
+        #mask times over which Kcorrs are valid
+        mask = [ts[i]>=tdiv]
+
+        #interpolate K-correction
+        kcorr = np.zeros(len(ts[i][mask]))
+        intmask = [ts[i][mask]<=tcorr[-1]]
+        extmask = [ts[i][mask]>tcorr[-1]]
+        if Kinterp == 'GP':
+            from scipy.optimize import minimize
+            import george
+            from george import kernels
+        
+            # matern kernel in time-band space
+            rt = 3.0
+            mu, sigma = np.mean(Kcorr[i]), np.sqrt(np.var(Kcorr[i]))
+            kernel = sigma*kernels.Matern32Kernel(metric=[rt], ndim=1)
+            #initialize gaussian process
+            gp = george.GP(kernel, mean=mu)
+            gp.compute(tcorr, Kcorr_err[i])  # You always need to call compute once.
+            initial_params = gp.get_parameter_vector()
+            bounds = gp.get_parameter_bounds()
+            #train gaussian process
+            r = minimize(neg_log_like, initial_params, method="L-BFGS-B",
+                     bounds=bounds, args=(Kcorr[i], gp))
+            gp.set_parameter_vector(r.x)
+            gp.get_parameter_dict()
+            print r.x
+            #predict using gaussian process
+            kcorr_gp, kcorr_var = gp.predict(Kcorr[i], tcs[i][mask][intmask])
+            kcorr[intmask] = kcorr_gp
+        else:
+            #correct B band using Bout = Bin + Scorr
+            kcorr[intmask] = np.interp(tcs[i][mask][intmask],tcorr,Kcorr[i])
+        
+        #extrapolate S-correction
+        if Klinext:
+            slope = (Kcorr[i][-1]-Kcorr[i][-2])/(tcorr[-1]-tcorr[-2])
+            kcorr[extmask] = slope*(tcs[i][mask][extmask]-tcorr[-1]) + Kcorr[i][-1]
+        else:
+            kcorr[extmask] = Kcorr[i][-1]
+        
+        #correct each band using S correction
+        magcs[i][mask] = mags[i][mask] - kcorr
+    
+        #mask times over which Scorrs are invalid
+        mask = [ts[i]<tdiv]
+        magcs[i][mask] = mags[i][mask] + 2.5*np.log10(1.+z)
+        
+    #return corrected light curves
+    return tcs, magcs
+
 #function: return corrected B band magnitude based Spectral Corrections
 def SBcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',
                  Bcol=0, Vcol=1, SBVega=0, mBVr=0, mBVrerr=0,
@@ -286,6 +367,106 @@ def BVcorrectFlux(ts, mags, errs, te, Fe, SNe, plot=True):
     SNce[0] = Bout/Bout_err
     #return corrected light curves
     return tce, Fce, SNce
+
+#function: return natural system magnitude based on reference star B-V
+def NaturalMag(mags, errs=None, Bcol=0, Vcol=1, Icol=2, mBVr=0, mBVrerr=0):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    #   mags: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitudes in float.              #
+    #                                                                     #
+    #   errs: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitude errors in float.        #
+    #                                                                     #
+    #   Bcol: index of B band column                                      #
+    #   Vcol: index of V band column                                      #
+    #   Icol: index of i band column                                      #
+    #                                                                     #
+    #   mBVr: mean color of reference stars used mBVr=<B-V>_r             #
+    #mBVrerr: error in above color                                        #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    #  magcs: list of natural system light curves [AB mag].               #
+    #                                                                     #
+    #  errcs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    import copy
+    from Cosmology import flux_0, bands
+    magcs = copy.deepcopy(mags)
+    #B band correlation with B-V
+    c = 0.27
+    #correct B band using Bout = (Bout-Vin)*c + Bin
+    Bin = mags[Bcol]
+    Bout = Bin - c*mBVr
+    magcs[Bcol] = Bout
+    #correct all bands for flux zero point difference
+    cols = [Bcol, Vcol, Icol]
+    bs = ['B', 'V', 'i']
+    for i in range(3):
+        magcs[cols[i]] -= 2.5*np.log10(3631./flux_0[bands[bs[i]]])
+
+    if errs is not None:
+        #propagate errors conservatively
+        errcs = copy.deepcopy(errs)
+        Bin_err = errs[Bcol] 
+        Bout_err = np.sqrt(np.square(Bin_err)+np.square(c*mBVrerr))
+        errcs[Bcol] = Bout_err
+    
+        #return corrected light curves
+        return magcs, errcs
+    else:
+        return magcs
+
+#function: return natural system flux based on reference star B-V
+def NaturalFlux(fluxes, errs=None, Bcol=0, mBVr=0, mBVrerr=0):
+    '''
+    #######################################################################
+    # Input                                                               #
+    # ------------------------------------------------------------------- #
+    # fluxes: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of fluxes [e.g., uJy] in float.      #
+    #                                                                     #
+    #   errs: list of light curves (eg. in different bands [B, V, I])     #
+    #         where each is an array of magnitude errors in float.        #
+    #                                                                     #
+    #   Bcol: index of B band column                                      #
+    #                                                                     #
+    #   mBVr: mean color of reference stars used mBVr=<B-V>_r             #
+    #mBVrerr: error in above color                                        #
+    # ------------------------------------------------------------------- #
+    # Output                                                              #
+    # ------------------------------------------------------------------- #
+    # fluxcs: list of natural system light curves [e.g. uJy].             #
+    #                                                                     #
+    #  errcs: list of corrected errors.                                   #
+    #######################################################################
+    '''
+    import copy
+    from Cosmology import flux_0, bands
+    fluxcs = copy.deepcopy(fluxes)
+    #B band correlation with B-V
+    c = 0.27
+    #correct B band using Bout = (Bout-Vin)*c + Bin
+    Bin = fluxes[Bcol]
+    Bout = Bin*np.power(10, c*mBVr/2.5)
+    fluxcs[Bcol] = Bout
+
+    if errs is not None:
+        #propagate errors conservatively
+        errcs = copy.deepcopy(errs)
+        Bin_err = errs[Bcol] 
+        Bout_err = Bout*np.sqrt(np.square(Bin/Bin_err)+
+                                np.square(np.log(10)*c*mBVrerr/2.5))
+        errcs[Bcol] = Bout_err
+    
+        #return corrected light curves
+        return fluxcs, errcs
+    else:
+        return fluxcs
 
 #function: return corrected B band magnitude based Spectral Corrections
 def SIcorrectMag(ts, mags, errs, tcorr, Scorr, tdiv=0, interp='GP',

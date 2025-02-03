@@ -14,7 +14,7 @@ import numpy as np
 #################################################################
 
 #function: compute monte carlo polynomial fit and parameters
-def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
+def LCpolyFit(t, M, M_err=None, order=6, N=None, teval=None, plot=False):
 
     import warnings
     import matplotlib.pyplot as plt
@@ -47,6 +47,8 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
         dM15 = np.polyval(popt, t_max+15.0) - min(Ma)
         #add to params list
         params = [t_max, M_max, dM15]
+        if teval is not None:
+            params += [np.polyval(popt, teval)]
         #return parameters
         return popt, params
         
@@ -62,6 +64,8 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
         #initializations
         fits = np.zeros((N,order+1))
         t_maxes, M_maxes, dM15s = np.zeros(N), np.zeros(N), np.zeros(N)
+        if teval is not None:
+            Mevals = np.zeros(N)
         #For each light curve, extract polynomial fit
         for j, LC in enumerate(LCtrials):
             #fit light curve
@@ -86,6 +90,8 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
             t_maxes[j] = t_max
             M_maxes[j] = M_max
             dM15s[j] = dM15
+            if teval is not None:
+                Mevals[j] = np.polyval(popt, teval)
                            
         #average parameters among monte carlo datasets
         fit_err = np.std(fits,0)
@@ -110,6 +116,11 @@ def LCpolyFit(t, M, M_err=None, order=6, N=None, plot=False):
         #add to params list
         params = [t_max, M_max, dM15]
         params_err = [t_max_err, M_max_err, dM15_err]
+        if teval is not None:
+            Meval = np.polyval(fit, teval)
+            Meval_err = np.std(Mevals)
+            params += [Meval]
+            params_err += [Meval_err]
         #return parameters
         return fit, fit_err, params, params_err
 
@@ -270,6 +281,13 @@ def earlyMultiErr(p, t, L, L_err):
     I_err = (earlyFit(t[2], p[0], p[3], p[6]) - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
 
+#function: Error function for multi-band power law + offset leastsq fitting
+def earlybMultiErr(p, t, L, L_err):
+    B_err = (earlyFit(t[0], p[0], p[1], p[4]) + p[7] - L[0])/L_err[0]
+    V_err = (earlyFit(t[1], p[0], p[2], p[5]) + p[8] - L[1])/L_err[1]
+    I_err = (earlyFit(t[2], p[0], p[3], p[6]) + p[9] - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
 #function: Error function for multi-band gaussian+PL leastsq fitting
 def GaussianMultiErr(p, t, L, L_err):
     from scipy.stats import norm
@@ -287,6 +305,85 @@ def GaussianMultiErr(p, t, L, L_err):
     I_err = (I_pred - L[2])/L_err[2]
     return np.concatenate([B_err, V_err, I_err],axis=0)
 
+#function: Error function for multi-band gaussian+PL+offset leastsq fitting
+def GaussianbMultiErr(p, t, L, L_err):
+    from scipy.stats import norm
+    #gaussian component
+    B_pred = p[2]*norm.pdf(t[0], p[0], p[1])
+    V_pred = p[3]*norm.pdf(t[1], p[0], p[1])
+    I_pred = p[4]*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[5], p[6], p[9])
+    V_pred = V_pred + earlyFit(t[1], p[5], p[7], p[10])
+    I_pred = I_pred + earlyFit(t[2], p[5], p[8], p[11])
+    #Error
+    B_err = (B_pred + p[12] - L[0])/L_err[0]
+    V_err = (V_pred + p[13] - L[1])/L_err[1]
+    I_err = (I_pred + p[14] - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
+#function: Error function for multi-band gaussian+PL leastsq fitting
+def Gaussiant0MultiErr(p, t, L, L_err):
+    from scipy.stats import norm
+    #gaussian component
+    B_pred = p[2]*norm.pdf(t[0], p[0], p[1])
+    V_pred = p[3]*norm.pdf(t[1], p[0], p[1])
+    I_pred = p[4]*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], 0, p[5], p[8]) 
+    V_pred = V_pred + earlyFit(t[1], 0, p[6], p[9])
+    I_pred = I_pred + earlyFit(t[2], 0, p[7], p[10]) 
+    #Error scaled residual
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err], axis=0)
+
+#function: Error function for multi-band gaussian+PL leastsq fitting
+def RegGaussianMultiLoss(p, t, L, L_err, bounds=[[0, 2.5], [0.2,2.5]], reg='weakbeta'):
+    from scipy.stats import norm
+    #gaussian component
+    B_pred = p[2]*norm.pdf(t[0], p[0], p[1])
+    V_pred = p[3]*norm.pdf(t[1], p[0], p[1])
+    I_pred = p[4]*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], 0, p[5], p[8]) 
+    V_pred = V_pred + earlyFit(t[1], 0, p[6], p[9])
+    I_pred = I_pred + earlyFit(t[2], 0, p[7], p[10]) 
+    #Error scaled residual
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    #regularization of Gaussian
+    if reg == 'weakbeta':
+        #beta prior based on 18oaz, 17cbv, 18oh, 23bee, 21aefx
+        a, b = 0.6897698593001228, 12.803572697960929
+    elif reg == 'strongbeta':
+        #beta prior based on not 2018aoz
+        a, b = 6.517345904865766, 93.04561154414041
+    else:
+        #Uniform prior
+        a, b = 1, 1
+    #hard bounds
+    amps = np.array(p[2:5])
+    if any(amps >= 1) or any(amps <= 0):
+        return np.inf
+    elif p[1] < bounds[1][0] or p[1] > bounds[1][1]:
+        return np.inf
+    elif p[0] < bounds[0][0] or p[0] > bounds[0][1]:
+        return np.inf
+    #elif any(np.array(p[5:8]) < 0) or any(np.array(p[8:11]) < 0):
+    #    return np.inf
+    #neg log prior probability
+    nreg = -np.sum((a-1)*np.log(amps) + (b-1)*np.log(1-amps))
+    #neg log likelihood
+    nll = 0.5*np.sum(np.concatenate([B_err, V_err, I_err],axis=0)**2)
+    #neg log posterior probability
+    nlp = nll+nreg
+    if np.isnan(nll+nreg):
+        print nlp, p
+    return nlp
+    
 #function: Error function for multi-band gaussian+PL leastsq fitting
 def GaussianViErr(p, t, L, L_err):
     from scipy.stats import norm
@@ -298,6 +395,23 @@ def GaussianViErr(p, t, L, L_err):
     B_pred = earlyFit(t[0], p[4], p[5], p[8]) 
     V_pred = V_pred + earlyFit(t[1], p[4], p[6], p[9])
     I_pred = I_pred + earlyFit(t[2], p[4], p[7], p[10]) 
+    #Error
+    B_err = (B_pred - L[0])/L_err[0]
+    V_err = (V_pred - L[1])/L_err[1]
+    I_err = (I_pred - L[2])/L_err[2]
+    return np.concatenate([B_err, V_err, I_err],axis=0)
+
+#function: Error function for multi-band skew gaussian+PL leastsq fitting
+def SkewGausMultiErr(p, t, L, L_err):
+    from scipy.stats import skewnorm
+    #gaussian component
+    B_pred = p[3]*skewnorm.pdf(t[0], p[2], p[0], p[1])
+    V_pred = p[4]*skewnorm.pdf(t[1], p[2], p[0], p[1])
+    I_pred = p[5]*skewnorm.pdf(t[2], p[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[6], p[7], p[10]) 
+    V_pred = V_pred + earlyFit(t[1], p[6], p[8], p[11])
+    I_pred = I_pred + earlyFit(t[2], p[6], p[9], p[12]) 
     #Error
     B_err = (B_pred - L[0])/L_err[0]
     V_err = (V_pred - L[1])/L_err[1]
@@ -382,7 +496,7 @@ def fit_leastchi2(p0, datax, datay, yerr, function, errfunc=False, bounds=None, 
     if bounds is not None:
         # Fit
         res = least_squares(errfunc, p0, args=(datax, datay, yerr),
-                            bounds=bounds, max_nfev=max_nfev, verbose=2)
+                            bounds=bounds, max_nfev=max_nfev)
     else:
         # Fit
         res = least_squares(errfunc, p0, args=(datax, datay, yerr),
@@ -391,12 +505,13 @@ def fit_leastchi2(p0, datax, datay, yerr, function, errfunc=False, bounds=None, 
     return res.x
 
 #function: bootstrap fitting method (Pedro Duarte)
-def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True, n=3000, nproc=4):
+def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True, n=3000, nproc=4, bounds=None):
 
+    from tqdm import tqdm
     from multiprocessing import Pool
     pool = Pool(nproc)
 
-    popt = fit_leastchi2(p0, datax, datay[0], yerr, function, errfunc)
+    popt = fit_leastchi2(p0, datax, datay[0], yerr, function, errfunc, bounds)
 
     if perturb:
         # n random data sets are generated and fitted
@@ -405,8 +520,8 @@ def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True,
     else:
         randomdataY = datay
     #perform processes asynchronously
-    procs = [pool.apply_async(fit_leastchi2, [p0, datax, randY, yerr, function, errfunc]) for randY in randomdataY]
-    ps = np.array([proc.get(timeout=10) for proc in procs])
+    procs = [pool.apply_async(fit_leastchi2, [p0, datax, randY, yerr, function, errfunc, bounds]) for randY in randomdataY]
+    ps = np.array([proc.get(timeout=10) for proc in tqdm(procs)])
     pool.terminate()
     
     #mean fit parameters
@@ -423,8 +538,128 @@ def fit_bootstrap(p0, datax, datay, yerr, function, errfunc=False, perturb=True,
     #pfit_bootstrap = mean_pfit
     pfit_bootstrap = popt
     perr_bootstrap = err_pfit
-    return pfit_bootstrap, perr_bootstrap 
+    return pfit_bootstrap, perr_bootstrap
 
+
+#function: Error function for multi-band early light curve leastsq fitting
+def earlyMulti_model(p, t):
+    B_pred = earlyFit(t[0], p[0], p[1], p[4])
+    V_pred = earlyFit(t[1], p[0], p[2], p[5])
+    I_pred = earlyFit(t[2], p[0], p[3], p[6])
+    return B_pred, V_pred, I_pred
+def earlyMulti_loglikelihood(p, t, L, L_err):
+    print p
+    cB = p[1]/np.power(10, p[4])
+    cV = p[2]/np.power(10, p[5])
+    cI = p[3]/np.power(10, p[6])
+    Bmod = (earlyFit(t[0], p[0], cB, p[4]) - L[0])
+    Bsig2 = L_err[0]**2 + Bmod**2 * np.exp(2 * p[7])
+    Vmod = (earlyFit(t[1], p[0], cV, p[5]) - L[1])
+    Vsig2 = L_err[1]**2 + Vmod**2 * np.exp(2 * p[7])
+    Imod = (earlyFit(t[2], p[0], cI, p[6]) - L[2])
+    Isig2 = L_err[2]**2 + Imod**2 * np.exp(2 * p[7])
+    #combined bands
+    resid = np.concatenate([L[0]-Bmod, L[1]-Vmod, L[2]-Imod],axis=0)
+    sigma2 = np.concatenate([Bsig2, Vsig2, Isig2],axis=0)
+    nll = -0.5 * np.sum(resid ** 2 / sigma2 + np.log(sigma2))
+    return nll
+def earlyMulti_logprior(p, bounds):
+    lp = 0 
+    for i in range(len(p)):
+        if bounds[0][i] < p[i] < bounds[1][i]:
+            #uniform prior
+            lp += -np.log(bounds[1][i]-bounds[0][i])
+        else:
+            return -np.inf
+    return lp
+def earlyMulti_logposterior(p, t, L, L_err, bounds):
+    lp = earlyMulti_logprior(p, bounds)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + earlyMulti_loglikelihood(p, t, L, L_err)
+
+#function: Error function for multi-band gaussian+PL leastsq fitting
+def GaussianMulti_model(p, t):
+    from scipy.stats import norm
+    #change of variables
+    cB = p[6]/np.power(10, p[9])
+    cV = p[7]/np.power(10, p[10])
+    cI = p[8]/np.power(10, p[11])
+    AB = p[2]*p[1]
+    AV = p[3]*p[1]
+    AI = p[4]*p[1]
+    #gaussian component
+    B_pred = AB*norm.pdf(t[0], p[0], p[1])
+    V_pred = AV*norm.pdf(t[1], p[0], p[1])
+    I_pred = AI*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[5], cB, p[9]) 
+    V_pred = V_pred + earlyFit(t[1], p[5], cV, p[10])
+    I_pred = I_pred + earlyFit(t[2], p[5], cI, p[11])
+    return B_pred, V_pred, I_pred
+def GaussianMulti_loglikelihood(p, t, L, L_err):
+    from scipy.stats import norm
+    #change of variables
+    cB = p[6]/np.power(10, p[9])
+    cV = p[7]/np.power(10, p[10])
+    cI = p[8]/np.power(10, p[11])
+    AB = p[2]*p[1]
+    AV = p[3]*p[1]
+    AI = p[4]*p[1]
+    #gaussian component
+    B_pred = AB*norm.pdf(t[0], p[0], p[1])
+    V_pred = AV*norm.pdf(t[1], p[0], p[1])
+    I_pred = AI*norm.pdf(t[2], p[0], p[1])
+    #Power law component
+    B_pred = B_pred + earlyFit(t[0], p[5], cB, p[9]) 
+    V_pred = V_pred + earlyFit(t[1], p[5], cV, p[10])
+    I_pred = I_pred + earlyFit(t[2], p[5], cI, p[11])
+    #Error
+    resid = np.concatenate([L[0]-B_pred, L[1]-V_pred, L[2]-I_pred],axis=0)
+    sigma2 = (np.concatenate(L_err,axis=0)*p[-1])**2
+    ll = -0.5 * np.sum(resid ** 2 / sigma2 + np.log(sigma2))
+    return ll
+def GaussianMulti_logprior(p, bounds):
+    lp = 0
+    #Uniform priors: for sig, t0, a1, a2, a3
+    for i in [1, 5, 9, 10, 11]:
+        if bounds[0][i] < p[i] < bounds[1][i]:
+            lp += 0.0
+        else:
+            return -np.inf
+    #uniform prior for mu, conditional on t0
+    if p[5]+bounds[0][0] < p[0] < p[5]+bounds[1][0]:
+        lp += 0.0
+    else:
+        return -np.inf
+    #Jeffreys (improper) priors: for A1, A2, A3, C1, C2, C3, beta
+    if any(np.concatenate([p[2:5], p[6:9], [p[12]]], axis=0) <= 0):
+        return -np.inf
+    else:
+        for i in [2, 3, 4]:
+            lp += -np.log(p[i]*p[1])
+        for i in [6, 7, 8]:
+            lp += -np.log(p[i])-p[i+3]*np.log(10)
+        for i in [1, 12]:
+            lp += -np.log(p[i])
+    return lp
+def GaussianMulti_logposterior(p, t, L, L_err, bounds):
+    lp = GaussianMulti_logprior(p, bounds)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + GaussianMulti_loglikelihood(p, t, L, L_err)
+
+#function: bootstrap fitting method 
+def fit_MCMC(p0, x, y, yerr, func_logposterior, nproc=4):
+    import emcee
+
+    pos = soln.x + 1e-4 * np.random.randn(32, 3)
+    nwalkers, ndim = pos.shape
+
+    sampler = emcee.EnsembleSampler(
+        nwalkers, ndim, log_probability, args=(x, y, yerr)
+    )
+    sampler.run_mcmc(pos, 5000, progress=True)
     
 
     
