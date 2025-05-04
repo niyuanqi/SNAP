@@ -78,7 +78,7 @@ def splitval(string):
         return string
     
 #function: split value(error) format into error
-def spliterr(string):
+def spliterr(string, abserr=False):
     '''
     ######################################
     # Input                              #
@@ -91,7 +91,10 @@ def spliterr(string):
     ######################################
     '''
     try:
-        return float(string.split('(')[1].split(')')[0])/100.0
+        f = 1.0
+        if not abserr:
+            f = 100.0
+        return float(string.split('(')[1].split(')')[0])/f
     except IndexError:
         return string
     
@@ -116,7 +119,7 @@ def valerr(val, err):
 #################################################################
 
 #function: split data formatting in light curve mag(err)
-def LCsplit(valerrs):
+def LCsplit(valerrs, abserr=False):
     '''
     #####################################################################
     # Input                                                             #
@@ -135,7 +138,7 @@ def LCsplit(valerrs):
     mags, errs = [[]]*len(valerrs), [[]]*len(valerrs)
     for i, valerr in enumerate(valerrs):
         mags[i] = np.array([splitval(string) for string in valerr])
-        errs[i] = np.array([spliterr(string) for string in valerr])
+        errs[i] = np.array([spliterr(string, abserr=abserr) for string in valerr])
     return mags, errs
 
 #function: filter bad data from light curve

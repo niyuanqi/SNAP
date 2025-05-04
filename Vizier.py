@@ -14,7 +14,9 @@ def aavso(radeg,decdeg,fovam,band,out=False):
 
     import urllib as url
     
-    str1 = 'http://webviz.u-strasbg.fr/viz-bin/asu-tsv/?-source=II/336' 
+    #str1 = 'http://webviz.u-strasbg.fr/viz-bin/asu-tsv/?-source=II/336'
+    #updated Vizier since 2025
+    str1 = 'https://vizier.cds.unistra.fr/viz-bin/asu-tsv/?-source=II/336'
     str2 = '&-c.ra={:4.6f}&-c.dec={:4.6f}&-c.bm={:4.7f}/{:4.7f}&-out.max=unlimited'.format(radeg,decdeg,fovam,fovam)
      
     # Make sure str2 does not have any spaces or carriage returns/line feeds when you # cut and paste into your code  

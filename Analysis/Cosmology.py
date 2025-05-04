@@ -67,17 +67,22 @@ def DM_toz(DM, DMerr, z0=0, ra=None, dec=None):
     return zDM
 
 #function: bootstrap DM error
-def MCDM(z, zerr, n=1000, ra=None, dec=None, Herr=None, verbose=False):
+def MCDM(z, zerr=None, n=1000, ra=None, dec=None, Herr=None, verbose=False):
     if ra is not None:
         if dec is None:
             print "COORDINATE ERROR"
         #Mould et al. (2000) local velocity field correction
         z, zerr = M00_corrz(z, zerr, ra, dec, verbose)
+    #bootstrap data
     if Herr is None:
         Hs = np.ones(n)*H0
     else:
         Hs = np.random.normal(H0, Herr, n)
-    dzs = np.random.normal(0,zerr,n)
+    if zerr is None:
+        dzs = np.ones(n)*z
+    else:
+        dzs = np.random.normal(0,zerr,n)
+    #boostrap results
     DMs = []
     for i in range(n):
         #get distance modulus
