@@ -6,7 +6,7 @@
 #################################################################
 
 #function: make fits file into stamp image array
-def make_stamp_image(filename, ra, dec, radius=100):
+def make_stamp_image(filename, ra, dec, radius=100, sci=0):
     """
     Makes stamp image png from fits file
     ------------------------------------
@@ -28,8 +28,8 @@ def make_stamp_image(filename, ra, dec, radius=100):
 
     #load HDU image
     hdulist = fits.open(filename)
-    wcs = WCS(filename)
-    image = hdulist[0].data
+    wcs = WCS(hdulist[sci].header)
+    image = hdulist[sci].data
     #close HDU image
     hdulist.close()
 
